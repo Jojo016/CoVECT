@@ -1,0 +1,75 @@
+.viewport{
+    float: top; /*align at the top*/
+    height: 60%;
+    background-color: #dddddd;
+    position: relative;
+}
+
+.viewport-tutorial-highlight{
+    width: calc(100% - 10px);
+    height: calc(60% - 10px);
+    border: 5px ridge greenyellow;
+}
+.viewport-tutorial-highlight-element{
+    border: 5px ridge deepskyblue !important;
+}
+
+.viewport-gui-buttons{
+    position: absolute;
+    top:5px;
+    right:5px;
+
+    z-index: 1;
+}
+
+.viewport-reset-cam{
+    position: absolute;
+    bottom:5px;
+    left:5px;
+
+    z-index: 1;
+}
+
+.viewport button:hover { /*define change if hovered*/
+    background-color: #ddd;
+    color: black;
+}
+.viewport button {
+    /* default for <button>, but useful for <a> */
+    display: inline-block;
+    text-align: left;
+    text-decoration: none;
+
+
+
+    /* create a small space when buttons wrap on 2 lines */
+    margin: 2px 1px;
+
+    /* invisible border (will be colored on hover/focus) */
+    border: solid 1px transparent;
+    border-radius: 4px;
+    /* size comes from text & padding (no width/height) */
+    /*padding: 0.5em 1em;*/
+}
+
+.viewport-unselected-button {
+    color: #c2c2c2;
+    background-color: #444;
+}
+
+.viewport-selected-button {
+    background-color: #ddd ;
+    color: black ;
+}
+
+.viewport-gui-light{
+    position: absolute;
+    top:5px;
+    left:5px;
+    z-index: 1;
+}
+.viewport-scene{
+    position: absolute;
+    top: 0;
+    left: 0;
+}

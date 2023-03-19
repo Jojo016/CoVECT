@@ -1,0 +1,76 @@
+
+.tutorial-panel{
+    z-index: 100;
+    width: 40%;
+    background-color: #c2c2c2;
+    border: 5px ridge white;
+    overflow: auto;
+    color: #444;
+    text-align: left;
+    text-decoration: none;
+    cursor: default !important; /*Cursor doesn't change*/
+    -webkit-user-select: none;  /*no text select*/
+    -moz-user-select: none;     /*no text select*/
+    -ms-user-select: none;      /*no text select*/
+    user-select: none;          /*no text select*/
+}
+
+.tutorial-panel-bottom{
+    position: absolute;
+    bottom:5px;
+    left:30%;
+}
+.tutorial-panel-top{
+    position: absolute;
+    top:5px;
+    left:30%;
+}
+
+.tutorial-panel button {
+    padding: 2px 5px;
+    box-sizing: border-box;
+    color: #c2c2c2;
+    background-color: #444;
+    border-radius: 5px;
+    text-align: center;
+    cursor: pointer;
+    width: 100%;
+    border: 1px solid #333;
+    box-shadow: 0 3px #727272;
+
+}
+
+.tutorial-panel button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.tutorial-panel button:hover{
+    /*color: #b1b1b1;*/
+    background-color: #8e8e8e;
+}
+
+.tutorial-panel-content{
+    display: grid;
+    grid-template-columns: 1fr 6fr 1fr;
+    grid-gap: 10px;
+    justify-items: center;
+    align-items: center;
+    padding: 10px;
+}
+
+.tutorial-panel-content-button{
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-gap: 5px;
+    justify-items: center;
+    align-items: center;
+}
+
+.tutorial-panel-content-description{
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-gap: 2px;
+    justify-items: left;
+    align-items: center;
+}

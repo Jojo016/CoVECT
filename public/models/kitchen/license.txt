@@ -1,0 +1,7 @@
+Model Information:
+* title:	Kitchen
+* source:	https://sketchfab.com/3d-models/kitchen-83492c3bf9b5496aa16306098b188a41
+* author:	AEN (https://sketchfab.com/aenikl)
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.

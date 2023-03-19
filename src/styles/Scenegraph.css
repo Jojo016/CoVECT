@@ -1,0 +1,154 @@
+.scenegraph{
+    overflow: auto; /*scrollable if needed*/
+    height: 60%;
+    background-color: #444;
+
+}
+
+.scenegraph-tutorial-highlight{
+    width: calc(100% - 10px);
+    height: calc(60% - 10px);
+    border: 5px ridge greenyellow;
+}
+.scenegraph-tutorial-highlight-element{
+    border: 5px ridge deepskyblue !important;
+}
+
+.scenegraph-gui-button{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 5px 10px;
+    justify-items: center;
+    align-items: center;
+    grid-gap: 1px;
+    border-bottom: 1px solid #333;
+}
+
+.scenegraph .scenegraph-gui-button button{
+    border: 1px solid #333 ;
+    text-align: center;
+}
+.scenegraph .scenegraph-gui-button .scenegraph-mode-selected{
+    background-color: #8e8e8e;
+    color: #333;
+}
+
+.scenegraph-list{
+    display: flex;
+    flex-direction: column;
+}
+
+.scenegraph a:hover { /*define change if hovered*/
+    background-color: #ddd;
+    color: black;
+}
+.scenegraph a{
+    color: #c2c2c2;
+    height: 22px;
+    text-align: left;
+    padding: 2px 8px;
+    text-decoration: none;
+    cursor: default !important; /*Cursor doesn't change*/
+    -webkit-user-select: none;  /*no text select*/
+    -moz-user-select: none;     /*no text select*/
+    -ms-user-select: none;      /*no text select*/
+    user-select: none;          /*no text select*/
+}
+
+.scenegraph button:hover { /*define change if hovered*/
+    background-color: #ddd;
+    color: black;
+}
+
+.scenegraph button:hover img { /*change navigation icon to darker color*/
+    filter: invert(1);
+}
+
+.scenegraph button {
+    /* default for <button>, but useful for <a> */
+    display: inline-block;
+    text-align: left;
+    text-decoration: none;
+
+    align-self: center;
+    justify-self:stretch;
+    cursor: pointer;
+    color: #c2c2c2;
+    background-color: inherit;
+
+    /* create a small space when buttons wrap on 2 lines */
+    margin: 2px 0;
+
+    /* invisible border (will be colored on hover/focus) */
+    border: solid 1px transparent;
+    border-radius: 4px;
+    /* size comes from text & padding (no width/height) */
+    padding: 2px;
+}
+
+.scene-element{
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    /*border-bottom: 1px solid #b7b7b7;*/
+}
+.scene-element-nested{
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: fit-content;
+    /*border-bottom: 1px solid #b7b7b7;*/
+}
+.scene-element-headline{
+    /*border-bottom: 1px solid #b7b7b7;*/
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-gap: 10px;
+}
+.scene-element-headline-button{
+    align-self: center;
+    justify-self:stretch;
+}
+
+.scenegraph-elementinfo{
+    white-space: nowrap;
+}
+.scenegraph-symbolkey{
+}
+.scenegraph-category-list{
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-left: 10px;
+}
+.scenegraph-entity-association-list{
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-left: 30px;
+    background-color: #4d4d4d;
+}
+
+.scene-element-nested-element{
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    width: fit-content;
+}
+.scene-element-selected{
+    background-color: #8e8e8e;
+    color: black ;
+}
+.scene-element-selected img{
+    filter: invert(1);
+}
+.scene-element-selected button{
+    background-color: #8e8e8e;
+    color: black ;
+}
+.scenegraph-invisible{
+    visibility: hidden;
+}
+.scenegraph-hidden{
+    display: none;
+}

@@ -1,0 +1,186 @@
+<Project name='VR-World'>
+	<IDs>
+		<Box>23</Box>
+		<Cylinder>0</Cylinder>
+		<Plane>8</Plane>
+		<Sphere>0</Sphere>
+		<Tetrahedron>0</Tetrahedron>
+		<Light>0</Light>
+		<DirectionalLight>0</DirectionalLight>
+		<PointLight>0</PointLight>
+		<SpotLight>0</SpotLight>
+		<Image>0</Image>
+		<Pdf>0</Pdf>
+		<Video>0</Video>
+		<Model>20</Model>
+		<NavMesh>7</NavMesh>
+		<Activity>0</Activity>
+		<Task>0</Task>
+		<TaskBar>0</TaskBar>
+		<CounterElement>0</CounterElement>
+		<ButtonElement>0</ButtonElement>
+		<PressurePlate>0</PressurePlate>
+		<Entity>52</Entity>
+		<Interaction>0</Interaction>
+		<Text>0</Text>
+		<Texture>727</Texture>
+	</IDs>
+	<UserContent>
+		<entry type='texture'  name='wood-floor' id='Texture1' url='/textures/wood-floor/wood-1108307_1280.jpg' materialName='body' userUploaded='false' ></entry>
+		<entry type='texture'  name='bricks-wall' id='Texture2' url='/textures/bricks-wall/bricks-459299_1280.jpg' materialName='body' userUploaded='false' ></entry>
+		<entry type='texture'  name='roughcast' id='Texture3' url='/textures/roughcast/texture-1504364_1280.jpg' materialName='body' userUploaded='false' ></entry>
+		<entry type='texture'  name='carpet' id='Texture4' url='/textures/carpet/carpet-554611_1280.jpg' materialName='body' userUploaded='false' ></entry>
+		<entry type='texture'  name='wood-dark' id='Texture5' url='/textures/wood-dark/wood-2045379_1280.jpg' materialName='body' userUploaded='false' ></entry>
+	</UserContent>
+	<Scene>
+	<Camera  name='Player' id='Entity2' x='0' y='0' z='0' xScale='1' yScale='1' zScale='1' xRotation='0' yRotation='0' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='true'  userUploaded='false'  playerHeight='1.6' avatar='/models/player/scene.gltf' rig='rig' >
+		
+	</Camera>
+	<Plane  name='Floor1' id='Entity3' x='-5' y='0' z='-5' xScale='10' yScale='20' zScale='1' xRotation='-90' yRotation='0' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  color='#787878'  height='1' width='1' doubleSide='false' >
+		<Textures>
+			<Texture  name='wood-floor' id='Texture28' url='/textures/wood-floor/wood-1108307_1280.jpg' materialName='body' userUploaded='undefined' />
+		</Textures>
+		
+	</Plane>
+	<Box  name='Wall1' id='Entity5' x='10' y='2' z='-10' xScale='0.3' yScale='4' zScale='10' xRotation='0' yRotation='0' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  color='#787878'  height='1' width='1' depth='1' >
+		<Textures>
+			<Texture  name='bricks-wall' id='Texture58' url='/textures/bricks-wall/bricks-459299_1280.jpg' materialName='body' userUploaded='undefined' />
+		</Textures>
+		
+	</Box>
+	<Box  name='Wall2' id='Entity8' x='10' y='2' z='0' xScale='0.3' yScale='4' zScale='10' xRotation='0' yRotation='0' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  color='#787878'  height='1' width='1' depth='1' >
+		<Textures>
+			<Texture  name='bricks-wall' id='Texture58' url='/textures/bricks-wall/bricks-459299_1280.jpg' materialName='body' userUploaded='undefined' />
+		</Textures>
+		
+	</Box>
+	<Box  name='Wall3' id='Entity10' x='-10' y='2' z='-10' xScale='0.3' yScale='4' zScale='10' xRotation='0' yRotation='0' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  color='#787878'  height='1' width='1' depth='1' >
+		<Textures>
+			<Texture  name='bricks-wall' id='Texture112' url='/textures/bricks-wall/bricks-459299_1280.jpg' materialName='body' userUploaded='undefined' />
+		</Textures>
+		
+	</Box>
+	<Box  name='Wall4' id='Entity11' x='-10' y='2' z='0' xScale='0.3' yScale='4' zScale='10' xRotation='0' yRotation='0' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  color='#787878'  height='1' width='1' depth='1' >
+		<Textures>
+			<Texture  name='bricks-wall' id='Texture116' url='/textures/bricks-wall/bricks-459299_1280.jpg' materialName='body' userUploaded='undefined' />
+		</Textures>
+		
+	</Box>
+	<Box  name='Wall5' id='Entity14' x='-5' y='2' z='-15' xScale='0.3' yScale='4' zScale='10' xRotation='0' yRotation='-90' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  color='#787878'  height='1' width='1' depth='1' >
+		<Textures>
+			<Texture  name='bricks-wall' id='Texture137' url='/textures/bricks-wall/bricks-459299_1280.jpg' materialName='body' userUploaded='undefined' />
+		</Textures>
+		
+	</Box>
+	<Box  name='Wall6' id='Entity15' x='5' y='2' z='-15' xScale='0.3' yScale='4' zScale='10' xRotation='0' yRotation='-90' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  color='#787878'  height='1' width='1' depth='1' >
+		<Textures>
+			<Texture  name='bricks-wall' id='Texture146' url='/textures/bricks-wall/bricks-459299_1280.jpg' materialName='body' userUploaded='undefined' />
+		</Textures>
+		
+	</Box>
+	<Box  name='Wall7' id='Entity16' x='5' y='2' z='4.857' xScale='0.3' yScale='4' zScale='10' xRotation='0' yRotation='-90' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  color='#787878'  height='1' width='1' depth='1' >
+		<Textures>
+			<Texture  name='bricks-wall' id='Texture150' url='/textures/bricks-wall/bricks-459299_1280.jpg' materialName='body' userUploaded='undefined' />
+		</Textures>
+		
+	</Box>
+	<Box  name='Wall8' id='Entity17' x='-5' y='2' z='4.858' xScale='0.3' yScale='4' zScale='10' xRotation='0' yRotation='-90' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  color='#787878'  height='1' width='1' depth='1' >
+		<Textures>
+			<Texture  name='bricks-wall' id='Texture157' url='/textures/bricks-wall/bricks-459299_1280.jpg' materialName='body' userUploaded='undefined' />
+		</Textures>
+		
+	</Box>
+	<Box  name='Kitchen-Wall1' id='Entity18' x='3.465' y='2' z='-11' xScale='0.3' yScale='4' zScale='8' xRotation='0' yRotation='0' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  color='#787878'  height='1' width='1' depth='1' >
+		<Textures>
+			<Texture  name='bricks-wall' id='Texture162' url='/textures/bricks-wall/bricks-459299_1280.jpg' materialName='body' userUploaded='undefined' />
+		</Textures>
+		
+	</Box>
+	<Box  name='Kitchen-Wall2' id='Entity20' x='4.575' y='2' z='-7.1' xScale='0.3' yScale='4' zScale='2.5' xRotation='0' yRotation='-90' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  color='#787878'  height='1' width='1' depth='1' >
+		<Textures>
+			<Texture  name='bricks-wall' id='Texture174' url='/textures/bricks-wall/bricks-459299_1280.jpg' materialName='body' userUploaded='undefined' />
+		</Textures>
+		
+	</Box>
+	<Plane  name='Screen' id='Entity21' x='-3.1' y='2.1' z='-14.8' xScale='5.5' yScale='2.9' zScale='1' xRotation='0' yRotation='0' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  color='#f2f2f2'  height='1' width='1' doubleSide='false' >
+		
+	</Plane>
+	<Model  name='Couch' id='Entity22' x='-3.003' y='0.635' z='-7.74' xScale='1.8' yScale='1.8' zScale='1.8' xRotation='0' yRotation='90' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  modelType='gltf' url='/models/couch/scene.gltf' >
+		
+	</Model>
+	<Model  name='Kitchen' id='Entity24' x='7.404' y='1.368' z='-14.157' xScale='1.2' yScale='1.2' zScale='1.2' xRotation='0' yRotation='0' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='true'  userUploaded='false'  modelType='gltf' url='/models/kitchen/scene.gltf' >
+		
+	</Model>
+	<Plane  name='Floor2' id='Entity25' x='5' y='0' z='-5' xScale='10' yScale='20' zScale='1' xRotation='-90' yRotation='0' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  color='#787878'  height='1' width='1' doubleSide='false' >
+		<Textures>
+			<Texture  name='wood-floor' id='Texture351' url='/textures/wood-floor/wood-1108307_1280.jpg' materialName='body' userUploaded='undefined' />
+		</Textures>
+		
+	</Plane>
+	<Box  name='Kitchen-Wall3' id='Entity28' x='8.606' y='2' z='-7.1' xScale='0.3' yScale='4' zScale='2.5' xRotation='0' yRotation='-90' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  color='#787878'  height='1' width='1' depth='1' >
+		<Textures>
+			<Texture  name='bricks-wall' id='Texture382' url='/textures/bricks-wall/bricks-459299_1280.jpg' materialName='body' userUploaded='undefined' />
+		</Textures>
+		
+	</Box>
+	<Model  name='Refrigerator' id='Entity29' x='4.275' y='0.968' z='-13.989' xScale='0.5' yScale='0.5' zScale='0.5' xRotation='0' yRotation='22.5' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='true'  userUploaded='false'  modelType='gltf' url='/models/refrigerator/scene.gltf' >
+		
+	</Model>
+	<Model  name='Flower1' id='Entity30' x='2.391' y='0.931' z='-13.936' xScale='0.4308960409755511' yScale='0.4308960409755511' zScale='0.4308960409755511' xRotation='0' yRotation='-60.75' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='true'  userUploaded='false'  modelType='gltf' url='/models/flowerpot/scene.gltf' >
+		
+	</Model>
+	<Model  name='Flower2' id='Entity31' x='-8.972' y='0.888' z='-13.936' xScale='0.4308960409755511' yScale='0.4308960409755511' zScale='0.4308960409755511' xRotation='0' yRotation='-60.75' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='true'  userUploaded='false'  modelType='gltf' url='/models/flowerpot/scene.gltf' >
+		
+	</Model>
+	<Plane  name='Carpet' id='Entity34' x='-2.903' y='0.01' z='-9.752' xScale='6' yScale='4' zScale='1' xRotation='-90' yRotation='0' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  color='#787878'  height='1' width='1' doubleSide='false' >
+		<Textures>
+			<Texture  name='carpet' id='Texture511' url='/textures/carpet/carpet-554611_1280.jpg' materialName='body' userUploaded='undefined' />
+		</Textures>
+		
+	</Plane>
+	<Model  name='Table' id='Entity35' x='-6.515' y='0.503' z='1.138' xScale='1.5' yScale='1.5' zScale='1.5' xRotation='0' yRotation='0' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  modelType='gltf' url='/models/table/scene.gltf' >
+		
+	</Model>
+	<Model  name='Chair1' id='Entity37' x='-5.844' y='0.625' z='1.678' xScale='0.5829091738087145' yScale='0.5829091738087145' zScale='0.5829091738087145' xRotation='0' yRotation='84.44' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  modelType='gltf' url='/models/chair/scene.gltf' >
+		
+	</Model>
+	<Model  name='Chair2' id='Entity38' x='-7.239' y='0.641' z='1.678' xScale='0.5829091738087145' yScale='0.5829091738087145' zScale='0.5829091738087145' xRotation='0' yRotation='-85.9' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  modelType='gltf' url='/models/chair/scene.gltf' >
+		
+	</Model>
+	<Model  name='Chair3' id='Entity39' x='-7.502' y='0.629' z='0.339' xScale='0.5829091738087145' yScale='0.5829091738087145' zScale='0.5829091738087145' xRotation='0' yRotation='-62.67' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  modelType='gltf' url='/models/chair/scene.gltf' >
+		
+	</Model>
+	<Model  name='Chair4' id='Entity40' x='-5.726' y='0.651' z='0.487' xScale='0.5829091738087145' yScale='0.5829091738087145' zScale='0.5829091738087145' xRotation='0' yRotation='62.22' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  modelType='gltf' url='/models/chair/scene.gltf' >
+		
+	</Model>
+	<Box  name='Stage' id='Entity41' x='7.1' y='0.2' z='2.38' xScale='5.5' yScale='0.4' zScale='4.6' xRotation='0' yRotation='0' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  color='#787878'  height='1' width='1' depth='1' >
+		<Textures>
+			<Texture  name='wood-dark' id='Texture680' url='/textures/wood-dark/wood-2045379_1280.jpg' materialName='body' userUploaded='undefined' />
+		</Textures>
+		
+	</Box>
+	<Box  name='Stage-Stair1' id='Entity42' x='8.5' y='0.1' z='-0.2' xScale='3' yScale='0.2' zScale='0.6' xRotation='0' yRotation='0' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  color='#787878'  height='1' width='1' depth='1' >
+		<Textures>
+			<Texture  name='wood-dark' id='Texture680' url='/textures/wood-dark/wood-2045379_1280.jpg' materialName='body' userUploaded='undefined' />
+		</Textures>
+		
+	</Box>
+	<Box  name='Stage-Stair2' id='Entity43' x='4.1' y='0.1' z='3.5' xScale='3' yScale='0.2' zScale='0.6' xRotation='0' yRotation='90' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  color='#787878'  height='1' width='1' depth='1' >
+		<Textures>
+			<Texture  name='wood-dark' id='Texture680' url='/textures/wood-dark/wood-2045379_1280.jpg' materialName='body' userUploaded='undefined' />
+		</Textures>
+		
+	</Box>
+	<Model  name='Flower3' id='Entity49' x='-9.092' y='1.133' z='3.953' xScale='1' yScale='1' zScale='1' xRotation='0' yRotation='0' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  modelType='gltf' url='/models/officeflower/scene.gltf' >
+		
+	</Model>
+	<Model  name='Flower4' id='Entity50' x='4.209' y='1.133' z='-7.821' xScale='1' yScale='1' zScale='1' xRotation='0' yRotation='0' zRotation='0'  visible='true'  physicsDisabled='false'  isStatic='true'  isDynamic='false'  castShadow='true'  receiveShadow='true'  isAutoscaled='false'  userUploaded='false'  modelType='gltf' url='/models/officeflower/scene.gltf' >
+		
+	</Model>
+	<NavMesh  name='Navigation6' id='Entity51' x='0' y='0' z='0' xScale='1' yScale='1' zScale='1' xRotation='0' yRotation='0' zRotation='0'  visible='false'  physicsDisabled='true'  isStatic='false'  isDynamic='false'  castShadow='false'  receiveShadow='false'  isAutoscaled='false'  userUploaded='true'  modelType='gltf' url='/navigation/lounge.gltf' >
+		
+	</NavMesh>
+	</Scene>
+	<Tasks>
+	</Tasks>
+</Project>

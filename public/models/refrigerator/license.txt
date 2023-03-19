@@ -1,0 +1,7 @@
+Model Information:
+* title:	Refrigerator
+* source:	https://sketchfab.com/models/5adb3486557b46eaab0e1ab643709a9c
+* author:	neeldesai2016 (https://sketchfab.com/neeldesai2016)
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
