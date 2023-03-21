@@ -56,7 +56,9 @@ con.connect(function(err) {
 */
 
 // Temporary list for data store (later handled by MySql)
-var listOfData = [];
+var componentCounter = 0;
+var listOfComponentData = [];
+var listOfSelectedComponents = [];
 
 // Serve the files from the examples folder
 app.use(express.static(path.resolve(__dirname, "src")));
@@ -110,18 +112,21 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
   if(msgType === "addNewObject") {
     var data = msg.msgData;
     if(true) { // validate json
+      componentCounter++;
       var easyrtcid = connectionObj.getEasyrtcid();
       // Add the new object to existing ones
       // TODO: IMPLEMENT FUNCTION FOR SAVING CURRENT A-FRAME STATE TO MYSQL !!!!!!!!!!!!
-      var newObj = JSON.parse(data);
-      listOfData.push(newObj);
 
+      var newObj = JSON.parse(data);
+      newObj['cid'] = componentCounter;
+      data = JSON.stringify(newObj);
+      listOfComponentData.push(data);
 
       // Create new message
       var message = {};
 
       // Set new msgType
-      message.msgType = 'spawnEntity';
+      message.msgType = 'spawnComponent';
 
       // Set message data
       message.msgData = data;
@@ -145,35 +150,80 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
           console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
         }
       });
-      console.log("Server emitted event!");
-
-      /*
-      easyrtc.events.emit('spawnEntity');
-      console.log("Server emitted second event!")
-      */
-
-      //console.log(easyrtc);
-      //easyrtc.events.emitEasyrtcMsg
-      //easyrtc.sendDataWS(room, "createEntity", data);
-
-
-      //console.log(connectionObj);
-      //console.log(connectionObj.socket.rooms);
-      //console.log("Room: " + connectionObj.getAttribute(rooms));
-
-      /*
-      var roomNames = connectionObj.getRoomNames(callback);
-      console.log("RoomNames: " + roomNames);
-      connections = connectionObj.room().getConnectionObjects(callback);
-      console.log(connections);
-      */
+      console.log("Server emitted creation event!");
     }
 
-    //var appObj = connectionObj.getApp();
-    //connectionObj.setField("credential", msg.msgData.credential, {"isShared":false});
-    //console.log("["+connectionObj.getAppName()+"]["+connectionObj.getEasyrtcid()+"] EasyRTC message received of type [" + msg.msgType + "]");
+  }else if(msgType === "selectComponent"){
+    // When a client selects an entity, broadcast it
+    var data = msg.msgData;
+    //var dat = connectionObj.getUsername();
 
-  }else if(msgType === "spawnEntity"){
+    var dataObj = JSON.parse(data);
+
+    var cid = dataObj.cid; 
+    if(listOfSelectedComponents.includes(cid)) {
+      var message = {};
+
+      var index = listOfSelectedComponents.indexOf(cid);
+      listOfSelectedComponents.splice(index, 1);
+      dataObj.bool = false;
+
+      data = JSON.stringify(dataObj);
+
+      message.msgType = 'selectedComponent';
+      message.msgData = data;
+
+      console.log("Sending '" + message.msgType + "'' with data '" + data + "'.")
+      easyrtc.events.emit("emitEasyrtcMsg", connectionObj, message.msgType, message, socketCallback, function(err) {
+          if(err) {
+            console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+          }
+        });
+    }else{
+
+      // Send 'Deselect' for other 'cid's.
+      for(i = 0; i < listOfSelectedComponents.length; i++) {
+
+        var message1 = {};
+        var idToBeDeselected = listOfSelectedComponents.pop();
+        dataObj.cid = idToBeDeselected;
+        dataObj.bool = false;
+        var data1 = JSON.stringify(dataObj);
+
+        message1.msgType = 'selectedComponent';
+        message1.msgData = data1;
+
+        console.log("Sending '" + message1.msgType + "'' with data '" + data1 + "'.")
+        easyrtc.events.emit("emitEasyrtcMsg", connectionObj, message1.msgType, message1, socketCallback, function(err) {
+            if(err) {
+              console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+            }
+          });
+      }
+
+      // Send 'Select' for initial 'cid'. 
+      var message2 = {};
+
+      listOfSelectedComponents.push(cid);
+      dataObj.cid = cid;
+      dataObj.bool = true;
+      var data2 = JSON.stringify(dataObj);
+
+      message2.msgType = 'selectedComponent';
+      message2.msgData = data2;
+
+
+      console.log("Sending '" + message2.msgType + "'' with data '" + data2 + "'.")
+      easyrtc.events.emit("emitEasyrtcMsg", connectionObj, message2.msgType, message2, socketCallback, function(err) {
+          if(err) {
+            console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+          }
+        });
+    }
+
+  }else if(msgType === "selectedComponent"){
+    // Only for client side --> SKIP
+  }else if(msgType === "spawnComponent"){
     // Only for client side --> SKIP
   }else{
     // Default listener

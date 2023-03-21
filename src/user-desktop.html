@@ -1,4 +1,26 @@
 ﻿<!DOCTYPE html>
+
+<!--
+<!DOCTYPE html>
+<html>
+  <head>
+    <script>
+      console.log("BabelScript loading...");
+    </script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script>
+      console.log("BabelScript loaded.");
+    </script>
+    <script type="text/jsx" src="/index.js"></script>
+  </head>
+  <body> 
+    <div id="root">
+    </div>
+    <script type="text/babel" src="./index.js"></script>
+  </body>
+</html>
+-->
+
 <html>
   <head>
     <meta charset="utf-8" />
@@ -119,7 +141,7 @@
           position="0 1.6 0"
           spawn-in-circle="radius:3"
           spawner-persistent2="template:#block-template"
-          wasd-controls
+          wasd-controls="fly:true;"
           look-controls
         >
           <a-sphere id="playerhead" class="head" visible="false" random-color></a-sphere>

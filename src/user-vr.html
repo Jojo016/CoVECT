@@ -1,0 +1,192 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Select & move objects</title>
+    <meta name="description" content="Ownership Transfer Example MODIFIED— Networked-Aframe" />
+
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.5.0/socket.io.slim.js"></script>
+    <script src="/easyrtc/easyrtc.js"></script>
+    <script src="/dist/networked-aframe.js"></script>
+    <script>
+      AFRAME.registerComponent('selectable', {
+        schema: {
+          color: {default: 'red'},
+        },
+
+        init: function () {
+          var data = this.data;
+          var el = this.el;  // <a-box>
+          /*
+          var head = document.querySelector('#playerhead');
+          var defColor = head.getAttribute('material').color;
+
+          el.addEventListener('mouseenter', function () {
+            el.setAttribute('color', data.color);
+          });
+
+          el.addEventListener('mouseleave', function () {
+            el.setAttribute('color', defColor);
+          });
+          */
+
+            // ###### TODO ######
+            // Add edit mode, annotations, etc
+
+          // Select entity
+          el.addEventListener('click', function () {
+            el.setAttribute('color', 'green');
+
+            var componentId = el.getAttribute('cid');
+
+            // Create data object to stringify
+            var obj = new Object();
+            obj.cid = componentId;
+
+            var data = JSON.stringify(obj);
+
+            // Easyrtcid '0' = for server???
+            var easyrtcId = 0;  
+
+            console.log("Sending: 'Select object with component-id:' " + data);
+            easyrtc.sendDataWS(easyrtcId, "selectComponent", data);
+          
+
+          });
+        }
+      });
+    </script>
+    <script>
+      // see issue https://github.com/networked-aframe/networked-aframe/issues/267
+      NAF.schemas.getComponentsOriginal = NAF.schemas.getComponents;
+      NAF.schemas.getComponents = (template) => {
+        if (!NAF.schemas.hasTemplate('#avatar-template')) {
+          NAF.schemas.add({
+            template: '#avatar-template',
+            components: [
+              'position',
+              'rotation',
+              {
+                selector: '.head',
+                component: 'material',
+                property: 'color'
+              }
+            ]
+          });
+
+          if (!NAF.schemas.hasTemplate('#block-template')) {
+            NAF.schemas.add({
+              template: '#block-template',
+              components: [
+                'position',
+                {
+                  selector: '.block',
+                  component: 'rotation'
+                },
+                {
+                  selector: '.block',
+                  component: 'position'
+                },
+                {
+                  selector: '.block',
+                  component: 'material',
+                  property: 'color'
+                },
+                {
+                  selector: '.block',
+                  component: 'select-entity',
+                  property: 'direction'
+                }
+              ]
+            });
+          }
+        }
+        const components = NAF.schemas.getComponentsOriginal(template);
+        return components;
+      };
+    </script>
+    <script src="https://unpkg.com/aframe-randomizer-components@^3.0.1/dist/aframe-randomizer-components.min.js"></script>
+    <script src="https://unpkg.com/aframe-environment-component@1.3.1/dist/aframe-environment-component.min.js"></script>
+    <script src="/js/spawn-in-circle.component.js"></script>
+    <script src="/js/spawner-persistent2.component.js"></script>
+    <script src="/js/select-entity.component.js"></script>
+    <script src="/js/arrow-control.component.js"></script>
+    <script src="/js/persistent-p2p.component.js"></script>
+    <script>
+      // Called by Networked-Aframe when connected to server
+      function onConnect() {
+        console.log('onConnect', new Date());
+      }
+    </script>
+    <link rel="stylesheet" type="text/css" href="/css/style.css" />
+  </head>
+  <body>
+    <a-scene
+      networked-scene="
+        room: dev;
+        debug: true;
+        adapter: wseasyrtc;
+      "
+    >
+      <a-assets>
+        <!-- Templates -->
+
+        <!-- Avatar -->
+        <template id="avatar-template">
+          <a-entity class="avatar">
+            <a-sphere class="head" scale="0.45 0.5 0.4"></a-sphere>
+            <a-entity class="face" position="0 0.05 0">
+              <a-sphere class="eye" color="#efefef" position="0.16 0.1 -0.35" scale="0.12 0.12 0.12">
+                <a-sphere class="pupil" color="#000" position="0 0 -1" scale="0.2 0.2 0.2"></a-sphere>
+              </a-sphere>
+              <a-sphere class="eye" color="#efefef" position="-0.16 0.1 -0.35" scale="0.12 0.12 0.12">
+                <a-sphere class="pupil" color="#000" position="0 0 -1" scale="0.2 0.2 0.2"></a-sphere>
+              </a-sphere>
+            </a-entity>
+          </a-entity>
+        </template>
+
+        <!-- Entity -->
+        <template id="block-template">
+          <a-entity>
+            <a-box class="block" arrow-control selectable color="#F00"></a-box>
+          </a-entity>
+        </template>
+
+        <!-- Grid -->
+        <img id="grid" src="https://img.gs/bbdkhfbzkk/stretch/https://i.imgur.com/25P1geh.png" crossorigin="anonymous">
+        <img id="sky" src="https://img.gs/bbdkhfbzkk/2048x2048,stretch/https://i.imgur.com/WqlqEkq.jpg" crossorigin="anonymous" />
+      </a-assets>
+
+      <a-entity id="rig">
+        <a-entity
+          id="player"
+          networked="template:#avatar-template;attachTemplateToLocal:false;"
+          camera
+          position="0 1.6 0"
+          spawn-in-circle="radius:3"
+          spawner-persistent2="template:#block-template"
+          wasd-controls
+          look-controls
+        >
+          <a-sphere id="playerhead" class="head" visible="false" random-color></a-sphere>
+          <a-cursor></a-cursor>
+        </a-entity>
+      </a-entity>
+
+    <!-- Environment -->
+      <a-entity position="0 0 0"
+        geometry="primitive: plane; width: 10000; height: 10000;" rotation="-90 0 0"
+        material="src: #grid; repeat: 10000 10000; transparent: true; metalness:0.6; roughness: 0.4; sphericalEnvMap: #sky;"
+      ></a-entity>
+      <a-entity light="color: #ccccff; intensity: 1; type: ambient;" visible=""></a-entity>
+      <a-entity light="color: #ffaaff; intensity: 1.5" position="5 5 5"></a-entity>
+      <a-sky src="#sky" rotation="0 -90 0"></a-sky>
+    </a-scene>
+
+    <div class="controls">
+      <p>Press space to spawn a block. Press enter to take ownership of all blocks.</p>
+    </div>
+  </body>
+</html>
