@@ -13,6 +13,7 @@
       AFRAME.registerComponent('selectable', {
         schema: {
           color: {default: 'red'},
+          that: {default: this}
         },
 
         init: function () {
@@ -34,10 +35,28 @@
             // ###### TODO ######
             // Add edit mode, annotations, etc
 
-          // Select entity
-          el.addEventListener('click', function () {
-            el.setAttribute('color', 'green');
+          // ### Select component ###
+          // Mouse control
+          el.addEventListener('click', function() {
+            //el.setAttribute('color', 'green');
+            var componentId = el.getAttribute('cid');
 
+            // Create data object to stringify
+            var obj = new Object();
+            obj.cid = componentId;
+
+            var data = JSON.stringify(obj);
+
+            // Easyrtcid '0' = for server???
+            var easyrtcId = 0;  
+
+            //console.log("Sending: 'Select object with component-id:' " + data);
+            //easyrtc.sendDataWS(easyrtcId, "selectComponent", data);
+          });
+
+          // Quest2 control
+          el.addEventListener('triggerdown', function(evt) {
+            //el.setAttribute('color', 'green');
             var componentId = el.getAttribute('cid');
 
             // Create data object to stringify
@@ -51,9 +70,32 @@
 
             console.log("Sending: 'Select object with component-id:' " + data);
             easyrtc.sendDataWS(easyrtcId, "selectComponent", data);
-          
-
           });
+        }
+      });
+    </script>
+    <script>
+      AFRAME.registerComponent('thumbstick-controls',{
+        init: function () {
+          this.el.addEventListener('thumbstickmoved', this.thumbstickControl);
+        },
+        thumbstickControl: function (evt) {
+
+          var pos = this.getAttribute('position');
+          console.log(pos);
+
+          if (evt.detail.y > 0.95) { 
+            console.log("DOWN"); 
+          }
+          if (evt.detail.y < -0.95) { 
+            console.log("UP"); 
+          }
+          if (evt.detail.x < -0.95) { 
+            console.log("LEFT"); 
+          }
+          if (evt.detail.x > 0.95) { 
+            console.log("RIGHT"); 
+          }
         }
       });
     </script>
@@ -167,8 +209,10 @@
           position="0 1.6 0"
           spawn-in-circle="radius:3"
           spawner-persistent2="template:#block-template"
+          oculus-touch-controls="hand: right"
           wasd-controls
           look-controls
+          thumbstick-controls
         >
           <a-sphere id="playerhead" class="head" visible="false" random-color></a-sphere>
           <a-cursor></a-cursor>
