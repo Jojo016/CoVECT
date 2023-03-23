@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <title>Select & move objects</title>
-    <meta name="description" content="Ownership Transfer Example MODIFIED— Networked-Aframe" />
+    <meta name="description" content="VREUD Example - Aframe" />
 
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.5.0/socket.io.slim.js"></script>
@@ -12,8 +12,7 @@
     <script>
       AFRAME.registerComponent('selectable', {
         schema: {
-          color: {default: 'red'},
-          that: {default: this}
+          color: {default: 'red'}
         },
 
         init: function () {
@@ -50,8 +49,8 @@
             // Easyrtcid '0' = for server???
             var easyrtcId = 0;  
 
-            //console.log("Sending: 'Select object with component-id:' " + data);
-            //easyrtc.sendDataWS(easyrtcId, "selectComponent", data);
+            console.log("Sending: 'Select object with component-id:' " + data);
+            easyrtc.sendDataWS(easyrtcId, "selectComponent", data);
           });
 
           // Quest2 control
@@ -168,7 +167,8 @@
       networked-scene="
         room: dev;
         debug: true;
-        adapter: wseasyrtc;
+        adapter: easyrtc;
+        audio: true;
       "
     >
       <a-assets>
@@ -176,7 +176,7 @@
 
         <!-- Avatar -->
         <template id="avatar-template">
-          <a-entity class="avatar">
+          <a-entity class="avatar" networked-audio-source>
             <a-sphere class="head" scale="0.45 0.5 0.4"></a-sphere>
             <a-entity class="face" position="0 0.05 0">
               <a-sphere class="eye" color="#efefef" position="0.16 0.1 -0.35" scale="0.12 0.12 0.12">

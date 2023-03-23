@@ -132,7 +132,7 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       message.msgData = data;
 
       // Set targetRoom name
-      var targetRoom = 'default';
+      var targetRoom = 'dev';
       connectionObj.getRoomNames((err, roomNames) => {
         if(roomNames.length > 0) {
             targetRoom = roomNames[0];
@@ -140,23 +140,32 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       });
       message.targetRoom = targetRoom;
 
-      // Get roomObj
-      var room = connectionObj.room;
-
-      // Emit message
-      //easyrtc.events.emit("emitEasyrtcMsg", room, message, undefined, undefined);
-      easyrtc.events.emit("emitEasyrtcMsg", connectionObj, message.msgType, message, socketCallback, function(err) {
-        if(err) {
-          console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
-        }
+      // Emit message to all room members
+      console.log("Server emitting creation event!");
+      
+      var roomObj; 
+      connectionObj.generateRoomClientList("update", null, function(err, callback){
+        roomObj = callback;
       });
-      console.log("Server emitted creation event!");
+
+      var clientList = roomObj['dev'].clientList;
+
+      for (var currentEasyrtcid in clientList) {
+        (function(innerCurrentEasyrtcid, innerMsg){
+          connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
+            easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
+              if(err) {
+                console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+              }
+            });
+          });
+        })(currentEasyrtcid, msg);
+      }
     }
 
   }else if(msgType === "selectComponent"){
     // When a client selects an entity, broadcast it
     var data = msg.msgData;
-    //var dat = connectionObj.getUsername();
 
     var dataObj = JSON.parse(data);
 
@@ -173,13 +182,34 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       message.msgType = 'selectedComponent';
       message.msgData = data;
 
-      console.log("Sending '" + message.msgType + "'' with data '" + data + "'.")
-      easyrtc.events.emit("emitEasyrtcMsg", connectionObj, message.msgType, message, socketCallback, function(err) {
-          if(err) {
-            console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
-          }
-        });
+      var roomObj; 
+      connectionObj.generateRoomClientList("update", null, function(err, callback){
+        roomObj = callback;
+      });
+
+      var clientList = roomObj['dev'].clientList;
+
+      for (var currentEasyrtcid in clientList) {
+        (function(innerCurrentEasyrtcid, innerMsg){
+          connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
+            easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
+              if(err) {
+                console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+              }
+            });
+          });
+        })(currentEasyrtcid, msg);
+      }
+
     }else{
+
+      // Get room's ClientList
+      var roomObj; 
+      connectionObj.generateRoomClientList("update", null, function(err, callback){
+        roomObj = callback;
+      });
+
+      var clientList = roomObj['dev'].clientList;
 
       // Send 'Deselect' for other 'cid's.
       for(i = 0; i < listOfSelectedComponents.length; i++) {
@@ -193,12 +223,18 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
         message1.msgType = 'selectedComponent';
         message1.msgData = data1;
 
-        console.log("Sending '" + message1.msgType + "'' with data '" + data1 + "'.")
-        easyrtc.events.emit("emitEasyrtcMsg", connectionObj, message1.msgType, message1, socketCallback, function(err) {
-            if(err) {
-              console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
-            }
-          });
+        // Send each message to every client in the room
+        for (var currentEasyrtcid in clientList) {
+          (function(innerCurrentEasyrtcid, innerMsg){
+            connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
+              easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message1.msgType, message1, null, function(err) {
+                if(err) {
+                  console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+                }
+              });
+            });
+          })(currentEasyrtcid, msg);
+        }
       }
 
       // Send 'Select' for initial 'cid'. 
@@ -212,13 +248,20 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       message2.msgType = 'selectedComponent';
       message2.msgData = data2;
 
-
-      console.log("Sending '" + message2.msgType + "'' with data '" + data2 + "'.")
-      easyrtc.events.emit("emitEasyrtcMsg", connectionObj, message2.msgType, message2, socketCallback, function(err) {
-          if(err) {
-            console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
-          }
-        });
+      //console.log("Sending '" + message2.msgType + "'' with data '" + data2 + "'.")
+      // Send the message to every client in the room
+      for (var currentEasyrtcid in clientList) {
+        (function(innerCurrentEasyrtcid, innerMsg){
+          connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
+            easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message2.msgType, message2, null, function(err) {
+              if(err) {
+                console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+              }
+            });
+          });
+        })(currentEasyrtcid, msg);
+      }
+      
     }
 
   }else if(msgType === "selectedComponent"){
