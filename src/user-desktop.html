@@ -80,6 +80,52 @@
         return components;
       };
     </script>
+    <script>
+      AFRAME.registerComponent('selectable', {
+        schema: {
+          color: {default: 'red'}
+        },
+
+        init: function () {
+          var data = this.data;
+          var el = this.el;  // <a-box>
+          /*
+          var head = document.querySelector('#playerhead');
+          var defColor = head.getAttribute('material').color;
+
+          el.addEventListener('mouseenter', function () {
+            el.setAttribute('color', data.color);
+          });
+
+          el.addEventListener('mouseleave', function () {
+            el.setAttribute('color', defColor);
+          });
+          */
+
+            // ###### TODO ######
+            // Add edit mode, annotations, etc
+
+          // ### Select component ###
+          // Mouse control
+          el.addEventListener('click', function() {
+            //el.setAttribute('color', 'green');
+            var componentId = el.getAttribute('cid');
+
+            // Create data object to stringify
+            var obj = new Object();
+            obj.cid = componentId;
+
+            var data = JSON.stringify(obj);
+
+            // Easyrtcid '0' = for server???
+            var easyrtcId = 0;  
+
+            console.log("Sending: 'Select object with component-id:' " + data);
+            easyrtc.sendDataWS(easyrtcId, "selectComponent", data);
+          });
+        }
+      });
+    </script>
     <script src="https://unpkg.com/aframe-randomizer-components@^3.0.1/dist/aframe-randomizer-components.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.1/dist/aframe-environment-component.min.js"></script>
     <script src="/js/spawn-in-circle.component.js"></script>
@@ -100,7 +146,8 @@
       networked-scene="
         room: dev;
         debug: true;
-        adapter: wseasyrtc;
+        adapter: easyrtc;
+        audio: true;
       "
     >
       <a-assets>
@@ -108,7 +155,7 @@
 
         <!-- Avatar -->
         <template id="avatar-template">
-          <a-entity class="avatar">
+          <a-entity class="avatar" networked-audio-source>
             <a-sphere class="head" scale="0.45 0.5 0.4"></a-sphere>
             <a-entity class="face" position="0 0.05 0">
               <a-sphere class="eye" color="#efefef" position="0.16 0.1 -0.35" scale="0.12 0.12 0.12">
@@ -124,7 +171,7 @@
         <!-- Entity -->
         <template id="block-template">
           <a-entity>
-            <a-box class="block" select-entity arrow-control color="#F00"></a-box>
+            <a-box class="block" arrow-control selectable color="#F00"></a-box>
           </a-entity>
         </template>
 
@@ -145,6 +192,7 @@
           look-controls
         >
           <a-sphere id="playerhead" class="head" visible="false" random-color></a-sphere>
+          <a-cursor></a-cursor>
         </a-entity>
       </a-entity>
 
@@ -159,7 +207,7 @@
     </a-scene>
 
     <div class="controls">
-      <p>Press space to spawn a block. Press enter to take ownership of all blocks.</p>
+      <p>Press space to spawn a component. Click on a component to select it as 'current component'.</p>
     </div>
   </body>
 </html>
