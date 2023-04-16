@@ -37,19 +37,19 @@ body { height:100%; width:100%; margin:0; display:table;}
 .iframe_container { height:100%; display:table-cell; }
 iframe { height:100%; width:100%; display:block; }
 
-table { 
+table.table1 { 
     border-collapse: separate; 
     margin: 5px;
     width: calc(100% - 10px); 
     }
 
-th { 
+th.th1 { 
     background: #3498db; 
     color: white; 
     font-weight: bold; 
     }
 
-td, th { 
+td.td1, th.th1 { 
     background: #575757;
     border-radius: 10px;
     font-size: 18px;
@@ -58,17 +58,17 @@ td, th {
     text-align: left; 
     }
 
-td:hover {
+td.td1:hover {
     background-color: #6e6e6e;
 } 
 
-.labels tr td {
+.labels tr.tr1 td.td1 {
     background-color: #2cc16a;
     font-weight: bold;
     color: #fff;
 }
 
-.label tr td label {
+.label tr.tr1 td.td1 label {
     display: block;
     height: 100%
     text-align: left;

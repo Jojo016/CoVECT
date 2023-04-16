@@ -12,12 +12,16 @@
       });
     </script>
     <script>
-      function addObject(shape) {
-        // Get iframe
-        var iframe = document.getElementById("iframe");
 
-        // Send the command to the server
+      // Send specific commands to the server 
+      function addObject(shape) {
+        var iframe = document.getElementById("iframe");
         iframe.contentWindow.sendToServer("addNewObject", shape);
+      }
+
+      function removeObject(cid) {
+        var iframe = document.getElementById("iframe");
+        iframe.contentWindow.sendToServer("removeObject", cid);
       }
     </script>
     <link rel="stylesheet" type="text/css" href="/styles/Editor2.css" />
@@ -29,40 +33,40 @@
 
       <div class="main">
         <div class="left-panel">
-          <table>
+          <table class="table1">
             <tbody>
               <tbody class="labels">
-                <tr>
-                  <td colspan="2">
+                <tr class="tr1">
+                  <td class="td1" colspan="2">
                     <label for="geometry">Geometry</label>
                     <input type="checkbox" name="geometry" id="geometry" data-toggle="toggle">
                   </td>
                 </tr>
               </tbody>
               <tbody class="hide">
-                <tr>
-                  <td>
+                <tr class="tr1">
+                  <td class="td1">
                     <div style="width: 100%;">
                       <button class="seamless-button" onClick="addObject('box')">Box</button>
                     </div>
                   </td>
                 </tr>
-                <tr>
-                  <td>
+                <tr class="tr1">
+                  <td class="td1">
                     <div style="width: 100%;">
                       <button class="seamless-button" onClick="addObject('cylinder')">Cylinder</button>
                     </div>
                   </td>
                 </tr>
-                <tr>
-                  <td>
+                <tr class="tr1">
+                  <td class="td1">
                     <div style="width: 100%;">
                       <button class="seamless-button" onClick="addObject('plane')">Plane</button>
                     </div>
                   </td>
                 </tr>
-                <tr>
-                  <td>
+                <tr class="tr1">
+                  <td class="td1">
                     <div style="width: 100%;">
                       <button class="seamless-button" onClick="addObject('sphere')">Sphere</button>
                     </div>
@@ -78,10 +82,44 @@
         </div>
 
         <div class="right-panel">
-          <p>Objects & Properties</p>
+          <table id="scene-objects" width="100%">
+            <thead>
+              <th>
+                Scene Objects
+              </th>
+            </thead>
+            <tbody>
+              <tbody class="labels">
+                <tr>
+                  <td colspan="3">
+                    <label for="geometries">Geometries</label>
+                    <input type="checkbox" name="geometries" id="geometries" data-toggle="toggle">
+                  </td>
+                </tr>
+              </tbody>
+              <tbody class="hide">
+                <tr>
+                  <td>
+                    <div style="width: 5%;">
+                      CID
+                    </div>
+                  </td>
+                  <td>
+                    <div style="width: 90%; text-align: left;">
+                      ElementName
+                    </div>
+                  </td>
+                  <td>
+                    <div style="width: 5%;">
+                      <button onClick="removeObject('id')">X</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </tbody>
+          </table>
         </div>
       </div>
-
     </div>
   </body>
 </html>

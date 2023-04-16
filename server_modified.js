@@ -200,7 +200,6 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
           });
         })(currentEasyrtcid, msg);
       }
-
     }else{
 
       // Get room's ClientList
@@ -261,16 +260,68 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
           });
         })(currentEasyrtcid, msg);
       }
-      
+    }
+  }else if(msgType === "removeComponent") {
+  // When a client selects an entity, broadcast it
+  var data = msg.msgData;
+  var dataObj = JSON.parse(data);
+  var cid = dataObj.cid; 
+
+  // Remove object from 'component' list
+  var dataIndex = -1;
+
+  for(let i = 0; i < listOfComponentData.length; i++){
+
+    if(listOfComponentData[i].cid == cid) {
+      dataIndex = i;
+      break;
+    }
+  }
+
+  if (dataIndex != -1) {
+    listOfComponentData.splice(dataIndex, 1);
+  }
+
+  // Remove object from 'selectedComponents' list
+  if(index != -1) {
+    var message = {};
+
+    var cidIndex = listOfSelectedComponents.indexOf(cid);
+    if (cidIndex != -1) {
+      listOfSelectedComponents.splice(cidIndex, 1);
     }
 
+    message.msgType = 'removedComponent';
+    message.msgData = data;
+
+    var roomObj; 
+    connectionObj.generateRoomClientList("update", null, function(err, callback){
+      roomObj = callback;
+    });
+
+    var clientList = roomObj['dev'].clientList;
+
+    for (var currentEasyrtcid in clientList) {
+      (function(innerCurrentEasyrtcid, innerMsg){
+        connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
+          easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
+            if(err) {
+              console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+            }
+          });
+        });
+      })(currentEasyrtcid, msg);
+    }
+  }else if(msgType === "removedComponent"){
+    // Only for client side --> SKIP
   }else if(msgType === "selectedComponent"){
     // Only for client side --> SKIP
   }else if(msgType === "spawnComponent"){
     // Only for client side --> SKIP
   }else{
-    // Default listener
-    easyrtc.events.defaultListeners.easyrtcMsg(connectionObj, msg, socketCallback, callback)
+      // Default listener
+      easyrtc.events.defaultListeners.easyrtcMsg(connectionObj, msg, socketCallback, callback)
+    }
   }
 });
 
