@@ -91,6 +91,59 @@ AFRAME.registerComponent('object-control-desktop', {
       buttonCell.appendChild(button);
   },
 
+  onMouseMove: function(event){
+
+
+      var mouse;
+
+      document.addEventListener('click', event => {
+        mouse.x = (event.clientX / this.el.scene.innerWidth) * 2 - 1;
+        mouse.y = - (event.clientY / this.el.scene.innerHeight) * 2 +1;
+      });
+  },
+
+  createAxes: function(object) {
+
+    var geometry = new THREE.CylinderGeometry( 0.05, 0.05, 2, 4 );
+    var material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
+    var x = new THREE.Mesh( geometry, material );
+    var y = new THREE.Mesh( geometry, material );
+    var z = new THREE.Mesh( geometry, material );
+
+    x.rotateZ(1.5708);
+    z.rotateX(1.5708);
+
+    x.name = "xAxis";
+    y.name = "yAxis";
+    z.name = "zAxis";
+
+    x.translateY(1);
+    y.translateY(1);
+    z.translateY(1);
+
+    object.object3D.add(x);
+    object.object3D.add(y);
+    object.object3D.add(z);
+
+    var clickMouse = new THREE.Vector2();
+
+    if(false){
+      var window = null;
+      window.addEventListener('click', event => {
+        clickMouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+        clickMouse.y = ( event.clientY / window.innerHeight ) * 2 + 1;
+
+        //raycaster.setFromCamera(clickMouse, camera);
+        //const found = raycaster.intersectObjects(scene.children);
+      });
+    }
+
+
+
+
+
+  },
+
   selectEntity: function(componentId, bool) {
 
       var el = null;
@@ -104,8 +157,12 @@ AFRAME.registerComponent('object-control-desktop', {
         }
       }
 
+      this.createAxes(el);
+
+
 
       // Direction: up
+      /*
       var dir = new THREE.Vector3( 0, 1, 0 );
       dir.normalize();
       var origin = new THREE.Vector3( 0, 0, 0 );
@@ -145,7 +202,7 @@ AFRAME.registerComponent('object-control-desktop', {
       // Remove row from table
       var tr = parent.document.getElementById("cid" + componentId);
       tr.parentNode.removeChild(tr);
-w
+
       // Remove entity from scene
       var el = null;
       var els = this.el.sceneEl.querySelectorAll('[cid]');
