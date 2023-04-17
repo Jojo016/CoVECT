@@ -119,8 +119,7 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
 
       var newObj = JSON.parse(data);
       newObj['cid'] = componentCounter;
-      data = JSON.stringify(newObj);
-      listOfComponentData.push(data);
+      listOfComponentData.push(newObj);      
 
       // Create new message
       var message = {};
@@ -129,6 +128,7 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       message.msgType = 'spawnComponent';
 
       // Set message data
+      data = JSON.stringify(newObj);
       message.msgData = data;
 
       // Set targetRoom name
@@ -271,26 +271,24 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
   var dataIndex = -1;
 
   for(let i = 0; i < listOfComponentData.length; i++){
-
     if(listOfComponentData[i].cid == cid) {
+
       dataIndex = i;
       break;
     }
   }
 
   if (dataIndex != -1) {
+    // Remove component from 'componentData' list
     listOfComponentData.splice(dataIndex, 1);
-  }
 
-  // Remove object from 'selectedComponents' list
-  if(index != -1) {
-    var message = {};
-
-    var cidIndex = listOfSelectedComponents.indexOf(cid);
+    // Remove component from 'selectedComponents' list
+    var cidIndex = listOfSelectedComponents.indexOf(''+cid);
     if (cidIndex != -1) {
       listOfSelectedComponents.splice(cidIndex, 1);
     }
 
+    var message = {};
     message.msgType = 'removedComponent';
     message.msgData = data;
 

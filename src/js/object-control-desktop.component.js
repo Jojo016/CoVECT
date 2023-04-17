@@ -58,8 +58,12 @@ AFRAME.registerComponent('object-control-desktop', {
       el.setAttribute('cid', cid);
 
       var pos3 = new THREE.Vector3(data.posX, data.posY, data.posZ);
-
       el.setAttribute('position', pos3);
+
+      el.setAttribute('class', 'cursor-listener');
+      el.setAttribute('cursor-listener', '');
+      console.log(el);
+
       var scene = this.el.sceneEl;
       scene.appendChild(el);
 
@@ -100,6 +104,30 @@ AFRAME.registerComponent('object-control-desktop', {
         }
       }
 
+
+      // Direction: up
+      var dir = new THREE.Vector3( 0, 1, 0 );
+      dir.normalize();
+      var origin = new THREE.Vector3( 0, 0, 0 );
+      var length = 3;
+      var hex = 0x00ff00;
+
+      var arrowHelper = new THREE.ArrowHelper( dir, origin, length, hex );
+
+      console.log(arrowHelper);
+
+      //this.el.sceneEl.object3D.add( arrowHelper );
+
+
+     el.object3D.add( arrowHelper );
+
+      /*
+      console.log(el);
+      var axesHelper = new THREE.AxesHelper(5);
+      el.setObject3D("axes-Helper", axesHelper);
+      //*
+
+      /*
       // Decide whether to select or deselect the object
       if(bool) {
         // Select object
@@ -109,6 +137,7 @@ AFRAME.registerComponent('object-control-desktop', {
         // Deselect object
         el.setAttribute('material', 'color: blue');
       }
+      //*/
   },
 
   removeComponent: function(componentId) {
@@ -116,7 +145,7 @@ AFRAME.registerComponent('object-control-desktop', {
       // Remove row from table
       var tr = parent.document.getElementById("cid" + componentId);
       tr.parentNode.removeChild(tr);
-
+w
       // Remove entity from scene
       var el = null;
       var els = this.el.sceneEl.querySelectorAll('[cid]');

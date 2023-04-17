@@ -161,12 +161,43 @@
           obj.posZ = pos3.z;
           //obj.color = color; 
 
-          var data = JSON.stringify(obj);
+          data = JSON.stringify(obj);
 
           console.log("Sending: 'Create new object with data:' " + data);
           easyrtc.sendDataWS(easyrtcId, "addNewObject", data);
+
+        }else if(command = 'removeComponent'){
+          // Get shape from data
+          var cid = data;
+
+          // Create data object to stringify
+          var obj = new Object();
+          obj.cid = cid;
+
+          data = JSON.stringify(obj);
+
+          console.log("Sending: 'Remove component with cid:' " + cid);
+          easyrtc.sendDataWS(easyrtcId, "removeComponent", data);
         }
       }
+    </script>
+    <script>
+      AFRAME.registerComponent('cursor-listener', {
+        init: function () {
+          this.el.addEventListener('raycaster-intersected', evt => {
+            this.raycaster = evt.detail.el;
+          });
+          this.el.addEventListener('raycaster-intersected-cleared', evt => {
+            this.raycaster = null;
+          });
+        },
+        tick: function () {
+            if (!this.raycaster) { return; }  // Not intersecting.
+            let intersection = this.raycaster.components.raycaster.getIntersection(this.el);
+            if (!intersection) { return; } // Not intersecting
+            // intersecting
+        }
+      });
     </script>
     <!--link rel="stylesheet" type="text/css" href="/styles/Editor2.css" /-->
   </head>
@@ -220,9 +251,10 @@
             object-control-desktop="template:#block-template"
             wasd-controls="fly:true;"
             look-controls
+            cursor="rayOrigin: mouse"
+            raycaster="objects: .cursor-listener"
           >
             <a-sphere id="playerhead" class="head" visible="false" random-color></a-sphere>
-            <a-cursor></a-cursor>
           </a-entity>
         </a-entity>
 
