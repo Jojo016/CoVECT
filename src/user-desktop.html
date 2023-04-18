@@ -23,6 +23,19 @@
         var iframe = document.getElementById("iframe");
         iframe.contentWindow.sendToServer("removeObject", cid);
       }
+
+      function addInteraction(type) {
+        var iframe = document.getElementById("iframe");
+
+        // TODO: Get positon
+        var position = null;
+
+        var data = []
+        data.push(type);
+        data.push(position);
+        
+        iframe.contentWindow.sendToServer("addInteraction", data);
+      }
     </script>
     <link rel="stylesheet" type="text/css" href="/styles/Editor2.css" />
   </head>
@@ -73,17 +86,50 @@
                   </td>
                 </tr>
               </tbody>
+              <tbody class="labels">
+                <tr class="tr1">
+                  <td class="td1" colspan="2">
+                    <label for="interaction">Interaction</label>
+                    <input type="checkbox" name="interaction" id="interaction" data-toggle="toggle">
+                  </td>
+                </tr>
+              </tbody>
+              <tbody class="hide">
+                <tr class="tr1">
+                  <td class="td1">
+                    <div style="width: 100%;">
+                      <button class="seamless-button" onClick="addInteraction('button')">Button</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
             </tbody>
           </table>
         </div>
 
         <div class="middle-panel">
-          <iframe id="iframe" src="user-desktop-ar.html" height="100%" width="100%"></iframe>
+          <div class="iframe-panel">
+            <iframe id="iframe" src="user-desktop-ar.html" height="100%" width="100%"></iframe>
+          </div>
+          <div class="properties-panel" id="properties-panel">
+            <!--div class="properties-category">
+              <div class="properties-category-content-one-parameter">
+                <span class="properties-category-name">
+                  <b>Name</b>
+                </span>
+                <div class="properties-parameter">
+                  <input type="text" name="name" value="Box1"/>
+                </div>
+              </div>
+            </div-->
+            <div class="properties-no-selection">
+              <span>Nothing is selected</span>
+            </div>
+          </div>
         </div>
 
         <div class="right-panel">
-          <div height="50%">
-            <table id="scene-objects" width="100%">
+          <table id="scene-objects" width="100%">
             <thead>
               <th>
                 Scene Objects
@@ -119,12 +165,6 @@
               </tbody>
             </tbody>
           </table>
-          </div>
-          <div height="50%">
-            <table>
-              
-            </table>
-          </div>
         </div>
       </div>
     </div>

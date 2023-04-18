@@ -60,6 +60,8 @@ AFRAME.registerComponent('object-control-desktop', {
       var pos3 = new THREE.Vector3(data.posX, data.posY, data.posZ);
       el.setAttribute('position', pos3);
 
+      el.setAttribute('entityName', 'New ' + shape);
+
       el.setAttribute('class', 'cursor-listener');
       el.setAttribute('cursor-listener', '');
       console.log(el);
@@ -144,6 +146,90 @@ AFRAME.registerComponent('object-control-desktop', {
 
   },
 
+  colorChanger: function(event) {
+
+    var el = event.currentTarget.el;
+    console.log(currentTarget);
+    console.log(el);
+    var mat = el.getAttribute('material');
+
+    console.log(mat.color);
+    mat.color = event.target.value;
+    console.log(mat.color);
+
+    el.setAttribute('material', mat);
+  },
+
+  addPropertiesRow: function(pPanel, action, data) {
+
+    if(action == "properties-no-selection") {
+      var div = document.createElement('div');
+
+      div.className = 'properties-no-selection';
+      div.innerHTML = `
+        <span>Nothing is selected</span>
+      `;
+      pPanel.appendChild(div);
+
+    }else if(action == 'select-aframe-entity') {
+      var el = data;
+      var div = document.createElement('div');
+
+      // Object Name
+      var name = el.getAttribute('entityName');
+      div.className = 'properties-category-content';
+      div.innerHTML = `
+        <span class="properties-category-name">
+          <b>Name</b>
+        </span>
+        <div class="properties-parameter">
+          <input type="text" name="name" value="${name}"/>
+        </div>
+      `;
+
+      pPanel.appendChild(div);
+
+      // Position
+      var position = el.getAttribute('position');
+      div = document.createElement('div');
+      div.className = 'properties-category-content';
+      div.innerHTML = `
+          <span class="properties-category-name">
+            <b>Position</b>
+          </span>
+        `;
+      for(const coord of ['x', 'y', 'z']) {
+          div.innerHTML += `
+          <div class="properties-parameter">
+            <span class="properties-parameter-name">
+              ${coord}:
+            </span>
+            <input type="number" name="${coord}Position" value="${position[coord]}"/>
+          </div>
+        `;
+      };
+      pPanel.appendChild(div);
+
+      // Material
+      var material = el.getAttribute('material');
+      div = document.createElement('div');
+      div.className = 'properties-category-content';
+      div.innerHTML = `
+        <span class="properties-category-name">
+          <b>Color</b>
+        </span>
+        <div class="properties-parameter">
+          <input type="color" name="color" value="${material.color}"/>
+        </div>
+      `;
+
+      div.addEventListener("input", this.colorChanger, false);
+
+      pPanel.appendChild(div);
+    }
+
+  },
+
   selectEntity: function(componentId, bool) {
 
       var el = null;
@@ -157,7 +243,7 @@ AFRAME.registerComponent('object-control-desktop', {
         }
       }
 
-      this.createAxes(el);
+      //this.createAxes(el);
 
 
 
@@ -175,24 +261,45 @@ AFRAME.registerComponent('object-control-desktop', {
 
       //this.el.sceneEl.object3D.add( arrowHelper );
 
-
-     el.object3D.add( arrowHelper );
+      el.object3D.add( arrowHelper );
 
       /*
       console.log(el);
       var axesHelper = new THREE.AxesHelper(5);
       el.setObject3D("axes-Helper", axesHelper);
-      //*
+      //*/
 
-      /*
+      
+      //*
       // Decide whether to select or deselect the object
+      var pPanel = window.parent.document.getElementById('properties-panel');
+
       if(bool) {
         // Select object
-        el.setAttribute('material', 'color: red');
+        el.setAttribute('material', 'color: #FF0000');
+
+        // Update properties view
+        console.log("pPanel");
+        console.log(pPanel);
+
+        // Remove all children
+        while (pPanel.firstChild) {
+          pPanel.removeChild(pPanel.firstChild);
+        }
+
+        this.addPropertiesRow(pPanel, 'select-aframe-entity', el);
 
       }else{
         // Deselect object
-        el.setAttribute('material', 'color: blue');
+        el.setAttribute('material', 'color: #0000FF');
+
+        // Remove all children
+        while (pPanel.firstChild) {
+          pPanel.removeChild(pPanel.firstChild);
+        }
+
+        // Set properties panel to 'no selection'
+        this.addPropertiesRow(pPanel, 'properties-no-selection', null);
       }
       //*/
   },
