@@ -20,9 +20,11 @@ AFRAME.registerComponent('object-control-desktop', {
       }else if(msgType === 'selectedComponent') {
         var data = JSON.parse(msgData);
         var cid = data.cid;
+        var sourceRtcId = data.sourcertcid;
         var bool = data.bool;
-        // @ToDo: add true/false
-        that.selectEntity(cid, bool);
+        // @ToDo: get correct source EasyRtcId
+        sourceRtcId = -1;
+        that.selectEntity(cid, sourceRtcId, bool);
       }else if(msgType === 'removedComponent') {
         var data = JSON.parse(msgData);
         var cid = data.cid;
@@ -51,7 +53,7 @@ AFRAME.registerComponent('object-control-desktop', {
       }
 
       // Handle other attributes
-      el.setAttribute('material', 'color: blue');
+      el.setAttribute('material', 'color: #00FF00');
       el.setAttribute('selectable', true)
       
       var cid = data.cid;
@@ -221,6 +223,9 @@ AFRAME.registerComponent('object-control-desktop', {
 
       // Material
       var material = el.getAttribute('material');
+      var color = material.color;
+      console.log('color');
+      console.log(color);
       div = document.createElement('div');
       div.className = 'properties-category-content';
       div.innerHTML = `
@@ -241,8 +246,10 @@ AFRAME.registerComponent('object-control-desktop', {
 
   },
 
-  selectEntity: function(componentId, bool) {
+  selectEntity: function(componentId, sourceRtcId, selectBool) {
 
+      // TODO: Get correct clientRtcId
+      var clientRtcId = -1;
       var el = null;
       var els = this.el.sceneEl.querySelectorAll('[cid]');
 
@@ -285,34 +292,49 @@ AFRAME.registerComponent('object-control-desktop', {
       // Decide whether to select or deselect the object
       var pPanel = window.parent.document.getElementById('properties-panel');
 
-      if(bool) {
-        // Select object
-        el.setAttribute('material', 'color: #FF0000');
+      if(sourceRtcId == clientRtcId) {
+        // Client's own EasyRTCid
+        if(selectBool) {
+          // Select object
+          var axesHelper = new THREE.AxesHelper(5);
+          el.setObject3D("axes-Helper", axesHelper);
+          console.log("axesHelper:");
+          console.log(axesHelper);
+          //el.setAttribute('material', 'color: #FF0000');
 
-        // Update properties view
-        console.log("pPanel");
-        console.log(pPanel);
+          // Update properties view
+          while (pPanel.firstChild) {
+            // Remove all children
+            pPanel.removeChild(pPanel.firstChild);
+          }
 
-        // Remove all children
-        while (pPanel.firstChild) {
-          pPanel.removeChild(pPanel.firstChild);
+          this.addPropertiesRow(pPanel, 'select-aframe-entity', el);
+
+        }else{
+          // Deselect object
+          while (pPanel.firstChild) {
+            // Remove all children
+            pPanel.removeChild(pPanel.firstChild);
+          }
+
+          // Set properties panel to 'no selection'
+          this.addPropertiesRow(pPanel, 'properties-no-selection', null);
         }
-
-        this.addPropertiesRow(pPanel, 'select-aframe-entity', el);
-
       }else{
-        // Deselect object
-        el.setAttribute('material', 'color: #0000FF');
 
-        // Remove all children
-        while (pPanel.firstChild) {
-          pPanel.removeChild(pPanel.firstChild);
+        // Other clients EasyRTCid
+        if(selectBool) {
+          // Make selected object transparent 
+          var mat = el.getAttribute('material');
+          mat.opacity = 0.4;
+          el.setAttribute('material', mat);
+        }else {
+          // Make deselected object fully visible
+          var mat = el.getAttribute('material');
+          mat.opacity = 1.0;
+          el.setAttribute('material', mat);
         }
-
-        // Set properties panel to 'no selection'
-        this.addPropertiesRow(pPanel, 'properties-no-selection', null);
       }
-      //*/
   },
 
   removeComponent: function(componentId) {

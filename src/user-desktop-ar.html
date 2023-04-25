@@ -83,7 +83,7 @@
     <script>
       AFRAME.registerComponent('selectable', {
         schema: {
-          color: {default: 'red'}
+          color: {default: '#00FF00'}
         },
 
         init: function () {
@@ -247,7 +247,7 @@
           <!-- Entity -->
           <template id="block-template">
             <a-entity>
-              <a-box class="block" arrow-control selectable color="#F00"></a-box>
+              <a-box class="block" arrow-control selectable></a-box>
             </a-entity>
           </template>
 
