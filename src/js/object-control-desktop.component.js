@@ -147,17 +147,26 @@ AFRAME.registerComponent('object-control-desktop', {
   },
 
   colorChanger: function(event) {
-
+    console.log(event);
     var el = event.currentTarget.el;
-    console.log(currentTarget);
-    console.log(el);
     var mat = el.getAttribute('material');
 
-    console.log(mat.color);
     mat.color = event.target.value;
-    console.log(mat.color);
 
     el.setAttribute('material', mat);
+
+    // Send changes to server
+    var type = event.type;
+    if(type == 'change') {
+      // TODO: Get correct easyrtcid
+      var easyrtcId = 0;
+      var obj = new Object();
+      obj.cid = el.cid; 
+      obj.update = 'material';
+      obj.data = mat;
+      var newData = JSON.stringify(obj);
+      easyrtc.sendDataWS(easyrtcId, "updateComponent", newData);
+    }
   },
 
   addPropertiesRow: function(pPanel, action, data) {
@@ -223,7 +232,9 @@ AFRAME.registerComponent('object-control-desktop', {
         </div>
       `;
 
+      div.el = el;
       div.addEventListener("input", this.colorChanger, false);
+      div.addEventListener("change", this.colorChanger, false);
 
       pPanel.appendChild(div);
     }
