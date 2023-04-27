@@ -83,45 +83,34 @@
     <script>
       AFRAME.registerComponent('selectable', {
         schema: {
-          color: {default: '#00FF00'}
+          targetable: {default: true}
         },
 
         init: function () {
           var data = this.data;
-          var el = this.el;  // <a-box>
-          /*
-          var head = document.querySelector('#playerhead');
-          var defColor = head.getAttribute('material').color;
+          var el = this.el; 
 
-          el.addEventListener('mouseenter', function () {
-            el.setAttribute('color', data.color);
-          });
+          // Get component id
+          var componentId = el.getAttribute('cid');
 
-          el.addEventListener('mouseleave', function () {
-            el.setAttribute('color', defColor);
-          });
-          */
+          // Create data object to stringify
+          var obj = new Object();
+          obj.cid = componentId;
 
-            // ###### TODO ######
-            // Add edit mode, annotations, etc
+          var entityData = JSON.stringify(obj);
 
-          // ### Select component ###
-          // Mouse control
+          // Easyrtcid '0' = for server???
+          var easyrtcId = 0;  
+
+          // Add click listener
           el.addEventListener('click', function() {
-            //el.setAttribute('color', 'green');
-            var componentId = el.getAttribute('cid');
-
-            // Create data object to stringify
-            var obj = new Object();
-            obj.cid = componentId;
-
-            var data = JSON.stringify(obj);
-
-            // Easyrtcid '0' = for server???
-            var easyrtcId = 0;  
-
-            console.log("Sending: 'Select object with component-id:' " + data);
-            easyrtc.sendDataWS(easyrtcId, "selectComponent", data);
+            var targetable = data.targetable;
+            if(targetable) {
+              console.log("Sending: 'Select object with component-id:' " + entityData);
+              easyrtc.sendDataWS(easyrtcId, "selectComponent", entityData);
+            }else{
+              console.log("Tried to select untargetable entity.");
+            }
           });
         }
       });

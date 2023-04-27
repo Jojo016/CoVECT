@@ -53,8 +53,8 @@ AFRAME.registerComponent('object-control-desktop', {
       }
 
       // Handle other attributes
-      el.setAttribute('material', 'color: #00FF00');
-      el.setAttribute('selectable', true)
+      el.setAttribute('material', 'color: #0000FF');
+      el.setAttribute('selectable', 'targetable: true');
       
       var cid = data.cid;
       el.setAttribute('cid', cid);
@@ -66,7 +66,6 @@ AFRAME.registerComponent('object-control-desktop', {
 
       el.setAttribute('class', 'cursor-listener');
       el.setAttribute('cursor-listener', '');
-      console.log(el);
 
       var scene = this.el.sceneEl;
       scene.appendChild(el);
@@ -224,8 +223,6 @@ AFRAME.registerComponent('object-control-desktop', {
       // Material
       var material = el.getAttribute('material');
       var color = material.color;
-      console.log('color');
-      console.log(color);
       div = document.createElement('div');
       div.className = 'properties-category-content';
       div.innerHTML = `
@@ -297,10 +294,7 @@ AFRAME.registerComponent('object-control-desktop', {
         if(selectBool) {
           // Select object
           var axesHelper = new THREE.AxesHelper(5);
-          el.setObject3D("axes-Helper", axesHelper);
-          console.log("axesHelper:");
-          console.log(axesHelper);
-          //el.setAttribute('material', 'color: #FF0000');
+          el.setObject3D("axes-helper", axesHelper);
 
           // Update properties view
           while (pPanel.firstChild) {
@@ -319,6 +313,10 @@ AFRAME.registerComponent('object-control-desktop', {
 
           // Set properties panel to 'no selection'
           this.addPropertiesRow(pPanel, 'properties-no-selection', null);
+
+          // Remove AxesHelper
+          var axesHelper = el.getObject3D('axes-helper');
+          el.removeObject3D('axes-helper');
         }
       }else{
 
@@ -334,6 +332,25 @@ AFRAME.registerComponent('object-control-desktop', {
           mat.opacity = 1.0;
           el.setAttribute('material', mat);
         }
+      }
+
+      // Further A-FRAME actions
+      if(selectBool) {
+        // Make selected object untargetable
+        var selectable = el.getAttribute('selectable');
+        selectable.targetable = false;
+        el.setAttribute('selectable', selectable);
+
+        // Set easyRtcId of source
+        el.setAttribute('selectedby', sourceRtcId);
+      }else {
+        // Make selected object targetable again
+        var selectable = el.getAttribute('selectable');
+        selectable.targetable = true;
+        el.setAttribute('selectable', selectable);
+
+        // Remove easyRtcId of source
+        el.removeAttribute('selectedby');
       }
   },
 
