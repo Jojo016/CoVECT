@@ -12,6 +12,7 @@
       });
     </script>
     <script>
+      var clientName = prompt("Please enter your name", "Jojo");
 
       // Send specific commands to the server 
       function addObject(shape) {
@@ -36,12 +37,39 @@
         
         iframe.contentWindow.sendToServer("addInteraction", data);
       }
+
+      // Status Bar functions
+      function addUserToStatusBar(clientId, isYourself) {
+        // Create Div
+        var div = document.createElement('div');
+        div.className = 'user-name';
+        div.innerHTML = `
+          <b>${clientName}</b>
+        `;
+
+        if(isYourself) {
+          div.setAttribute('highlight', '')
+        }
+
+        // Add div to statusbar
+        var statusbar = document.getElementById('statusbar');
+        statusbar.appendChild(div);
+        console.log("Added client to statusbar: " + clientName + "[" + clientId + "]");
+      }
+
+      function removeUserFromStatusBar(clientId) {
+
+        console.log("Remove client from statusbar: [" + clientId + "]");
+      }
+
     </script>
     <link rel="stylesheet" type="text/css" href="/styles/Editor2.css" />
   </head>
   <body>
     <div class="editor">
       <div class="header">
+        <div class="statusbar" id="statusbar">
+        </div>
       </div>
 
       <div class="main">

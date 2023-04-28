@@ -22,14 +22,12 @@ AFRAME.registerComponent('object-control-desktop', {
         var cid = data.cid;
         var sourceRtcId = data.sourcertcid;
         var bool = data.bool;
-        // @ToDo: get correct source EasyRtcId
-        sourceRtcId = -1;
         that.selectEntity(cid, sourceRtcId, bool);
       }else if(msgType === 'removedComponent') {
         var data = JSON.parse(msgData);
         var cid = data.cid;
         that.removeComponent(cid);
-      }
+      } 
     });
     
 
@@ -245,8 +243,6 @@ AFRAME.registerComponent('object-control-desktop', {
 
   selectEntity: function(componentId, sourceRtcId, selectBool) {
 
-      // TODO: Get correct clientRtcId
-      var clientRtcId = -1;
       var el = null;
       var els = this.el.sceneEl.querySelectorAll('[cid]');
 

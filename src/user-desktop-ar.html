@@ -97,17 +97,14 @@
           var obj = new Object();
           obj.cid = componentId;
 
-          var entityData = JSON.stringify(obj);
-
-          // Easyrtcid '0' = for server???
-          var easyrtcId = 0;  
+          var entityData = JSON.stringify(obj); 
 
           // Add click listener
           el.addEventListener('click', function() {
             var targetable = data.targetable;
             if(targetable) {
               console.log("Sending: 'Select object with component-id:' " + entityData);
-              easyrtc.sendDataWS(easyrtcId, "selectComponent", entityData);
+              easyrtc.sendDataWS(clientRtcId, "selectComponent", entityData);
             }else{
               console.log("Tried to select untargetable entity.");
             }
@@ -121,16 +118,19 @@
     <script src="/js/object-control-desktop.component.js"></script>
     <script src="/js/arrow-control.component.js"></script>
     <script>
+      let clientRtcId;
+
       // Called by Networked-Aframe when connected to server
-      function onConnect() {
-        console.log('onConnect', new Date());
+      function onConnect() {        
+        // Set clients easyrtcid
+        clientRtcId = NAF.clientId;
+
+        // Send clientId to statusbar
+        window.parent.addUserToStatusBar(clientRtcId, true);
       }
     </script>
     <script>
       function sendToServer(command, data) {
-        // TODO: set correct easyrtcid 
-        var easyrtcId = 0;
-
         if(command == 'addNewObject') {
           // Get shape from data
           var shape = data;
@@ -153,7 +153,7 @@
           data = JSON.stringify(obj);
 
           console.log("Sending: 'Create new object with data:' " + data);
-          easyrtc.sendDataWS(easyrtcId, "addNewObject", data);
+          easyrtc.sendDataWS(clientRtcId, "addNewObject", data);
 
         }else if(command == 'removeComponent'){
           // Get shape from data
@@ -166,7 +166,7 @@
           data = JSON.stringify(obj);
 
           console.log("Sending: 'Remove component with cid:' " + cid);
-          easyrtc.sendDataWS(easyrtcId, "removeComponent", data);
+          easyrtc.sendDataWS(clientRtcId, "removeComponent", data);
 
         }else if(command == 'addInteraction'){
           // Get type & position from data
@@ -181,7 +181,7 @@
           data = JSON.stringify(obj);
 
           console.log("Sending: 'Add interaction of type:' " + type);
-          easyrtc.sendDataWS(easyrtcId, "addInteraction", data);
+          easyrtc.sendDataWS(clientRtcId, "addInteraction", data);
         }
       }
     </script>
@@ -274,7 +274,7 @@
     </div>
 
     <div class="controls">
-      <p>Press space to spawn a component. Click on a component to select it as 'current component'.</p>
+      <p>Use WASD-Keys to fly around. Click on a component to select it and edit its properties.</p>
     </div>
   </body>
 </html>
