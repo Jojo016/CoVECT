@@ -39,13 +39,15 @@
       }
 
       // Status Bar functions
-      function addUserToStatusBar(clientId, isYourself) {
+      function addUserToStatusBar(clientId, clientName, isYourself) {
         // Create Div
         var div = document.createElement('div');
         div.className = 'user-name';
         div.innerHTML = `
           <b>${clientName}</b>
-        `;
+        `; 
+        div.setAttribute('padding', '50px');
+        div.setAttribute('display', 'inline-block');
 
         if(isYourself) {
           div.setAttribute('highlight', '')

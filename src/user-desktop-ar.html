@@ -124,9 +124,11 @@
       function onConnect() {        
         // Set clients easyrtcid
         clientRtcId = NAF.clientId;
+        clientName = window.parent.clientName;
 
         // Send clientId to statusbar
-        window.parent.addUserToStatusBar(clientRtcId, true);
+        //window.parent.addUserToStatusBar(clientRtcId, true);
+        serverJoinedSetup();
       }
     </script>
     <script>
@@ -183,6 +185,34 @@
           console.log("Sending: 'Add interaction of type:' " + type);
           easyrtc.sendDataWS(clientRtcId, "addInteraction", data);
         }
+      }
+
+      function serverJoinedSetup() {
+        // Add own name to statusbar
+        window.parent.addUserToStatusBar(clientRtcId, clientName, true);
+
+        // Broadcast ClientName
+        var obj = new Object();
+        obj.easyrtcid = clientRtcId;
+        obj.name = clientName;
+        var clientData = JSON.stringify(obj);
+        console.log("clientData:");
+        console.log(clientData);
+
+        easyrtc.sendDataWS(clientRtcId, "broadcastUserName", clientData);
+
+        // Init Listeners
+        easyrtc.setServerListener( function(msgType, msgData, targeting) {
+          if(msgType === 'userJoined') {
+            var data = JSON.parse(msgData);
+            window.parent.addUserToStatusBar(data.easyrtcid, data.name, false);
+
+          }else if(msgType === 'userLeft') {
+            var data = JSON.parse(msgData);
+            window.parent.removeUserFromStatusBar(data.easyrtcid);
+          }
+        });
+
       }
     </script>
     <script>

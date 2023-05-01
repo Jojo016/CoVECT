@@ -10,9 +10,7 @@ AFRAME.registerComponent('object-control-desktop', {
     var that = this;
     
     easyrtc.setServerListener( function(msgType, msgData, targeting) {
-
-      console.log("Received server msg: " + msgType);
-
+      
       if(msgType === 'spawnComponent') {
         var newData = JSON.parse(msgData);
         that.spawnEntity(newData);

@@ -371,6 +371,38 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
         })(currentEasyrtcid, msg);
       }
     }
+  }else if(msgType === "broadcastUserName") {
+
+    // Get data & create message
+    var data = msg.msgData;
+    var easyrtcid = connectionObj.getEasyrtcid();
+    var message = {};
+    message.msgType = 'userJoined';
+    message.msgData = data;
+
+    // Broadcast to room
+    var roomObj; 
+    connectionObj.generateRoomClientList("update", null, function(err, callback){
+      roomObj = callback;
+    });
+    var clientList = roomObj['dev'].clientList;
+    for (var currentEasyrtcid in clientList) {
+      (function(innerCurrentEasyrtcid, innerMsg){
+        connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
+          if(currentEasyrtcid != easyrtcid) {
+            easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
+              if(err) {
+                console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+              }
+            });
+          }
+        });
+      })(currentEasyrtcid, "TODO: Remove this (unnecessary?) invocation");
+    }
+  }else if(msgType === "userJoined") {
+    // Only for client side --> SKIP
+  }else if(msgType === "userLeft") {
+    // Only for client side --> SKIP
   }else if(msgType === "removedComponent"){
     // Only for client side --> SKIP
   }else if(msgType === "updatedComponent"){
@@ -394,6 +426,7 @@ easyrtc.events.on("roomJoin", (connectionObj, roomName, roomParameter, callback)
 // RoomLeave event
 easyrtc.events.on("roomLeave", (connectionObj, roomName, roomParameter, callback) => {
 
+  console.log("bla");
   // Deselect all components the leaving clients has selected
   var cidToDeselect = -1;
   var easyrtcid = connectionObj.getEasyrtcid();
@@ -404,37 +437,41 @@ easyrtc.events.on("roomLeave", (connectionObj, roomName, roomParameter, callback
     }
   }
 
+  // Send 'Deselect' of 'old cid' 
+  var message = {};
+  var dataObj = new Object();
+  dataObj.easyrtcid = easyrtcid;
+
   if(cidToDeselect != -1) {
-    // Send 'Deselect' of 'old cid' 
-    var message = {};
-    var dataObj = new Object();
     dataObj.cid = cidToDeselect;
-    dataObj.bool = false;
-    var data = JSON.stringify(dataObj);
-
-    message.msgType = 'selectedComponent';
-    message.msgData = data;
-
-    // Send each message to every client in the room
-    var roomObj; 
-    connectionObj.generateRoomClientList("update", null, function(err, callback){
-      roomObj = callback;
-    });
-    var clientList = roomObj['dev'].clientList;
-    for (var currentEasyrtcid in clientList) {
-      (function(innerCurrentEasyrtcid, innerMsg){
-        connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
-          easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
-            if(err) {
-              console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
-            }
-          });
-        });
-      })(currentEasyrtcid, "TODO: Remove this (unnecessary?) invocation");
-    }
 
     // Delete the KeyValuePair 'ComponentId/EasyRtcId' from dict
     delete dictOfSelectedComponents[cidToDeselect];
+  }else{
+    dataObj.cid = -1;
+  }
+
+  var data = JSON.stringify(dataObj);
+
+  message.msgType = 'userLeft';
+  message.msgData = data;
+
+  // Send each message to every client in the room
+  var roomObj; 
+  connectionObj.generateRoomClientList("update", null, function(err, callback){
+    roomObj = callback;
+  });
+  var clientList = roomObj['dev'].clientList;
+  for (var currentEasyrtcid in clientList) {
+    (function(innerCurrentEasyrtcid, innerMsg){
+      connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
+        easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
+          if(err) {
+            console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+          }
+        });
+      });
+    })(currentEasyrtcid, "TODO: Remove this (unnecessary?) invocation");
   }
 
   easyrtc.events.defaultListeners.roomLeave(connectionObj, roomName, roomParameter, callback);
