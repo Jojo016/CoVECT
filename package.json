@@ -27,7 +27,7 @@
     "react-three-fiber": "^4.2.20",
     "react-xml-parser": "^1.1.6",
     "recastjs": "^0.1.16",
-    "socket.io": "^4.6.1",
+    "socket.io": "2.4.1",
     "three": "^0.128.0",
     "three-gltf-loader": "^1.111.0",
     "three-obj-exporter": "^0.0.1",

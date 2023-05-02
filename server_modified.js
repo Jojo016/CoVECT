@@ -2,6 +2,8 @@
 const http = require("http");                 // http server core module
 const path = require("path");
 const express = require("express");           // web framework external module
+//const { Server } = require("socket.io");      // web socket external module
+//const socketIo = require("socket.io");        // web socket external module
 const socketIo = require("socket.io");        // web socket external module
 const easyrtc = require("open-easyrtc");      // EasyRTC external module
 const mysql = require('mysql');               // MySql external module
@@ -70,6 +72,7 @@ const webServer = http.createServer(app);
 
 // Start Socket.io so it attaches itself to Express server
 const socketServer = socketIo.listen(webServer, {"log level": 1});
+
 const myIceServers = [
   {"urls":"stun:stun1.l.google.com:19302"},
   {"urls":"stun:stun2.l.google.com:19302"},

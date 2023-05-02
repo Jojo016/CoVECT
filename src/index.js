@@ -14,7 +14,6 @@ import './styles/index.css';
 
 console.log("INDEX.js RUN!!!");
 
-
 ReactDOM.render(
     <Editor />,
     document.getElementById('root')
