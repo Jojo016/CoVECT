@@ -112,14 +112,12 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
   // Id '0' indicates a wanted access to the file system
   if(msgType === "addNewObject") {
     var data = msg.msgData;
-    if(true) { // validate json
+    if(true) { // TODO: validate json
       componentCounter++;
       // Add the new object to existing ones
-      // TODO: IMPLEMENT FUNCTION FOR SAVING CURRENT A-FRAME STATE TO MYSQL !!!!!!!!!!!!
-
       var newObj = JSON.parse(data);
       newObj['cid'] = componentCounter;
-      listOfComponentData.push(newObj);      
+      listOfComponentData.push(newObj);  
 
       // Create new message
       var message = {};
@@ -326,10 +324,11 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       }
     }
   }else if(msgType === "updateComponent") {
+    // TODO: Check if object is selected by the user
     // Update the given component
     var data = msg.msgData;
     var dataObj = JSON.parse(data);
-    var cid = dataObj.cid; 
+    var cid = dataObj.cid;
 
     // Update object in 'component' list
     var dataIndex = -1;
@@ -346,6 +345,17 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       // Get component from 'componentData' list
       var component = listOfComponentData[dataIndex];
       // TODO: update the data 
+      var updateType = dataObj.updatetype;
+      var updateData = dataObj.updatedata;
+
+      // Set opacity to '0.4' for all users but the one who edits the component
+      if(updateType == 'material') {
+        updateData.opacity = 0.4;
+        dataObj.updatedata = updateData;
+        data = JSON.stringify(dataObj);
+      }
+
+      component[updateType] = updateData;
 
       // Send update message
       var message = {};
@@ -362,11 +372,13 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       for (var currentEasyrtcid in clientList) {
         (function(innerCurrentEasyrtcid, innerMsg){
           connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
-            easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
-              if(err) {
-                console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
-              }
-            });
+            if(currentEasyrtcid != easyrtcid) {
+              easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
+                if(err) {
+                  console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+                }
+              });
+            }
           });
         })(currentEasyrtcid, msg);
       }
@@ -426,7 +438,7 @@ easyrtc.events.on("roomJoin", (connectionObj, roomName, roomParameter, callback)
 // RoomLeave event
 easyrtc.events.on("roomLeave", (connectionObj, roomName, roomParameter, callback) => {
 
-  console.log("bla");
+  console.log("RoomLeave Event");
   // Deselect all components the leaving clients has selected
   var cidToDeselect = -1;
   var easyrtcid = connectionObj.getEasyrtcid();

@@ -6,32 +6,6 @@ AFRAME.registerComponent('object-control-desktop', {
   },
 
   init: function() {
-    // EasyRTC listener for object spawner
-    var that = this;
-    
-    easyrtc.setServerListener( function(msgType, msgData, targeting) {
-      
-      if(msgType === 'spawnComponent') {
-        var newData = JSON.parse(msgData);
-        that.spawnEntity(newData);
-
-      }else if(msgType === 'selectedComponent') {
-        var data = JSON.parse(msgData);
-        var cid = data.cid;
-        var sourceRtcId = data.sourcertcid;
-        var bool = data.bool;
-        that.selectEntity(cid, sourceRtcId, bool);
-      }else if(msgType === 'removedComponent') {
-        var data = JSON.parse(msgData);
-        var cid = data.cid;
-        that.removeComponent(cid);
-      } 
-    });
-    
-
-    /*
-    easyrtc.addEventListener("roomOccupant", (eventName, eventData) => {
-    */
   },
 
   spawnEntity: function(data) {
@@ -136,15 +110,9 @@ AFRAME.registerComponent('object-control-desktop', {
         //const found = raycaster.intersectObjects(scene.children);
       });
     }
-
-
-
-
-
   },
 
-  colorChanger: function(event) {
-    console.log(event);
+  colorChanged: function(event) {
     var el = event.currentTarget.el;
     var mat = el.getAttribute('material');
 
@@ -158,12 +126,38 @@ AFRAME.registerComponent('object-control-desktop', {
       // TODO: Get correct easyrtcid
       var easyrtcId = 0;
       var obj = new Object();
-      obj.cid = el.cid; 
-      obj.update = 'material';
-      obj.data = mat;
+      var cid = el.getAttribute('cid');
+      obj.cid = cid; 
+      obj.updatetype = 'material';
+      obj.updatedata = mat;
       var newData = JSON.stringify(obj);
       easyrtc.sendDataWS(easyrtcId, "updateComponent", newData);
     }
+  },
+
+  positionChanged: function(event) {
+    var el = event.currentTarget.el;
+    var pos = el.getAttribute('position');
+    var value = event.target.value;
+
+    // Get the correct  x-/y- or z-coord and update it
+    var name = event.target.name;
+    var coord = name.substr(0, 1);
+    pos[coord] = value; 
+
+    // Update local data 
+    el.setAttribute('position', pos);
+
+    // Send changes to server
+    // TODO: Get correct easyrtcid
+    var easyrtcId = 0;
+    var obj = new Object();
+    var cid = el.getAttribute('cid');
+    obj.cid = cid; 
+    obj.updatetype = 'position';
+    obj.updatedata = pos;
+    var newData = JSON.stringify(obj);
+    easyrtc.sendDataWS(easyrtcId, "updateComponent", newData);
   },
 
   addPropertiesRow: function(pPanel, action, data) {
@@ -193,6 +187,10 @@ AFRAME.registerComponent('object-control-desktop', {
         </div>
       `;
 
+      div.el = el;
+      // TODO: Add Name Change Event Listener + Function
+      //div.addEventListener("change", this.nameChanged, false);
+
       pPanel.appendChild(div);
 
       // Position
@@ -205,7 +203,7 @@ AFRAME.registerComponent('object-control-desktop', {
           </span>
         `;
       for(const coord of ['x', 'y', 'z']) {
-          div.innerHTML += `
+        div.innerHTML += `
           <div class="properties-parameter">
             <span class="properties-parameter-name">
               ${coord}:
@@ -214,6 +212,9 @@ AFRAME.registerComponent('object-control-desktop', {
           </div>
         `;
       };
+
+      div.el = el;
+      div.addEventListener("change", this.positionChanged, false);
       pPanel.appendChild(div);
 
       // Material
@@ -231,8 +232,8 @@ AFRAME.registerComponent('object-control-desktop', {
       `;
 
       div.el = el;
-      div.addEventListener("input", this.colorChanger, false);
-      div.addEventListener("change", this.colorChanger, false);
+      div.addEventListener("input", this.colorChanged, false);
+      div.addEventListener("change", this.colorChanged, false);
 
       pPanel.appendChild(div);
     }
@@ -367,6 +368,27 @@ AFRAME.registerComponent('object-control-desktop', {
       }
 
       el.parentNode.removeChild(el);
+  },
+
+  updateComponent: function(componentId, type, data) {
+    console.log("updateComponent");
+    var el = null;
+    var els = this.el.sceneEl.querySelectorAll('[cid]');
+
+    for (var i = 0; i < els.length; i++) {
+
+      if(els[i].getAttribute('cid') == componentId) {
+        el = els[i];
+        break;
+      }
+    }
+
+    if(type == 'material') {
+      console.log("material:");
+      console.log(data);
+    }
+
+    el.setAttribute(type, data);
   }
 });
 

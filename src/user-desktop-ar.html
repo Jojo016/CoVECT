@@ -191,19 +191,35 @@
         // Add own name to statusbar
         window.parent.addUserToStatusBar(clientRtcId, clientName, true);
 
-        // Broadcast ClientName
-        var obj = new Object();
-        obj.easyrtcid = clientRtcId;
-        obj.name = clientName;
-        var clientData = JSON.stringify(obj);
-        console.log("clientData:");
-        console.log(clientData);
-
-        easyrtc.sendDataWS(clientRtcId, "broadcastUserName", clientData);
-
         // Init Listeners
         easyrtc.setServerListener( function(msgType, msgData, targeting) {
-          if(msgType === 'userJoined') {
+          if(msgType === 'spawnComponent') {
+            var newData = JSON.parse(msgData);
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.spawnEntity(newData);
+
+          }else if(msgType === 'selectedComponent') {
+            var data = JSON.parse(msgData);
+            var cid = data.cid;
+            var sourceRtcId = data.sourcertcid;
+            var bool = data.bool;
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.selectEntity(cid, sourceRtcId, bool);
+
+          }else if(msgType === 'removedComponent') {
+            var data = JSON.parse(msgData);
+            var cid = data.cid;
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.removeComponent(cid);
+          }else if(msgType === 'updatedComponent') {
+            var data = JSON.parse(msgData);
+            var cid = data.cid;
+            var type = data.updatetype;
+            var newData = data.updatedata;
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.updateComponent(cid, type, newData);
+
+          } else if(msgType === 'userJoined') {
             var data = JSON.parse(msgData);
             window.parent.addUserToStatusBar(data.easyrtcid, data.name, false);
 
@@ -212,6 +228,13 @@
             window.parent.removeUserFromStatusBar(data.easyrtcid);
           }
         });
+
+        // Broadcast ClientName
+        var obj = new Object();
+        obj.easyrtcid = clientRtcId;
+        obj.name = clientName;
+        var clientData = JSON.stringify(obj);
+        easyrtc.sendDataWS(clientRtcId, "broadcastUserName", clientData);
 
       }
     </script>
