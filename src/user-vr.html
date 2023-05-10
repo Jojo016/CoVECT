@@ -160,6 +160,58 @@
         console.log('onConnect', new Date());
       }
     </script>
+    <script>
+      function serverJoinedSetup() {
+        // Add own name to statusbar
+        window.parent.addUserToStatusBar(clientRtcId, clientName, true);
+
+        // Init Listeners
+        easyrtc.setServerListener( function(msgType, msgData, targeting) {
+          if(msgType === 'spawnComponent') {
+            var newData = JSON.parse(msgData);
+            var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
+            controller.spawnEntity(newData);
+
+          }else if(msgType === 'selectedComponent') {
+            var data = JSON.parse(msgData);
+            var cid = data.cid;
+            var sourceRtcId = data.sourcertcid;
+            var bool = data.bool;
+            var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
+            controller.selectEntity(cid, sourceRtcId, bool);
+
+          }else if(msgType === 'removedComponent') {
+            var data = JSON.parse(msgData);
+            var cid = data.cid;
+            var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
+            controller.removeComponent(cid);
+          }else if(msgType === 'updatedComponent') {
+            var data = JSON.parse(msgData);
+            var cid = data.cid;
+            var type = data.updatetype;
+            var newData = data.updatedata;
+            var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
+            controller.updateComponent(cid, type, newData);
+
+          } else if(msgType === 'userJoined') {
+            var data = JSON.parse(msgData);
+            window.parent.addUserToStatusBar(data.easyrtcid, data.name, false);
+
+          }else if(msgType === 'userLeft') {
+            var data = JSON.parse(msgData);
+            window.parent.removeUserFromStatusBar(data.easyrtcid);
+          }
+        });
+
+        // Broadcast ClientName
+        var obj = new Object();
+        obj.easyrtcid = clientRtcId;
+        obj.name = clientName;
+        var clientData = JSON.stringify(obj);
+        easyrtc.sendDataWS(clientRtcId, "broadcastUserName", clientData);
+
+      }
+    </script>
     <link rel="stylesheet" type="text/css" href="/css/style.css" />
   </head>
   <body>
@@ -208,7 +260,7 @@
           camera
           position="0 1.6 0"
           spawn-in-circle="radius:3"
-          spawner-persistent2="template:#block-template"
+          object-control-vr="template:#block-template"
           oculus-touch-controls="hand: right"
           wasd-controls
           look-controls
@@ -230,7 +282,7 @@
     </a-scene>
 
     <div class="controls">
-      <p>Press space to spawn a component. Click on a component to select it as 'current component'.</p>
+      <p>Description pending...</p>
     </div>
   </body>
 </html>
