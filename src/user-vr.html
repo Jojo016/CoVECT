@@ -10,70 +10,6 @@
     <script src="/easyrtc/easyrtc.js"></script>
     <script src="/dist/networked-aframe.js"></script>
     <script>
-      AFRAME.registerComponent('selectable', {
-        schema: {
-          color: {default: 'red'}
-        },
-
-        init: function () {
-          var data = this.data;
-          var el = this.el;  // <a-box>
-          /*
-          var head = document.querySelector('#playerhead');
-          var defColor = head.getAttribute('material').color;
-
-          el.addEventListener('mouseenter', function () {
-            el.setAttribute('color', data.color);
-          });
-
-          el.addEventListener('mouseleave', function () {
-            el.setAttribute('color', defColor);
-          });
-          */
-
-            // ###### TODO ######
-            // Add edit mode, annotations, etc
-
-          // ### Select component ###
-          // Mouse control
-          el.addEventListener('click', function() {
-            //el.setAttribute('color', 'green');
-            var componentId = el.getAttribute('cid');
-
-            // Create data object to stringify
-            var obj = new Object();
-            obj.cid = componentId;
-
-            var data = JSON.stringify(obj);
-
-            // Easyrtcid '0' = for server???
-            var easyrtcId = 0;  
-
-            console.log("Sending: 'Select object with component-id:' " + data);
-            easyrtc.sendDataWS(easyrtcId, "selectComponent", data);
-          });
-
-          // Quest2 control
-          el.addEventListener('triggerdown', function(evt) {
-            //el.setAttribute('color', 'green');
-            var componentId = el.getAttribute('cid');
-
-            // Create data object to stringify
-            var obj = new Object();
-            obj.cid = componentId;
-
-            var data = JSON.stringify(obj);
-
-            // Easyrtcid '0' = for server???
-            var easyrtcId = 0;  
-
-            console.log("Sending: 'Select object with component-id:' " + data);
-            easyrtc.sendDataWS(easyrtcId, "selectComponent", data);
-          });
-        }
-      });
-    </script>
-    <script>
       AFRAME.registerComponent('thumbstick-controls',{
         init: function () {
           this.el.addEventListener('thumbstickmoved', this.thumbstickControl);
@@ -147,29 +83,69 @@
         return components;
       };
     </script>
+    <script>
+      AFRAME.registerComponent('selectable', {
+        schema: {
+          targetable: {default: true}
+        },
+
+        init: function () {
+          var data = this.data;
+          var el = this.el; 
+
+          // Get component id
+          var componentId = el.getAttribute('cid');
+
+          // Create data object to stringify
+          var obj = new Object();
+          obj.cid = componentId;
+
+          var entityData = JSON.stringify(obj); 
+
+          // Add click listener
+          el.addEventListener('click', function() {
+            var targetable = data.targetable;
+            if(targetable) {
+              console.log("Sending: 'Select object with component-id:' " + entityData);
+              easyrtc.sendDataWS(clientRtcId, "selectComponent", entityData);
+            }else{
+              console.log("Tried to select untargetable entity.");
+            }
+          });
+        }
+      });
+    </script>
     <script src="https://unpkg.com/aframe-randomizer-components@^3.0.1/dist/aframe-randomizer-components.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.1/dist/aframe-environment-component.min.js"></script>
     <script src="/js/spawn-in-circle.component.js"></script>
-    <script src="/js/spawner-persistent2.component.js"></script>
-    <script src="/js/select-entity.component.js"></script>
-    <script src="/js/arrow-control.component.js"></script>
-    <script src="/js/persistent-p2p.component.js"></script>
+    <script src="/js/object-control-vr.component.js"></script>
     <script>
+      let clientRtcId;
+
       // Called by Networked-Aframe when connected to server
-      function onConnect() {
-        console.log('onConnect', new Date());
+      function onConnect() {        
+        // Set clients easyrtcid
+        clientRtcId = NAF.clientId;
+        clientName = window.parent.clientName;
+
+        // Send clientId to statusbar
+        //window.parent.addUserToStatusBar(clientRtcId, true);
+        serverJoinedSetup();
       }
     </script>
     <script>
       function serverJoinedSetup() {
         // Add own name to statusbar
-        window.parent.addUserToStatusBar(clientRtcId, clientName, true);
+        // TODO: Make VR ready
+        //window.parent.addUserToStatusBar(clientRtcId, clientName, true);
 
         // Init Listeners
         easyrtc.setServerListener( function(msgType, msgData, targeting) {
           if(msgType === 'spawnComponent') {
             var newData = JSON.parse(msgData);
             var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
+            console.log("controller:");
+            console.log(controller);
             controller.spawnEntity(newData);
 
           }else if(msgType === 'selectedComponent') {
@@ -212,6 +188,24 @@
 
       }
     </script>
+    <script>
+      AFRAME.registerComponent('cursor-listener', {
+        init: function () {
+          this.el.addEventListener('raycaster-intersected', evt => {
+            this.raycaster = evt.detail.el;
+          });
+          this.el.addEventListener('raycaster-intersected-cleared', evt => {
+            this.raycaster = null;
+          });
+        },
+        tick: function () {
+            if (!this.raycaster) { return; }  // Not intersecting.
+            let intersection = this.raycaster.components.raycaster.getIntersection(this.el);
+            if (!intersection) { return; } // Not intersecting
+            // intersecting
+        }
+      });
+    </script>
     <link rel="stylesheet" type="text/css" href="/css/style.css" />
   </head>
   <body>
@@ -244,7 +238,7 @@
         <!-- Entity -->
         <template id="block-template">
           <a-entity>
-            <a-box class="block" arrow-control selectable color="#F00"></a-box>
+            <a-box class="block" arrow-control selectable></a-box>
           </a-entity>
         </template>
 
@@ -253,7 +247,64 @@
         <img id="sky" src="https://img.gs/bbdkhfbzkk/2048x2048,stretch/https://i.imgur.com/WqlqEkq.jpg" crossorigin="anonymous" />
       </a-assets>
 
+      <!-- TODO: REMOVE THIS TEMPORARY TEST ENTITY -->
+      <a-plane 
+            class="vr-menu-panel" 
+            color="#80160e" 
+            position="0 1.4 -0.9"
+            rotation="-30 0 0" 
+            scale="1 0.3 0.3"
+            visible="true"
+          >
+            <a-box
+              class="box" 
+              color="#23ddeb" 
+              position="0.33 0 -0.03"
+              rotation="0 0 0" 
+              scale="0.3 0.9 0.1"
+              visible="true"
+              vr-menu
+            >
+            </a-box>
+          </a-plane>
+
       <a-entity id="rig">
+        <a-entity
+          id="player"
+          networked="template:#avatar-template;attachTemplateToLocal:false;"
+          camera
+          position="0 1.6 0"
+          spawn-in-circle="radius:3"
+          object-control-vr="template:#block-template"
+          wasd-controls
+          look-controls
+          cursor="rayOrigin: mouse"
+          raycaster="objects: .cursor-listener"
+        >
+          <!--a-plane 
+            class="vr-menu-panel" 
+            color="#80160e" 
+            position="0 -0.4 -0.9"
+            rotation="-30 0 0" 
+            scale="1 0.3 0.3"
+            visible="true"
+          >
+            <a-box
+              class="box" 
+              color="#23ddeb" 
+              position="0.33 -0.1 0"
+              rotation="0 0 0" 
+              scale="0.3 1 0.3"
+              visible="true"
+              vr-menu
+            >
+            </a-box>
+          </a-plane-->
+          <a-sphere id="playerhead" class="head" visible="false" random-color></a-sphere>
+          <!--a-cursor></a-cursor-->
+        </a-entity>
+      </a-entity>
+      <!--a-entity id="rig">
         <a-entity
           id="player"
           networked="template:#avatar-template;attachTemplateToLocal:false;"
@@ -269,7 +320,7 @@
           <a-sphere id="playerhead" class="head" visible="false" random-color></a-sphere>
           <a-cursor></a-cursor>
         </a-entity>
-      </a-entity>
+      </a-entity-->
 
     <!-- Environment -->
       <a-entity position="0 0 0"

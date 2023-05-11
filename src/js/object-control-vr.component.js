@@ -1,5 +1,5 @@
 ﻿/* global AFRAME, NAF */
-AFRAME.registerComponent('object-control-desktop', {
+AFRAME.registerComponent('object-control-vr', {
   schema: {
     template: { default: '' },
     keyCode: { default: 32 }
@@ -41,6 +41,8 @@ AFRAME.registerComponent('object-control-desktop', {
       scene.appendChild(el);
 
       // Add object to list 'Scene Objects'
+      // TODO: Add menu for this??
+      /*
       var table = parent.document.getElementById('scene-objects');
       var tr = table.insertRow();
       tr.setAttribute("id", "cid" + cid);
@@ -62,6 +64,7 @@ AFRAME.registerComponent('object-control-desktop', {
         easyrtc.sendDataWS(easyrtcId, "removeComponent", newData);
       }
       buttonCell.appendChild(button);
+      */
   },
 
   onMouseMove: function(event){
