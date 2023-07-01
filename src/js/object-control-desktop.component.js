@@ -23,7 +23,7 @@ AFRAME.registerComponent('object-control-desktop', {
       }
 
       // Handle other attributes
-      el.setAttribute('material', 'color: #0000FF');
+      el.setAttribute('material', 'color: ' + data.color);
       el.setAttribute('selectable', 'targetable: true');
       
       var cid = data.cid;
@@ -36,6 +36,25 @@ AFRAME.registerComponent('object-control-desktop', {
 
       el.setAttribute('class', 'cursor-listener');
       el.setAttribute('cursor-listener', '');
+
+      // Check for selection
+      var selectedById = data.selectedBy;
+      if(selectedById != -1) {
+        // Make selected object transparent and untargetable
+        var mat = el.getDOMAttribute('material');
+        var selectable = el.getDOMAttribute('selectable');
+
+        mat.opacity = 0.4;
+        selectable.targetable = false;
+
+        el.setAttribute('material', mat);
+        el.setAttribute('selectable', selectable);
+
+        // Set easyRtcId of source
+        el.setAttribute('selectedby', selectedById);
+      }else{
+
+      }
 
       var scene = this.el.sceneEl;
       scene.appendChild(el);

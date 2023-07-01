@@ -140,16 +140,13 @@
           var player = document.getElementById('player');
           var pos3 = player.getAttribute('position');
 
-          // Get color
-          // var color = ;
-
           // Create data object to stringify
           var obj = new Object();
           obj.shape = shape;
           obj.posX = pos3.x;
           obj.posY = pos3.y;
           obj.posZ = pos3.z;
-          //obj.color = color; 
+          obj.color = "#0000FF"; 
 
           data = JSON.stringify(obj);
 
@@ -235,6 +232,11 @@
         var clientData = JSON.stringify(obj);
         easyrtc.sendDataWS(clientRtcId, "broadcastUserName", clientData);
 
+        // Fetch existing components from server
+        var obj = new Object();
+        obj.easyrtcid = clientRtcId;
+        var clientData = JSON.stringify(obj);
+        easyrtc.sendDataWS(clientRtcId, "getAllComponents", null);
       }
     </script>
     <script>

@@ -120,6 +120,7 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       // Add the new object to existing ones
       var newObj = JSON.parse(data);
       newObj['cid'] = componentCounter;
+      newObj.selectedBy = -1;
       listOfComponentData.push(newObj);  
 
       // Create new message
@@ -204,6 +205,7 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
 
       // Delete the KeyValuePair 'ComponentId/EasyRtcId' from dict
       delete dictOfSelectedComponents[cid];
+
     }else{
 
       // Get room's ClientList
@@ -224,6 +226,12 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       }
 
       if(cidToDeselect != -1) {
+        // Edit list of component data
+        var specificObject = listOfComponentData.find(obj => {
+          return obj.cid == cidToDeselect;
+        })
+        specificObject.selectedBy = -1;
+
         // Send 'Deselect' of 'old cid' 
         var message1 = {};
         dataObj.cid = cidToDeselect;
@@ -250,6 +258,12 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
         // Delete the KeyValuePair 'ComponentId/EasyRtcId' from dict
         delete dictOfSelectedComponents[cidToDeselect];
       }
+
+      // Edit list of component data
+      var specificObject = listOfComponentData.find(obj => {
+        return obj.cid == cid;
+      })
+      specificObject.selectedBy = easyrtcid;
 
       // Send 'Select' for initial 'cid'. 
       var message2 = {};
@@ -414,6 +428,37 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
         });
       })(currentEasyrtcid, "TODO: Remove this (unnecessary?) invocation");
     }
+  }else if(msgType === "getAllComponents"){
+    // Sending all existing components to a new user
+    console.log("Sending all existing components to new user ["+easyrtcid+"].");
+
+    var targetRoom = 'dev';
+    connectionObj.getRoomNames((err, roomNames) => {
+      if(roomNames.length > 0) {
+          targetRoom = roomNames[0];
+      }
+    });
+
+    // Create base message
+    var message = {};
+    message.msgType = 'spawnComponent'
+    message.targetRoom = targetRoom;;
+
+    // Send all existing components to the newly joined user
+    listOfComponentData.forEach(comp => {
+      // Set specific message data
+      var data = JSON.stringify(comp);
+      message.msgData = data;
+
+      connectionObj.getApp().connection(easyrtcid, function(err, emitToConnectionObj) {
+        easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
+          if(err) {
+            console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+          }
+        });
+      });
+      
+    });
   }else if(msgType === "userJoined") {
     // Only for client side --> SKIP
   }else if(msgType === "userLeft") {
@@ -434,7 +479,8 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
 
 // To test, lets print the credential to the console for every room join!
 easyrtc.events.on("roomJoin", (connectionObj, roomName, roomParameter, callback) => {
-    console.log("["+connectionObj.getEasyrtcid()+"] Credential retrieved!", connectionObj.getFieldValueSync("credential"));
+    var currentEasyRtcId = connectionObj.getEasyrtcid();
+    console.log("["+currentEasyRtcId+"] Credential retrieved!", connectionObj.getFieldValueSync("credential"));
     easyrtc.events.defaultListeners.roomJoin(connectionObj, roomName, roomParameter, callback);
 });
 
