@@ -1,765 +1,555 @@
-let express = require('express');
-let app = express();
-let multer = require('multer')
-let cors = require('cors');
-let fs = require('fs')
-let bodyParser = require('body-parser')
-let THREE=require("three")
+﻿// Load required modules
+const http = require("http");                 // http server core module
+const path = require("path");
+const express = require("express");           // web framework external module
+//const { Server } = require("socket.io");      // web socket external module
+//const socketIo = require("socket.io");        // web socket external module
+const socketIo = require("socket.io");        // web socket external module
+const easyrtc = require("open-easyrtc");      // EasyRTC external module
+const mysql = require('mysql');               // MySql external module
+// To generate a certificate for local development with https, you can use
+// https://github.com/FiloSottile/mkcert
+// Then to enable https on the node server, uncomment the next lines
+// and the webServer line down below.
+// const https = require("https");
+// const fs = require("fs");
+// const privateKey = fs.readFileSync("key.pem", "utf8");
+// const certificate = fs.readFileSync("cert.pem", "utf8");
+// const credentials = { key: privateKey, cert: certificate };
 
-let pdfjsLib = require("pdfjs-dist/es5/build/pdf.js");
-let Canvas = require("canvas");
-let assert = require("assert").strict;
-let CMAP_URL = "./node_modules/pdfjs-dist/cmaps/"; //needed for the pdf to image converter
-let CMAP_PACKED = true; //needed for the pdf to image converter
+// Set process name
+process.title = "networked-aframe-server";
 
-const domain="localhost"
+// Get port or default to 8080
+const port = process.env.PORT || 8080;
 
-const recast = require('./recast/build/Release/RecastCLI');
-const obj2gltf = require('obj2gltf');
+// Setup and configure Express http server.
+const app = express();
 
-const path= require('path')
+// Serve the bundle in-memory in development (needs to be before the express.static)
+if (process.env.NODE_ENV === "development") {
+  const webpackMiddleware = require("webpack-dev-middleware");
+  const webpack = require("webpack");
+  const config = require("../webpack.config");
 
-const https = require('https');
-const key = fs.readFileSync('./keys/key.pem');
-const cert = fs.readFileSync('./keys/cert.pem');
-const server = https.createServer({key: key, cert: cert }, app);
-
-const rootDirectory="build"
-let latestDemoBuild=""
-
-app.use(cors())
-app.use(express.static(path.join(__dirname, rootDirectory)));
-app.use(bodyParser.json());
-
-
-app.get('/', function(req, res) {
-    res.sendFile(path.join(__dirname, rootDirectory, 'index.html'));
-});
-
-app.get('/demovr', function(req, res) {
-    res.sendFile(path.join(__dirname, rootDirectory, latestDemoBuild));
-});
-
-app.post('/demo',function(req, res) {
-    console.log("demo received")
-    let path="/interactive-scenes/" //image root path
-        +Date.now()                       //randomness
-    let demo=""; // image name
-    let demoStorage = multer.diskStorage({ //define file name and directory
-        destination: function (req, file, cb) {
-            if(!fs.existsSync(rootDirectory+path)){ //checks if the directory already exists
-                console.log("create directory",rootDirectory+path)
-                fs.mkdirSync(rootDirectory+path, { recursive: true })
-            }
-            console.log("path:"+rootDirectory+path)
-            cb(null, rootDirectory+path)
-        },
-        filename: function (req, file, cb) {
-            if (fs.existsSync(rootDirectory + path + "/" + file.originalname)) {
-                demo = Date.now()+file.originalname
-            }
-            else{
-                demo = file.originalname // save the file name
-            }
-            console.log("name:"+demo)
-            cb(null, demo )
-        }
-    });
-    let uploadDemo = multer({
-        storage: demoStorage,
-        fileFilter: (req, file, cb) => {
-            if (file.mimetype==="application/html") {
-                cb(null, true);
-            } else {
-                cb(new Error("wrong mime type"));
-            }
-        }
-    }).single('demo') //defines the name of the input element
-    uploadDemo(req, res, function (err) {
-        console.log(err)
-        if (err instanceof multer.MulterError) {
-            return res.status(500).json(err)
-        } else if (err){
-            if (err.message==="wrong mime type") {
-                return res.status(415).json(err)
-            } else{
-                return res.status(500).json(err)
-            }
-        }
-        latestDemoBuild=path+"/"+demo;
-        res.set("demo-url",[path+"/"+demo]) //remove
-        return res.status(200).send(req.file)
-
+  app.use(
+    webpackMiddleware(webpack(config), {
+      publicPath: "/dist/"
     })
+  );
+}
+
+// Setup MySql database
+/*
+var con = mysql.createConnection({
+  host: "localhost",
+  user: "server_admin",
+  password: "12345678"
 });
 
-app.post('/uploadImages',function(req, res) {
-    console.log("image received")
-    let path="/uploads/images/" //image root path
-        +Date.now()                       //randomness
-        +req.headers['directory'].replace(/ /g,'-') //path of the image
-    let image=""; // image name
-    let imageStorage = multer.diskStorage({ //define file name and directory
-        destination: function (req, file, cb) {
-            if(!fs.existsSync(rootDirectory+path)){ //checks if the directory already exists
-                console.log("create directory",rootDirectory+path)
-                fs.mkdirSync(rootDirectory+path, { recursive: true })
-            }
-            console.log("path:"+rootDirectory+path)
-            cb(null, rootDirectory+path)
-        },
-        filename: function (req, file, cb) {
-            if (fs.existsSync(rootDirectory + path + "/" + file.originalname)) {
-                image = "aba"+file.originalname
-            }
-            else{
-                image = file.originalname // save the file name
-            }
-            console.log("name:"+image)
-            cb(null, image )
+con.connect(function(err) {
+  if (err) throw err;
+  console.log("MySQL Connected!");
+  con.query("CREATE DATABASE objectdb", function (err, result) {
+    if (err) throw err;
+    console.log("Database 'objectdb' created!");
+  });
+});
+*/
+
+// Temporary list for data store (later handled by MySql)
+var componentCounter = 0;
+var listOfComponentData = [];
+var dictOfSelectedComponents = new Object();
+
+// Serve the files from the examples folder
+app.use(express.static(path.resolve(__dirname, "src")));
+
+// Start Express http server
+const webServer = http.createServer(app);
+// To enable https on the node server, comment the line above and uncomment the line below
+// const webServer = https.createServer(credentials, app);
+
+// Start Socket.io so it attaches itself to Express server
+const socketServer = socketIo.listen(webServer, {"log level": 1});
+
+const myIceServers = [
+  {"urls":"stun:stun1.l.google.com:19302"},
+  {"urls":"stun:stun2.l.google.com:19302"},
+  // {
+  //   "urls":"turn:[ADDRESS]:[PORT]",
+  //   "username":"[USERNAME]",
+  //   "credential":"[CREDENTIAL]"
+  // },
+  // {
+  //   "urls":"turn:[ADDRESS]:[PORT][?transport=tcp]",
+  //   "username":"[USERNAME]",
+  //   "credential":"[CREDENTIAL]"
+  // }
+];
+easyrtc.setOption("appIceServers", myIceServers);
+easyrtc.setOption("logLevel", "debug");
+easyrtc.setOption("demosEnable", false);
+
+// Overriding the default easyrtcAuth listener, only so we can directly access its callback
+easyrtc.events.on("easyrtcAuth", (socket, easyrtcid, msg, socketCallback, callback) => {
+    easyrtc.events.defaultListeners.easyrtcAuth(socket, easyrtcid, msg, socketCallback, (err, connectionObj) => {
+        if (err || !msg.msgData || !msg.msgData.credential || !connectionObj) {
+            callback(err, connectionObj);
+            return;
         }
+
+        connectionObj.setField("credential", msg.msgData.credential, {"isShared":false});
+
+        console.log("["+easyrtcid+"] Credential saved!", connectionObj.getFieldValueSync("credential"));
+
+        callback(err, connectionObj);
     });
-    let uploadImage = multer({
-        storage: imageStorage,
-        fileFilter: (req, file, cb) => {
-            if (file.mimetype.startsWith("image/")) {
-                cb(null, true);
-            } else {
-                cb(new Error("wrong mime type"));
-            }
-        }
-    }).single('image') //defines the name of the input element
-    uploadImage(req, res, function (err) {
-        console.log(err)
-        if (err instanceof multer.MulterError) {
-            return res.status(500).json(err)
-        } else if (err){
-            if (err.message==="wrong mime type") {
-                return res.status(415).json(err)
-            } else{
-                return res.status(500).json(err)
-            }
-        }
-        res.set("image-url",[path+"/"+image]) //remove
-        return res.status(200).send(req.file)
-
-    })
 });
 
-app.post('/uploadTextures',function(req, res) {
-    console.log("texture received")
-    let path="/uploads/textures/" //image root path
-        +Date.now()                       //randomness
-        +req.headers['directory'].replace(/ /g,'-') //path of the image
-    let texture=""; // image name
-    let textureStorage = multer.diskStorage({ //define file name and directory
-        destination: function (req, file, cb) {
-            if(!fs.existsSync(rootDirectory+path)){ //checks if the directory already exists
-                console.log("create directory",rootDirectory+path)
-                fs.mkdirSync(rootDirectory+path, { recursive: true })
-            }
-            console.log("path:"+rootDirectory+path)
-            cb(null, rootDirectory+path)
-        },
-        filename: function (req, file, cb) {
-            if (fs.existsSync(rootDirectory + path + "/" + file.originalname)) {
-                texture = Date.now()+file.originalname
-            }
-            else{
-                texture = file.originalname // save the file name
-            }
-            console.log("name:"+texture)
-            cb(null, texture )
-        }
-    });
-    let uploadTexture = multer({
-        storage: textureStorage,
-        fileFilter: (req, file, cb) => {
-            if (file.mimetype.startsWith("image/")) {
-                cb(null, true);
-            } else {
-                cb(new Error("wrong mime type"));
-            }
-        }
-    }).single('texture') //defines the name of the input element
-    uploadTexture(req, res, function (err) {
-        console.log(err)
-        if (err instanceof multer.MulterError) {
-            return res.status(500).json(err)
-        } else if (err){
-            if (err.message==="wrong mime type") {
-                return res.status(415).json(err)
-            } else{
-                return res.status(500).json(err)
-            }
-        }
-        res.set("texture-url",[path+"/"+texture]) //remove
-        return res.status(200).send(req.file)
+// Handling data upstream
+easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) => {
+  var msgType = msg.msgType;
+  var easyrtcid = connectionObj.getEasyrtcid();
 
-    })
-});
+  // Id '0' indicates a wanted access to the file system
+  if(msgType === "addNewObject") {
+    var data = msg.msgData;
+    if(true) { // TODO: validate json
+      componentCounter++;
+      // Add the new object to existing ones
+      var newObj = JSON.parse(data);
+      newObj['cid'] = componentCounter;
+      newObj.selectedBy = -1;
+      listOfComponentData.push(newObj);  
 
-app.post('/uploadVideos',function(req, res) {
-    console.log("video received")
-    let path="/uploads/videos/" //image root path
-        +Date.now()                       //randomness
-        +req.headers['directory'].replace(/ /g,'-') //path of the image
-    let video=""; // image name
-    let videoStorage = multer.diskStorage({ //define file name and directory
-        destination: function (req, file, cb) {
-            if(!fs.existsSync(rootDirectory+path)){ //checks if the directory already exists
-                console.log("create directory",rootDirectory+path)
-                fs.mkdirSync(rootDirectory+path, { recursive: true })
-            }
-            console.log("path:"+rootDirectory+path)
-            cb(null, rootDirectory+path)
-        },
-        filename: function (req, file, cb) {
-            if (fs.existsSync(rootDirectory + path + "/" + file.originalname)) {
-                video = Date.now()+file.originalname
-            }
-            else{
-                video = file.originalname // save the file name
-            }
-            console.log("name:"+video)
-            cb(null, video )
-        }
-    });
-    let uploadVideo = multer({
-        storage: videoStorage,
-        fileFilter: (req, file, cb) => {
-            if (file.mimetype.startsWith("video/")) {
-                cb(null, true);
-            } else {
-                cb(new Error("wrong mime type"));
-            }
-        }
-    }).single('video') //defines the name of the input element
-    uploadVideo(req, res, function (err) {
-        console.log(err)
-        if (err instanceof multer.MulterError) {
-            return res.status(500).json(err)
-        } else if (err){
-            if (err.message==="wrong mime type") {
-                return res.status(415).json(err)
-            } else{
-                return res.status(500).json(err)
-            }
-        }
-        res.set("video-url",[path+"/"+video]) //remove
-        return res.status(200).send(req.file)
-    })
-});
+      // Create new message
+      var message = {};
 
-app.post('/uploadNavigation',function(req, res) {
-    console.log("image received")
-    let path="/uploads/navigation/" //image root path
-        +Date.now()                       //randomness
-        +req.headers['directory'].replace(/ /g,'-') //path of the image
-    let navigation=""; // image name
-    let navigationStorage = multer.diskStorage({ //define file name and directory
-        destination: function (req, file, cb) {
-            if(!fs.existsSync(rootDirectory+path)){ //checks if the directory already exists
-                console.log("create directory",rootDirectory+path)
-                fs.mkdirSync(rootDirectory+path, { recursive: true })
-            }
-            console.log("path:"+rootDirectory+path)
-            cb(null, rootDirectory+path)
-        },
-        filename: function (req, file, cb) {
-            if (fs.existsSync(rootDirectory + path + "/" + file.originalname)) {
-                navigation = "aba"+file.originalname
-            }
-            else{
-                navigation = file.originalname // save the file name
-            }
-            console.log("name:"+navigation)
-            cb(null, navigation )
-        }
-    });
-    let uploadNavigation = multer({
-        storage: navigationStorage,
-    }).single('navigation') //defines the name of the input element
-    uploadNavigation(req, res, function (err) {
-        console.log(err)
-        if (err instanceof multer.MulterError) {
-            return res.status(500).json(err)
-        } else if (err){
-            if (err.message==="wrong mime type") {
-                return res.status(415).json(err)
-            } else{
-                return res.status(500).json(err)
-            }
-        }
-        res.set("navigation-url",[path+"/"+navigation]) //remove
-        return res.status(200).send(req.file)
+      // Set new msgType
+      message.msgType = 'spawnComponent';
 
-    })
-});
+      // Set message data
+      data = JSON.stringify(newObj);
+      message.msgData = data;
 
-function covertRecursivePdfToPnG (currentPage,lastPage,imageUrls,path,pdf,callback){
-    if(currentPage>lastPage){
-        return callback(null,imageUrls)
+      // Set targetRoom name
+      var targetRoom = 'dev';
+      connectionObj.getRoomNames((err, roomNames) => {
+        if(roomNames.length > 0) {
+            targetRoom = roomNames[0];
+        }
+      });
+      message.targetRoom = targetRoom;
+
+      // Emit message to all room members
+      console.log("Server emitting creation event!");
+      
+      var roomObj; 
+      connectionObj.generateRoomClientList("update", null, function(err, callback){
+        roomObj = callback;
+      });
+
+      var clientList = roomObj['dev'].clientList;
+
+      for (var currentEasyrtcid in clientList) {
+        (function(innerCurrentEasyrtcid, innerMsg){
+          connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
+            easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
+              if(err) {
+                console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+              }
+            });
+          });
+        })(currentEasyrtcid, msg);
+      }
     }
-    pdf.getPage(currentPage).then( function (page) {
-        // Render the page on a Node canvas with 100% scale.
-        let viewport = page.getViewport({ scale: 1.0 });
-        let canvasFactory = new NodeCanvasFactory();
-        let canvasAndContext = canvasFactory.create(
-            viewport.width,
-            viewport.height
-        );
-        let renderContext = {
-            canvasContext: canvasAndContext.context,
-            viewport: viewport,
-            canvasFactory: canvasFactory,
-        };
 
-        let renderTask = page.render(renderContext);
-        renderTask.promise.then(function () {
-            // Convert the canvas to an image buffer.
-            let image = canvasAndContext.canvas.toBuffer();
-            fs.writeFileSync(rootDirectory+path+"/page_"+currentPage+".png", image);
-            imageUrls=imageUrls.concat(path+"/page_"+currentPage+".png")
-            return covertRecursivePdfToPnG (currentPage+1,lastPage,imageUrls,path,pdf,callback)
-        }).catch( function (error){
-            console.log(error)
-            callback(error,null);
+  }else if(msgType === "selectComponent"){
+    // When a client selects an entity, broadcast it
+    var data = msg.msgData;
+
+    var dataObj = JSON.parse(data);
+
+    // TODO: update this method so each client has its own selected component
+    var cid = dataObj.cid; 
+    if(dictOfSelectedComponents.hasOwnProperty(cid)) {
+      
+      // Edit the data object so send
+      dataObj.bool = false;
+      data = JSON.stringify(dataObj);
+
+      // Create the message to send
+      var message = {};
+      message.msgType = 'selectedComponent';
+      message.msgData = data;
+
+      var roomObj; 
+      connectionObj.generateRoomClientList("update", null, function(err, callback){
+        roomObj = callback;
+      });
+
+      var clientList = roomObj['dev'].clientList;
+
+      for (var currentEasyrtcid in clientList) {
+        (function(innerCurrentEasyrtcid, innerMsg){
+          connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
+            easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
+              if(err) {
+                console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+              }
+            });
+          });
+        })(currentEasyrtcid, msg);
+      }
+
+      // Delete the KeyValuePair 'ComponentId/EasyRtcId' from dict
+      delete dictOfSelectedComponents[cid];
+
+    }else{
+
+      // Get room's ClientList
+      var roomObj; 
+      connectionObj.generateRoomClientList("update", null, function(err, callback){
+        roomObj = callback;
+      });
+
+      var clientList = roomObj['dev'].clientList;
+
+      // Deselect all other components that are flagged with the current selector's easyrtcid 
+      var cidToDeselect = -1;
+
+      for(const key in dictOfSelectedComponents) {
+        if(dictOfSelectedComponents[key] == easyrtcid) {
+          cidToDeselect = key;
+        }
+      }
+
+      if(cidToDeselect != -1) {
+        // Edit list of component data
+        var specificObject = listOfComponentData.find(obj => {
+          return obj.cid == cidToDeselect;
+        })
+        specificObject.selectedBy = -1;
+
+        // Send 'Deselect' of 'old cid' 
+        var message1 = {};
+        dataObj.cid = cidToDeselect;
+        dataObj.bool = false;
+        dataObj.sourcertcid = easyrtcid;
+        var data1 = JSON.stringify(dataObj);
+
+        message1.msgType = 'selectedComponent';
+        message1.msgData = data1;
+
+        // Send each message to every client in the room
+        for (var currentEasyrtcid in clientList) {
+          (function(innerCurrentEasyrtcid, innerMsg){
+            connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
+              easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message1.msgType, message1, null, function(err) {
+                if(err) {
+                  console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+                }
+              });
+            });
+          })(currentEasyrtcid, msg);
+        }
+
+        // Delete the KeyValuePair 'ComponentId/EasyRtcId' from dict
+        delete dictOfSelectedComponents[cidToDeselect];
+      }
+
+      // Edit list of component data
+      var specificObject = listOfComponentData.find(obj => {
+        return obj.cid == cid;
+      })
+      specificObject.selectedBy = easyrtcid;
+
+      // Send 'Select' for initial 'cid'. 
+      var message2 = {};
+
+      dictOfSelectedComponents[cid] = easyrtcid;
+      dataObj.cid = cid;
+      dataObj.bool = true;
+      dataObj.sourcertcid = easyrtcid;
+      var data2 = JSON.stringify(dataObj);
+
+      message2.msgType = 'selectedComponent';
+      message2.msgData = data2;
+
+      //console.log("Sending '" + message2.msgType + "'' with data '" + data2 + "'.")
+      // Send the message to every client in the room
+      for (var currentEasyrtcid in clientList) {
+        (function(innerCurrentEasyrtcid, innerMsg){
+          connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
+            easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message2.msgType, message2, null, function(err) {
+              if(err) {
+                console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+              }
+            });
+          });
+        })(currentEasyrtcid, msg);
+      }
+    }
+  }else if(msgType === "removeComponent") {
+    // Remove the given component
+    var data = msg.msgData;
+    var dataObj = JSON.parse(data);
+    var cid = dataObj.cid; 
+
+    // Remove object from 'component' list
+    var dataIndex = -1;
+
+    for(let i = 0; i < listOfComponentData.length; i++){
+      if(listOfComponentData[i].cid == cid) {
+
+        dataIndex = i;
+        break;
+      }
+    }
+
+    if (dataIndex != -1) {
+      // Remove component from 'componentData' list
+      listOfComponentData.splice(dataIndex, 1);
+
+      // Remove component from 'selectedComponents' dictionary
+      if(dictOfSelectedComponents.hasOwnProperty(cid)) {
+        delete dictOfSelectedComponents[cid];
+      }
+
+      var message = {};
+      message.msgType = 'removedComponent';
+      message.msgData = data;
+
+      var roomObj; 
+      connectionObj.generateRoomClientList("update", null, function(err, callback){
+        roomObj = callback;
+      });
+
+      var clientList = roomObj['dev'].clientList;
+
+      for (var currentEasyrtcid in clientList) {
+        (function(innerCurrentEasyrtcid, innerMsg){
+          connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
+            easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
+              if(err) {
+                console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+              }
+            });
+          });
+        })(currentEasyrtcid, msg);
+      }
+    }
+  }else if(msgType === "updateComponent") {
+    // TODO: Check if object is selected by the user
+    // Update the given component
+    var data = msg.msgData;
+    var dataObj = JSON.parse(data);
+    var cid = dataObj.cid;
+
+    // Update object in 'component' list
+    var dataIndex = -1;
+
+    for(let i = 0; i < listOfComponentData.length; i++){
+      if(listOfComponentData[i].cid == cid) {
+
+        dataIndex = i;
+        break;
+      }
+    }
+
+    if (dataIndex != -1) {
+      // Get component from 'componentData' list
+      var component = listOfComponentData[dataIndex];
+      // TODO: update the data 
+      var updateType = dataObj.updatetype;
+      var updateData = dataObj.updatedata;
+
+      // Set opacity to '0.4' for all users but the one who edits the component
+      if(updateType == 'material') {
+        updateData.opacity = 0.4;
+        dataObj.updatedata = updateData;
+        data = JSON.stringify(dataObj);
+      }
+
+      component[updateType] = updateData;
+
+      // Send update message
+      var message = {};
+      message.msgType = 'updatedComponent';
+      message.msgData = data;
+
+      var roomObj; 
+      connectionObj.generateRoomClientList("update", null, function(err, callback){
+        roomObj = callback;
+      });
+
+      var clientList = roomObj['dev'].clientList;
+
+      for (var currentEasyrtcid in clientList) {
+        (function(innerCurrentEasyrtcid, innerMsg){
+          connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
+            if(currentEasyrtcid != easyrtcid) {
+              easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
+                if(err) {
+                  console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+                }
+              });
+            }
+          });
+        })(currentEasyrtcid, msg);
+      }
+    }
+  }else if(msgType === "broadcastUserName") {
+
+    // Get data & create message
+    var data = msg.msgData;
+    var easyrtcid = connectionObj.getEasyrtcid();
+    var message = {};
+    message.msgType = 'userJoined';
+    message.msgData = data;
+
+    // Broadcast to room
+    var roomObj; 
+    connectionObj.generateRoomClientList("update", null, function(err, callback){
+      roomObj = callback;
+    });
+    var clientList = roomObj['dev'].clientList;
+    for (var currentEasyrtcid in clientList) {
+      (function(innerCurrentEasyrtcid, innerMsg){
+        connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
+          if(currentEasyrtcid != easyrtcid) {
+            easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
+              if(err) {
+                console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+              }
+            });
+          }
         });
-    }).catch( function (error){
-        console.log(error)
-        callback(error,null);
-    });
-}
+      })(currentEasyrtcid, "TODO: Remove this (unnecessary?) invocation");
+    }
+  }else if(msgType === "getAllComponents"){
+    // Sending all existing components to a new user
+    console.log("Sending all existing components to new user ["+easyrtcid+"].");
 
-app.post('/uploadPdfs',function(req, res) {
-    let path="/uploads/pdfs/" //models root path
-        +Date.now()                       //randomness
-        +req.headers['directory'].replace(/ /g,'-') //path of the image
-    let pdfUrl=""; //path to the model
-    let pdfStorage = multer.diskStorage({ //define file name and directory
-        destination: function (req, file, cb) {
-            if(!fs.existsSync(rootDirectory+path)){ //checks if the directory already exists
-                console.log("create directory",rootDirectory+path)
-                fs.mkdirSync(rootDirectory+path, { recursive: true })
-            }
-            cb(null, rootDirectory+path)
-        },
-        filename: function (req, file, cb) {
-            let pdfName=file.originalname // save the file name
-            if (fs.existsSync(rootDirectory + path + "/" + file.originalname)) {
-                pdfName = Date.now() +file.originalname
-            }
-            pdfUrl=path+"/"+pdfName
-            cb(null, pdfName )
-        }
+    var targetRoom = 'dev';
+    connectionObj.getRoomNames((err, roomNames) => {
+      if(roomNames.length > 0) {
+          targetRoom = roomNames[0];
+      }
     });
-    let uploadPDF = multer({
-        storage: pdfStorage,
-    }).array('pdf') //defines the name of the input element
-    uploadPDF(req, res, function (err) {
-        console.log(err)
-        if (err instanceof multer.MulterError) {
-            return res.status(500).json(err)
-        } else if (err){
-            if (err.message==="wrong mime type") {
-                return res.status(415).json(err)
-            } else{
-                return res.status(500).json(err)
-            }
-        }
-        let data
-        try{
-            data= new Uint8Array(fs.readFileSync(rootDirectory+pdfUrl));
-        }
-        catch (error){
-            console.log(error)
-            return res.status(500).json(error)
-        }
 
-        // Load the PDF file.
-        var loadingTask = pdfjsLib.getDocument({
-            data: data,
-            cMapUrl: CMAP_URL,
-            cMapPacked: CMAP_PACKED,
+    // Create base message
+    var message = {};
+    message.msgType = 'spawnComponent'
+    message.targetRoom = targetRoom;;
+
+    // Send all existing components to the newly joined user
+    listOfComponentData.forEach(comp => {
+      // Set specific message data
+      var data = JSON.stringify(comp);
+      message.msgData = data;
+
+      connectionObj.getApp().connection(easyrtcid, function(err, emitToConnectionObj) {
+        easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
+          if(err) {
+            console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+          }
         });
-        loadingTask.promise
-            .then(function (pdfDocument) {
-                console.log("# PDF document loaded.");
-
-                // Get the first page.
-                let serverAnswer= function (error,urlList){
-                    if(error){
-                        res.status(500).json(error)
-                    }
-                    else{
-                        res.set("pdf-url",[pdfUrl]) //remove
-                        res.set("image-urls",urlList)
-                        res.status(200).send()
-                    }
-                }
-                let pageCount=pdfDocument.numPages
-                covertRecursivePdfToPnG(1,pageCount,[],path,pdfDocument,serverAnswer)
-            }).catch(function (reason) {
-                console.log(reason);
-                res.status(500).json(reason)
-            });
-        console.log("1")
-
-    })
-});
-
-function moveRecursive(fileData,newPath,callback){
-    if(fileData){
-        if(fileData.length<1){
-            return callback(null)
-        }
-        else{
-            fs.rename("./"+fileData[0].path, "./"+newPath+fileData[0].filename, (err) => {
-                if (err) return callback(err);
-                moveRecursive(fileData.slice(1),newPath,callback)
-            });
-        }
-    }
-    else{
-        return callback(new Error("no files to move"));
-    }
-}
-
-app.post('/uploadModels',function(req, res) {
-    let path="/uploads/models/" //models root path
-        +Date.now()                       //randomness
-        +req.headers['directory'].replace(/ /g,'-') //path of the image
-
-    let modelUrl=""; //path to the model
-    let materialUrl=""; //path to an optional material file
-    let texturePaths=[];
-    let modelStorage = multer.diskStorage({ //define file name and directory
-        destination: function (req, file, cb) {
-            if(!fs.existsSync(rootDirectory+path)){ //checks if the directory already exists
-                console.log("create directory",rootDirectory+path)
-                fs.mkdirSync(rootDirectory+path, { recursive: true })
-            }
-            cb(null, rootDirectory+path)
-        },
-        filename: function (req, file, cb) {
-            let modelName=file.originalname // save the file name
-            if (fs.existsSync(rootDirectory + path + "/" + file.originalname)) {
-                modelName = Date.now() +file.originalname
-            }
-            if(/\.mtl+$/ig.test(modelName)){ //save path of material file
-                materialUrl=path+"/"+modelName
-            }
-            if(/\.(gltf|glb|fbx|obj)+$/ig.test(modelName)){ //save path of material file
-                modelUrl=path+"/"+modelName
-            }
-            if(/^image\//ig.test(file.mimetype)){
-                texturePaths=texturePaths.concat({path:rootDirectory+path+"/"+modelName, filename:modelName})
-            }
-            console.log("model:"+modelUrl+" material:"+materialUrl)
-            cb(null, modelName )
-        }
+      });
+      
     });
-    let uploadModel = multer({
-        storage: modelStorage,
-    }).array('model') //defines the name of the input element
-    uploadModel(req, res, function (err) {
-        console.log(err)
-        if (err instanceof multer.MulterError) {
-            return res.status(500).json(err)
-        } else if (err){
-            if (err.message==="wrong mime type") {
-                return res.status(415).json(err)
-            } else{
-                return res.status(500).json(err)
-            }
-        }
-        if(req.headers['texture-path']){
-            let pathTextures=req.headers['texture-path'] //path of the textures
-            if(!(pathTextures.charAt(0)==="/")){
-                pathTextures="/"+pathTextures
-                if(!(pathTextures.charAt(pathTextures.length - 1)==="/")){
-                    pathTextures+="/"
-                }
-            }
-            try{
-                if(!fs.existsSync(rootDirectory+path+pathTextures)){ //checks if the directory already exists
-                    console.log("create directory",rootDirectory+path+pathTextures)
-                    fs.mkdirSync(rootDirectory+path+pathTextures, { recursive: true })
-                }
-                moveRecursive(texturePaths,rootDirectory+path+pathTextures,(error)=>{
-                    if (error){
-                        console.log(error)
-                        return res.status(500).json(error)
-                    }
-                    else{
-                        res.set("model-url",[modelUrl]) //remove
-                        if(materialUrl!==""){ //set if a material file was uploaded
-                            res.set("material-url",[materialUrl]) //remove
-                        }
-                        res.status(200).send(req.file)
-                    }
-                })
-            }
-            catch (error){
-                console.log(error)
-                return res.status(500).json(error)
-            }
-        }
-        else{
-            res.set("model-url",[modelUrl]) //remove
-            if(materialUrl!==""){ //set if a material file was uploaded
-                res.set("material-url",[materialUrl]) //remove
-            }
-            return res.status(200).send(req.file)
-        }
-    })
+  }else if(msgType === "userJoined") {
+    // Only for client side --> SKIP
+  }else if(msgType === "userLeft") {
+    // Only for client side --> SKIP
+  }else if(msgType === "removedComponent"){
+    // Only for client side --> SKIP
+  }else if(msgType === "updatedComponent"){
+    // Only for client side --> SKIP
+  }else if(msgType === "selectedComponent"){
+    // Only for client side --> SKIP
+  }else if(msgType === "spawnComponent"){
+    // Only for client side --> SKIP
+  }else{
+      // Default listener
+      easyrtc.events.defaultListeners.easyrtcMsg(connectionObj, msg, socketCallback, callback)
+  }
 });
 
-function generateNavmesh(entityList,path,callback){
-    console.log("g1")
-    let OBJExporter = require('three-obj-exporter')
-    console.log("g2")
-    let exporter = new OBJExporter();
-    console.log("g3")
-    let obstacleScene = new THREE.Scene();
-    console.log("g4")
-    for (let index = 0; index < entityList.length; index++) {
-                obstacleScene.add(entityList[index])
+// To test, lets print the credential to the console for every room join!
+easyrtc.events.on("roomJoin", (connectionObj, roomName, roomParameter, callback) => {
+    var currentEasyRtcId = connectionObj.getEasyrtcid();
+    console.log("["+currentEasyRtcId+"] Credential retrieved!", connectionObj.getFieldValueSync("credential"));
+    easyrtc.events.defaultListeners.roomJoin(connectionObj, roomName, roomParameter, callback);
+});
+
+// RoomLeave event
+easyrtc.events.on("roomLeave", (connectionObj, roomName, roomParameter, callback) => {
+
+  console.log("RoomLeave Event");
+  // Deselect all components the leaving clients has selected
+  var cidToDeselect = -1;
+  var easyrtcid = connectionObj.getEasyrtcid();
+
+  for(const key in dictOfSelectedComponents) {
+    if(dictOfSelectedComponents[key] == easyrtcid) {
+      cidToDeselect = key;
     }
-    console.log("g5")
-    obstacleScene.updateMatrixWorld(true)
-    console.log("g6")
-    let objModel = exporter.parse(obstacleScene)
-    fs.mkdirSync("./"+rootDirectory+path+"/", { recursive: true }, (err) => {
-        if (err) throw err;
+  }
+
+  // Send 'Deselect' of 'old cid' 
+  var message = {};
+  var dataObj = new Object();
+  dataObj.easyrtcid = easyrtcid;
+
+  if(cidToDeselect != -1) {
+    dataObj.cid = cidToDeselect;
+
+    // Delete the KeyValuePair 'ComponentId/EasyRtcId' from dict
+    delete dictOfSelectedComponents[cidToDeselect];
+  }else{
+    dataObj.cid = -1;
+  }
+
+  var data = JSON.stringify(dataObj);
+
+  message.msgType = 'userLeft';
+  message.msgData = data;
+
+  // Send each message to every client in the room
+  var roomObj; 
+  connectionObj.generateRoomClientList("update", null, function(err, callback){
+    roomObj = callback;
+  });
+  var clientList = roomObj['dev'].clientList;
+  for (var currentEasyrtcid in clientList) {
+    (function(innerCurrentEasyrtcid, innerMsg){
+      connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
+        easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
+          if(err) {
+            console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+          }
+        });
+      });
+    })(currentEasyrtcid, "TODO: Remove this (unnecessary?) invocation");
+  }
+
+  easyrtc.events.defaultListeners.roomLeave(connectionObj, roomName, roomParameter, callback);
+});
+
+// Start EasyRTC server
+easyrtc.listen(app, socketServer, null, (err, rtcRef) => {
+    console.log("Initiated");
+
+    rtcRef.events.on("roomCreate", (appObj, creatorConnectionObj, roomName, roomOptions, callback) => {
+        console.log("roomCreate fired! Trying to create: " + roomName);
+
+        appObj.events.defaultListeners.roomCreate(appObj, creatorConnectionObj, roomName, roomOptions, callback);
     });
-    fs.writeFileSync("./"+rootDirectory+path+"/export.obj", objModel);
-    console.log("g7")
-    try{
-        console.log("g8")
-        recast.loadFile("./"+rootDirectory+path+"/export.obj");
-        console.log("g9")
-        recast.build(0.166, 0.1, 1.7, 0.5, 0.3, 45);
-        console.log("g10")
-        recast.save("./"+rootDirectory+path+"/navmesh.obj");
-        console.log("g11")
-        obj2gltf("./"+rootDirectory+path+"/navmesh.obj")
-           .then(function(gltf) {
-               const data = Buffer.from(JSON.stringify(gltf));
-               fs.writeFileSync("./"+rootDirectory+path+"/navmesh.gltf", data);
-               callback(null,path + "/navmesh.gltf")
-           }).catch();
-    }
-    catch (e) {
-        callback(e,"");
-    }
-
-}
-
-app.post('/generate-navmesh',function(req, res) {
-    let path = "/uploads/navmesh/"
-        + Date.now()                       //randomness
-    console.log("generate navmesh")
-    console.log(req.body);      // your JSON
-    //build database for scene
-    if (req.body.length > 1) {
-        let answerClient = (err, link) => {
-            if (err) {
-                res.status(500).json(err)
-            } else {
-                res.set("nav-url", [path + "/navmesh.gltf"])
-                res.status(200).send(req.body)
-            }
-        }
-        let sendObjects = req.body;
-        let meshList = []
-        let loadChain = [];
-        for (let index = 0; index < sendObjects.length; index++) {
-            let entity = sendObjects[index]
-            let geometry = null;
-            let meshCreated = false;
-            switch (sendObjects[index].className) {
-                case "Box":
-                    geometry = new THREE.BoxBufferGeometry(entity.width, entity.height, entity.depth)
-                    meshCreated = true;
-                    break;
-                case "Cylinder":
-                    geometry = new THREE.CylinderBufferGeometry(entity.radiusTop, entity.radiusBottom, entity.height,);
-                    meshCreated = true;
-                    break;
-                case "Plane":
-                case "Image":
-                case "Text":
-                    geometry = new THREE.PlaneBufferGeometry(entity.width, entity.height);
-                    meshCreated = true;
-                    break;
-                case "Model":
-                case "ObjModel":
-                    loadChain = loadChain.concat(entity)
-                    break;
-                case "Sphere":
-                    geometry = new THREE.SphereBufferGeometry(entity.radius, entity.widthSegments, entity.heightSegments);
-                    meshCreated = true;
-                    break;
-                case "Tetrahedron":
-                    geometry = new THREE.TetrahedronBufferGeometry(entity.radius, entity.details);
-                    meshCreated = true;
-                    break;
-                default:
-
-            }
-            if (meshCreated) {
-                let mesh = new THREE.Mesh(geometry)
-                mesh.rotation.set(entity.xRotation * Math.PI / 180, entity.yRotation * Math.PI / 180, entity.zRotation * Math.PI / 180);
-                mesh.position.set(entity.x, entity.y, entity.z);
-                mesh.scale.set(entity.xScale, entity.yScale, entity.zScale);
-                mesh.updateMatrix();
-                meshList = meshList.concat(mesh)
-            }
-        }
-        if (loadChain.length > 0) { // models have to be loaded
-            let loadChainWithCallback = function loadModels(modelList, meshList, callbackModels) {
-
-                if (modelList.length > 0) { //list contains models to load
-                    let model = modelList[0];
-                    switch (model.modelType) { //load the 3D Model
-                        case "obj":
-                            let OBJLoader = require("three-obj-loader")(THREE);
-                            // let loader = new OBJLoader();
-                            OBJLoader.load(rootDirectory + model.url, model => loadModels(modelList.slice(1), meshList.concat(model), callbackModels));//load the model
-                            break;
-                        case "gltf":
-                            let GLTFLoader = require("three-gltf-loader");
-                            let loaderGLTF = new GLTFLoader();
-                            loaderGLTF.load(rootDirectory + model.url, model => loadModels(modelList.slice(1), meshList.concat(model.scene), callbackModels));//load the model
-                            break;
-                        default:
-                            loadModels(modelList.slice(1), meshList, callbackModels)
-                    }
-                } else {
-                    callbackModels(meshList);
-                }
-
-            }
-            loadChainWithCallback(loadChain, (meshList) => {
-                console.log("all models are loaded")
-                generateNavmesh(meshList, path, answerClient)
-            })
-        } else { //no models have to be loaded and the opening is complete
-            console.log("no model has to be loaded")
-            generateNavmesh(meshList, path, answerClient)
-        }
-    } else {
-        res.status(415).json(new Error("no data send"))
-    }
 });
 
-app.post('/generate-navmesh-from-obj',function(req, res) {
-
-    let path="/uploads/navigation/" //image root path
-        +Date.now()                       //randomness
-        +req.headers['directory'].replace(/ /g,'-') //path of the image
-    let nav=""; // image name
-    let navStorage = multer.diskStorage({ //define file name and directory
-        destination: function (req, file, cb) {
-            if(!fs.existsSync(rootDirectory+path)){ //checks if the directory already exists
-                console.log("create directory",rootDirectory+path)
-                fs.mkdirSync(rootDirectory+path, { recursive: true })
-            }
-            console.log("path:"+rootDirectory+path)
-            cb(null, rootDirectory+path)
-        },
-        filename: function (req, file, cb) {
-            if (fs.existsSync(rootDirectory + path + "/" + file.originalname)) {
-                nav = Date.now()+file.originalname
-            }
-            else{
-                nav = file.originalname // save the file name
-            }
-            console.log("name:"+nav)
-            cb(null, nav )
-        }
-    });
-    let uploadnav = multer({
-        storage: navStorage
-    }).single('nav') //defines the name of the input element
-    uploadnav(req, res, function (err) {
-        console.log(err)
-        if (err instanceof multer.MulterError) {
-            return res.status(500).json(err)
-        } else if (err){
-            if (err.message==="wrong mime type") {
-                return res.status(415).json(err)
-            } else{
-                return res.status(500).json(err)
-            }
-        }
-        try {
-            let agentHeight=parseFloat(req.headers['agentheight'])
-            let agentRadius=parseFloat(req.headers['agentradius'])
-            let agentMaxClimb=parseFloat(req.headers['agentmaxclimp'])
-            let agentMaxSlope=parseFloat(req.headers['agentmaxslope'])
-            console.log("test:",[agentHeight,agentRadius,agentMaxClimb,agentMaxSlope])
-            recast.loadFile("./" + rootDirectory + path + "/" + nav);
-            recast.build(0.166, 0.1, agentHeight, agentRadius, agentMaxClimb, agentMaxSlope);
-            recast.save("./" + rootDirectory + path + "/navmesh.obj");
-            fs.unlinkSync("./" + rootDirectory + path + "/" + nav);
-            obj2gltf("./" + rootDirectory + path + "/navmesh.obj")
-                .then(function (gltf) {
-                    const data = Buffer.from(JSON.stringify(gltf));
-                    fs.writeFileSync("./" + rootDirectory + path + "/navmesh.gltf", data);
-                    res.set("nav-url", [path + "/navmesh.gltf"])
-                    res.status(200).send(req.file)
-                }).catch(error=>{
-                res.status(500).json(error)
-            });
-        }
-        catch (error){
-            return res.status(500).json(error)
-        }
-    })
+// Listen on port
+webServer.listen(port, () => {
+    console.log("listening on http://localhost:" + port);
 });
-
-app.listen(80,domain, function() {
-
-    console.log('Http Listener running on port 80');
-
-});
-
-server.listen(443,domain, ()=>console.log('Https Listener running on port 443'))
-
-
-
-
-function NodeCanvasFactory() {}
-NodeCanvasFactory.prototype = {
-    create: function NodeCanvasFactory_create(width, height) {
-        assert(width > 0 && height > 0, "Invalid canvas size");
-        var canvas = Canvas.createCanvas(width, height);
-        var context = canvas.getContext("2d");
-        return {
-            canvas: canvas,
-            context: context,
-        };
-    },
-
-    reset: function NodeCanvasFactory_reset(canvasAndContext, width, height) {
-        assert(canvasAndContext.canvas, "Canvas is not specified");
-        assert(width > 0 && height > 0, "Invalid canvas size");
-        canvasAndContext.canvas.width = width;
-        canvasAndContext.canvas.height = height;
-    },
-
-    destroy: function NodeCanvasFactory_destroy(canvasAndContext) {
-        assert(canvasAndContext.canvas, "Canvas is not specified");
-
-        // Zeroing the width and height cause Firefox to release graphics
-        // resources immediately, which can greatly reduce memory consumption.
-        canvasAndContext.canvas.width = 0;
-        canvasAndContext.canvas.height = 0;
-        canvasAndContext.canvas = null;
-        canvasAndContext.context = null;
-    },
-};
-
