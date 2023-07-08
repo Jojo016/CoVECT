@@ -1,39 +1,36 @@
 ﻿<!DOCTYPE html>
+
+<!--
+<!DOCTYPE html>
+<html>
+  <head>
+    <script>
+      console.log("BabelScript loading...");
+    </script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script>
+      console.log("BabelScript loaded.");
+    </script>
+    <script type="text/jsx" src="/index.js"></script>
+  </head>
+  <body> 
+    <div id="root">
+    </div>
+    <script type="text/babel" src="./index.js"></script>
+  </body>
+</html>
+-->
+
 <html>
   <head>
     <meta charset="utf-8" />
     <title>Select & move objects</title>
-    <meta name="description" content="VREUD Example - Aframe" />
+    <meta name="description" content="Ownership Transfer Example MODIFIED— Networked-Aframe" />
 
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.5.0/socket.io.slim.js"></script>
     <script src="/easyrtc/easyrtc.js"></script>
     <script src="/dist/networked-aframe.js"></script>
-    <script>
-      AFRAME.registerComponent('thumbstick-controls',{
-        init: function () {
-          this.el.addEventListener('thumbstickmoved', this.thumbstickControl);
-        },
-        thumbstickControl: function (evt) {
-
-          var pos = this.getAttribute('position');
-          console.log(pos);
-
-          if (evt.detail.y > 0.95) { 
-            console.log("DOWN"); 
-          }
-          if (evt.detail.y < -0.95) { 
-            console.log("UP"); 
-          }
-          if (evt.detail.x < -0.95) { 
-            console.log("LEFT"); 
-          }
-          if (evt.detail.x > 0.95) { 
-            console.log("RIGHT"); 
-          }
-        }
-      });
-    </script>
     <script>
       // see issue https://github.com/networked-aframe/networked-aframe/issues/267
       NAF.schemas.getComponentsOriginal = NAF.schemas.getComponents;
@@ -118,7 +115,7 @@
     <script src="https://unpkg.com/aframe-randomizer-components@^3.0.1/dist/aframe-randomizer-components.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.1/dist/aframe-environment-component.min.js"></script>
     <script src="/js/spawn-in-circle.component.js"></script>
-    <script src="/js/object-control-vr.component.js"></script>
+    <script src="/js/object-control-desktop.component.js"></script>
     <script>
       let clientRtcId;
 
@@ -134,18 +131,67 @@
       }
     </script>
     <script>
+      function sendToServer(command, data) {
+        if(command == 'addNewObject') {
+          // Get shape from data
+          var shape = data;
+
+          // Get player position
+          var player = document.getElementById('player');
+          var pos3 = player.getAttribute('position');
+
+          // Create data object to stringify
+          var obj = new Object();
+          obj.shape = shape;
+          obj.posX = pos3.x;
+          obj.posY = pos3.y;
+          obj.posZ = pos3.z;
+          obj.color = "#0000FF"; 
+
+          data = JSON.stringify(obj);
+
+          console.log("Sending: 'Create new object with data:' " + data);
+          easyrtc.sendDataWS(clientRtcId, "addNewObject", data);
+
+        }else if(command == 'removeComponent'){
+          // Get shape from data
+          var cid = data;
+
+          // Create data object to stringify
+          var obj = new Object();
+          obj.cid = cid;
+
+          data = JSON.stringify(obj);
+
+          console.log("Sending: 'Remove component with cid:' " + cid);
+          easyrtc.sendDataWS(clientRtcId, "removeComponent", data);
+
+        }else if(command == 'addInteraction'){
+          // Get type & position from data
+          var type = data[0];
+          var pos = data[1];
+
+          // Create data object to stringify
+          var obj = new Object();
+          obj.type = type;
+          //obj.pos = pos;
+
+          data = JSON.stringify(obj);
+
+          console.log("Sending: 'Add interaction of type:' " + type);
+          easyrtc.sendDataWS(clientRtcId, "addInteraction", data);
+        }
+      }
+
       function serverJoinedSetup() {
         // Add own name to statusbar
-        // TODO: Make VR ready
-        //window.parent.addUserToStatusBar(clientRtcId, clientName, true);
+        window.parent.addUserToStatusBar(clientRtcId, clientName, true);
 
         // Init Listeners
         easyrtc.setServerListener( function(msgType, msgData, targeting) {
           if(msgType === 'spawnComponent') {
             var newData = JSON.parse(msgData);
-            var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
-            console.log("controller:");
-            console.log(controller);
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
             controller.spawnEntity(newData);
 
           }else if(msgType === 'selectedComponent') {
@@ -153,20 +199,20 @@
             var cid = data.cid;
             var sourceRtcId = data.sourcertcid;
             var bool = data.bool;
-            var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
             controller.selectEntity(cid, sourceRtcId, bool);
 
           }else if(msgType === 'removedComponent') {
             var data = JSON.parse(msgData);
             var cid = data.cid;
-            var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
             controller.removeComponent(cid);
           }else if(msgType === 'updatedComponent') {
             var data = JSON.parse(msgData);
             var cid = data.cid;
             var type = data.updatetype;
             var newData = data.updatedata;
-            var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
             controller.updateComponent(cid, type, newData);
 
           } else if(msgType === 'userJoined') {
@@ -186,6 +232,11 @@
         var clientData = JSON.stringify(obj);
         easyrtc.sendDataWS(clientRtcId, "broadcastUserName", clientData);
 
+        // Fetch existing components from server
+        var obj = new Object();
+        obj.easyrtcid = clientRtcId;
+        var clientData = JSON.stringify(obj);
+        easyrtc.sendDataWS(clientRtcId, "getAllComponents", null);
       }
     </script>
     <script>
@@ -206,9 +257,10 @@
         }
       });
     </script>
-    <link rel="stylesheet" type="text/css" href="/css/style.css" />
+    <!--link rel="stylesheet" type="text/css" href="/styles/Editor2.css" /-->
   </head>
   <body>
+   <div class="middle-panel">
     <a-scene
       networked-scene="
         room: dev;
@@ -217,123 +269,66 @@
         audio: true;
       "
     >
-      <a-assets>
-        <!-- Templates -->
+        <a-assets>
+          <!-- Templates -->
 
-        <!-- Avatar -->
-        <template id="avatar-template">
-          <a-entity class="avatar" networked-audio-source>
-            <a-sphere class="head" scale="0.45 0.5 0.4"></a-sphere>
-            <a-entity class="face" position="0 0.05 0">
-              <a-sphere class="eye" color="#efefef" position="0.16 0.1 -0.35" scale="0.12 0.12 0.12">
-                <a-sphere class="pupil" color="#000" position="0 0 -1" scale="0.2 0.2 0.2"></a-sphere>
-              </a-sphere>
-              <a-sphere class="eye" color="#efefef" position="-0.16 0.1 -0.35" scale="0.12 0.12 0.12">
-                <a-sphere class="pupil" color="#000" position="0 0 -1" scale="0.2 0.2 0.2"></a-sphere>
-              </a-sphere>
+          <!-- Avatar -->
+          <template id="avatar-template">
+            <a-entity class="avatar" networked-audio-source>
+              <a-sphere class="head" scale="0.45 0.5 0.4"></a-sphere>
+              <a-entity class="face" position="0 0.05 0">
+                <a-sphere class="eye" color="#efefef" position="0.16 0.1 -0.35" scale="0.12 0.12 0.12">
+                  <a-sphere class="pupil" color="#000" position="0 0 -1" scale="0.2 0.2 0.2"></a-sphere>
+                </a-sphere>
+                <a-sphere class="eye" color="#efefef" position="-0.16 0.1 -0.35" scale="0.12 0.12 0.12">
+                  <a-sphere class="pupil" color="#000" position="0 0 -1" scale="0.2 0.2 0.2"></a-sphere>
+                </a-sphere>
+              </a-entity>
             </a-entity>
-          </a-entity>
-        </template>
+          </template>
 
-        <!-- Entity -->
-        <template id="block-template">
-          <a-entity>
-            <a-box class="block" arrow-control selectable></a-box>
-          </a-entity>
-        </template>
+          <!-- Entity -->
+          <template id="block-template">
+            <a-entity>
+              <a-box class="block" arrow-control selectable></a-box>
+            </a-entity>
+          </template>
 
-        <!-- Grid -->
-        <img id="grid" src="https://img.gs/bbdkhfbzkk/stretch/https://i.imgur.com/25P1geh.png" crossorigin="anonymous">
-        <img id="sky" src="https://img.gs/bbdkhfbzkk/2048x2048,stretch/https://i.imgur.com/WqlqEkq.jpg" crossorigin="anonymous" />
-      </a-assets>
+          <!-- Grid -->
+          <img id="grid" src="https://img.gs/bbdkhfbzkk/stretch/https://i.imgur.com/25P1geh.png" crossorigin="anonymous">
+          <img id="sky" src="https://img.gs/bbdkhfbzkk/2048x2048,stretch/https://i.imgur.com/WqlqEkq.jpg" crossorigin="anonymous" />
+        </a-assets>
 
-      <!-- TODO: REMOVE THIS TEMPORARY TEST ENTITY -->
-      <a-plane 
-            class="vr-menu-panel" 
-            color="#80160e" 
-            position="0 1.4 -0.9"
-            rotation="-30 0 0" 
-            scale="1 0.3 0.3"
-            visible="true"
+        <a-entity id="rig">
+          <a-entity
+            id="player"
+            networked="template:#avatar-template;attachTemplateToLocal:false;"
+            camera
+            position="0 1.6 0"
+            spawn-in-circle="radius:3"
+            object-control-desktop="template:#block-template"
+            wasd-controls="fly:true;"
+            look-controls
+            cursor="rayOrigin: mouse"
+            raycaster="objects: .cursor-listener"
           >
-            <a-box
-              class="box" 
-              color="#23ddeb" 
-              position="0.33 0 -0.03"
-              rotation="0 0 0" 
-              scale="0.3 0.9 0.1"
-              visible="true"
-              vr-menu
-            >
-            </a-box>
-          </a-plane>
-
-      <a-entity id="rig">
-        <a-entity
-          id="player"
-          networked="template:#avatar-template;attachTemplateToLocal:false;"
-          camera
-          position="0 1.6 0"
-          spawn-in-circle="radius:3"
-          object-control-vr="template:#block-template"
-          wasd-controls
-          look-controls
-          cursor="rayOrigin: mouse"
-          raycaster="objects: .cursor-listener"
-        >
-          <!--a-plane 
-            class="vr-menu-panel" 
-            color="#80160e" 
-            position="0 -0.4 -0.9"
-            rotation="-30 0 0" 
-            scale="1 0.3 0.3"
-            visible="true"
-          >
-            <a-box
-              class="box" 
-              color="#23ddeb" 
-              position="0.33 -0.1 0"
-              rotation="0 0 0" 
-              scale="0.3 1 0.3"
-              visible="true"
-              vr-menu
-            >
-            </a-box>
-          </a-plane-->
-          <a-sphere id="playerhead" class="head" visible="false" random-color></a-sphere>
-          <!--a-cursor></a-cursor-->
+            <a-sphere id="playerhead" class="head" visible="false" random-color></a-sphere>
+          </a-entity>
         </a-entity>
-      </a-entity>
-      <!--a-entity id="rig">
-        <a-entity
-          id="player"
-          networked="template:#avatar-template;attachTemplateToLocal:false;"
-          camera
-          position="0 1.6 0"
-          spawn-in-circle="radius:3"
-          object-control-vr="template:#block-template"
-          oculus-touch-controls="hand: right"
-          wasd-controls
-          look-controls
-          thumbstick-controls
-        >
-          <a-sphere id="playerhead" class="head" visible="false" random-color></a-sphere>
-          <a-cursor></a-cursor>
-        </a-entity>
-      </a-entity-->
 
-    <!-- Environment -->
-      <a-entity position="0 0 0"
-        geometry="primitive: plane; width: 10000; height: 10000;" rotation="-90 0 0"
-        material="src: #grid; repeat: 10000 10000; transparent: true; metalness:0.6; roughness: 0.4; sphericalEnvMap: #sky;"
-      ></a-entity>
-      <a-entity light="color: #ccccff; intensity: 1; type: ambient;" visible=""></a-entity>
-      <a-entity light="color: #ffaaff; intensity: 1.5" position="5 5 5"></a-entity>
-      <a-sky src="#sky" rotation="0 -90 0"></a-sky>
-    </a-scene>
+         <!-- Environment -->
+        <a-entity position="0 0 0"
+          geometry="primitive: plane; width: 10000; height: 10000;" rotation="-90 0 0"
+          material="src: #grid; repeat: 10000 10000; transparent: true; metalness:0.6; roughness: 0.4; sphericalEnvMap: #sky;"
+        ></a-entity>
+        <a-entity light="color: #ccccff; intensity: 1; type: ambient;" visible=""></a-entity>
+        <a-entity light="color: #ffaaff; intensity: 1.5" position="5 5 5"></a-entity>
+        <a-sky src="#sky" rotation="0 -90 0"></a-sky>
+      </a-scene>
+    </div>
 
     <div class="controls">
-      <p>Description pending...</p>
+      <p>Use WASD-Keys to fly around. Click on a component to select it and edit its properties.</p>
     </div>
   </body>
 </html>

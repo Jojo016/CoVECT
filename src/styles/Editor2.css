@@ -1,4 +1,4 @@
-.editor{
+﻿.editor{
     font: 15px Helvetica,Arial,sans-serif;
     height: 100%; /* This is needed for height 100% in the containing elements */
 }
@@ -15,19 +15,122 @@
 .left-panel{
     background-color: #444;
     border-right: 1px solid #333;
-    width: calc(20% - 1px);
+    width: calc(15% - 1px);
     float: left; /*align left*/
-    height: 100%; /*fill whole page*/
+    height: calc(100% - 5px);; /*fill whole page*/
 }
 .middle-panel{
-    background-color: green;
-    width: 60%;
+    background-color: white;
+    width: 65%;
     height: 100%; /*fill whole page*/
     float: left; /*align left*/
 }
+.iframe-panel{
+    background-color: green;
+    width: 100%;
+    height: 60%; 
+    float: left; 
+}
+.properties-panel{
+    background-color: royalblue;
+    width: 100%;
+    height: 40%; 
+    float: left;
+}
+.properties-category{
+    background-color: darkgray;
+    height: 40px; 
+    float: left;
+    display: flex;
+    flex-direction: column;
+}
+.properties-category-name{
+    background-color: slategray;
+    display: flex;
+    flex-direction: column;
+    height: 40px; 
+    float: left;
+}
+.properties-parameter{
+    text-align: left;
+    display: grid;
+    grid-template-columns: 1fr 3fr;
+    grid-gap: 5px;
+    justify-items: center;
+    align-items: center;
+}
+.properties-parameter-name{
+    color: #c2c2c2;
+}
+.properties-no-selection{
+    text-align: center;
+    height: 95%; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 .right-panel{
-    height: 100%; /*fill whole page*/
+    height: calc(100%); /*fill whole page*/
     width: calc(20% - 1px);
     float: right; /*align right*/
     border-left: 1px solid #333;
+}
+
+html { height:100% }
+body { height:100%; width:100%; margin:0; display:table;}
+.iframe_container { height:100%; display:table-cell; }
+iframe { height:100%; width:100%; display:block; }
+
+table.table1 { 
+    border-collapse: separate; 
+    margin: 5px;
+    width: calc(100% - 10px); 
+    }
+
+th.th1 { 
+    background: #3498db; 
+    color: white; 
+    font-weight: bold; 
+    }
+
+td.td1, th.th1 { 
+    background: #575757;
+    border-radius: 10px;
+    font-size: 18px;
+    padding: 2px; 
+    padding-left: 10px;
+    text-align: left; 
+    }
+
+td.td1:hover {
+    background-color: #6e6e6e;
+} 
+
+.labels tr.tr1 td.td1 {
+    background-color: #2cc16a;
+    font-weight: bold;
+    color: #fff;
+}
+
+.label tr.tr1 td.td1 label {
+    display: block;
+    height: 100%
+    text-align: left;
+    width: 100%;
+    padding-left: 10px;
+}
+
+
+[data-toggle="toggle"] {
+    display: none;
+}
+
+.seamless-button {
+    background: none;
+    border: none;
+    color: white;
+    height: 100%
+    padding: 0;
+    text-align: left;
+    width: 100%;
 }
