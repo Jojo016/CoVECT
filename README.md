@@ -5,8 +5,7 @@ A collaborative Virtual Environment Creation Tool to simplify the development of
 None
 
 ## Installation 
-1. Install Nodejs and npm 
-2. Tested with versions: npm8.11.0 node17.9.1 python3.11.1
+1. Install Nodejs and npm (Tested with versions: npm8.11.0 node17.9.1 python3.11.1)
 1. Open the folder recast in a console.
 1. Input "npm install" to install the dependencies of the library
 1. Input "npm run build" to build the library.
