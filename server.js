@@ -1,5 +1,5 @@
 ﻿// Load required modules
-const http = require("http");                 // http server core module
+//const http = require("http");                 // http server core module
 const path = require("path");
 const express = require("express");           // web framework external module
 //const { Server } = require("socket.io");      // web socket external module
@@ -11,17 +11,21 @@ const mysql = require('mysql');               // MySql external module
 // https://github.com/FiloSottile/mkcert
 // Then to enable https on the node server, uncomment the next lines
 // and the webServer line down below.
-// const https = require("https");
-// const fs = require("fs");
-// const privateKey = fs.readFileSync("key.pem", "utf8");
-// const certificate = fs.readFileSync("cert.pem", "utf8");
-// const credentials = { key: privateKey, cert: certificate };
+const https = require("https");
+const fs = require("fs");
+
+// Next two lines are a SSL certificate for local testing
+//const privateKey = fs.readFileSync(__dirname + "\\certs\\localhost.key", "utf8");
+//const certificate = fs.readFileSync(__dirname + "\\certs\\localhost.crt", "utf8");
+const privateKey = fs.readFileSync("/certbot/privkey.pem", "utf8");
+const certificate = fs.readFileSync("/certbot/fullchain.pem", "utf8");
+const credentials = { key: privateKey, cert: certificate };
 
 // Set process name
 process.title = "networked-aframe-server";
 
 // Get port or default to 8080
-const port = process.env.PORT || 8080;
+const port = process.env.PORT || 8081;
 
 // Setup and configure Express http server.
 const app = express();
