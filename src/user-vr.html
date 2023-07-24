@@ -232,13 +232,13 @@
         },
 
         tick: function () {
-          if (!this.raycaster) { return; }  // Not intersecting.
-
-          let intersection = this.raycaster.components.raycaster.getIntersection(this.el);
-          if (!intersection) { 
+          if (!this.raycaster) { 
             this.el.setAttribute('material', 'color: #ffffff');
             return;
-          }
+          }  // Not intersecting.
+
+          let intersection = this.raycaster.components.raycaster.getIntersection(this.el);
+          if (!intersection) { return; }
 
           // Intersecting
           this.el.setAttribute('material', 'color: #0000ff');
