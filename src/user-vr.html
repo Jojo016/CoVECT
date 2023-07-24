@@ -308,6 +308,7 @@
           id="player"
           networked="template:#avatar-template;attachTemplateToLocal:false;"
           camera
+          look-control
           position="0 1.6 0"
           spawn-in-circle="radius:3"
           object-control-vr="template:#block-template"
@@ -319,14 +320,14 @@
 
 
       <a-entity oculus-touch-controls="hand: left">
-        <a-entity class="collidable" geometry="primitive: box" scale="0.1 0.1 0.1"></a-entity>
+        <a-entity class="collidable" geometry="primitive: box; color: #ffffff" scale="0.1 0.1 0.1"></a-entity>
       </a-entity>
       <a-entity 
         oculus-touch-controls="hand: right"
         raycaster="objects: .collidable; showLine: true"
         ></a-entity>
       </a-entity>
-      <a-entity class="collidable" raycaster-listen  color="#ffffff" geometry="primitive: box" position="5 0 0"></a-entity>
+      <a-entity class="collidable" raycaster-listen geometry="primitive: box; color: #ffffff" position="5 0 0"></a-entity>
 
 
       <!-- Environment -->
