@@ -279,15 +279,17 @@
           <a-sphere id="playerhead" class="head" visible="false" random-color></a-sphere>
           <a-cursor></a-cursor>
         </a-entity>
-        <a-entity oculus-touch-controls="hand: left">
-          <a-sphere></a-sphere>
-        </a-entity>
-        <a-entity oculus-touch-controls="hand: right">
-          <a-sphere></a-sphere>
-        </a-entity>
       </a-entity>
 
-    <!-- Environment -->
+
+      <a-entity oculus-touch-controls="hand: left">
+        <a-sphere scale="0.05 0.05 0.05"></a-sphere>
+      </a-entity>
+      <a-entity oculus-touch-controls="hand: right">
+        <a-sphere scale="0.05 0.05 0.05"></a-sphere>
+      </a-entity>
+
+      <!-- Environment -->
       <a-entity position="0 0 0"
         geometry="primitive: plane; width: 10000; height: 10000;" rotation="-90 0 0"
         material="src: #grid; repeat: 10000 10000; transparent: true; metalness:0.6; roughness: 0.4; sphericalEnvMap: #sky;"

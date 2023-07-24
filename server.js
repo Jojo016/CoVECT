@@ -70,9 +70,9 @@ var dictOfSelectedComponents = new Object();
 app.use(express.static(path.resolve(__dirname, "src")));
 
 // Start Express http server
-const webServer = http.createServer(app);
+// const webServer = http.createServer(app);
 // To enable https on the node server, comment the line above and uncomment the line below
-// const webServer = https.createServer(credentials, app);
+const webServer = https.createServer(credentials, app);
 
 // Start Socket.io so it attaches itself to Express server
 const socketServer = socketIo.listen(webServer, {"log level": 1});
