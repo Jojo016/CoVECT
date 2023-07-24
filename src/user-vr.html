@@ -211,8 +211,19 @@
         dependencies: ['raycaster'],
 
         init: function () {
+          var el = this.el; 
           this.el.addEventListener('raycaster-intersection', function () {
-            console.log('Player hit something!');
+            // Get component id
+            var componentId = el.getAttribute('cid');
+
+            // Create data object to stringify
+            var obj = new Object();
+            obj.cid = componentId;
+
+            var entityData = JSON.stringify(obj); 
+            // TODO: Add server-communication for intersecting
+
+            el.setAttribute('color', '#ffffff');
           });
         }
       });
@@ -297,7 +308,7 @@
         <a-sphere scale="0.1 0.1 0.1" color="#ffaaff"></a-sphere>
       </a-entity>
       <a-entity oculus-touch-controls="hand: right">
-        <a-entity raycaster="objects: .collidable" position="0 -0.9 0" rotation="90 0 0"></a-entity>
+        <a-entity raycaster="objects: .collidable; showLine: true" position="0 -0.9 0" rotation="90 0 0"></a-entity>
       </a-entity>
 
       <a-entity class="collidable" geometry="primitive: box" position="5 0 0"></a-entity>
