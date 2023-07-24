@@ -222,7 +222,7 @@
           // Use events to figure out what raycaster is listening so we don't have to
           // hardcode the raycaster.
           this.el.addEventListener('raycaster-intersected', evt => {
-
+            console.log("intersect!");
             this.el.setAttribute('material', 'color: #0000ff');
             this.raycaster = evt.detail.el;
           });
@@ -230,6 +230,7 @@
 
           this.el.addEventListener('raycaster-intersected-cleared', evt => {
             this.el.setAttribute('material', 'color: #ffffff');
+            console.log("cleared!");
             this.raycaster = null;
           });
         },
