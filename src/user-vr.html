@@ -223,13 +223,10 @@
           // hardcode the raycaster.
           this.el.addEventListener('raycaster-intersected', evt => {
             this.raycaster = evt.detail.el;
-            el.setAttribute('color', '#FF0000');
           });
 
 
           this.el.addEventListener('raycaster-intersected-cleared', evt => {
-
-            el.setAttribute('color', '#000000');
             this.raycaster = null;
           });
         },
@@ -239,6 +236,8 @@
 
           let intersection = this.raycaster.components.raycaster.getIntersection(this.el);
           if (!intersection) { return; }
+
+          el.setAttribute('color', '#0000ff');
           
         }
       });
@@ -327,7 +326,7 @@
         raycaster="objects: .collidable; showLine: true"
         ></a-entity>
       </a-entity>
-      <a-entity class="collidable" raycaster-listen  color="#FFFFFF" geometry="primitive: box" position="5 0 0"></a-entity>
+      <a-entity class="collidable" raycaster-listen  color="#ffffff" geometry="primitive: box" position="5 0 0"></a-entity>
 
 
       <!-- Environment -->
