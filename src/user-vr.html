@@ -222,19 +222,21 @@
           // Use events to figure out what raycaster is listening so we don't have to
           // hardcode the raycaster.
           this.el.addEventListener('raycaster-intersected', evt => {
+
+            this.el.setAttribute('material', 'color: #0000ff');
             this.raycaster = evt.detail.el;
           });
 
 
           this.el.addEventListener('raycaster-intersected-cleared', evt => {
+            this.el.setAttribute('material', 'color: #ffffff');
             this.raycaster = null;
           });
         },
 
         tick: function () {
           if (!this.raycaster) { 
-            console.log("Not intersecting " + this.el.getAttribute('name'));
-            this.el.setAttribute('material', 'color: #ffffff');
+            //console.log("Not intersecting " + this.el.getAttribute('name'));
             return;
           }  // Not intersecting.
 
@@ -242,8 +244,7 @@
           if (!intersection) { return; }
 
           // Intersecting
-          console.log("Intersecting " + this.el.getAttribute('name'));
-          this.el.setAttribute('material', 'color: #0000ff');
+          //console.log("Intersecting " + this.el.getAttribute('name'));
           
         }
       });
