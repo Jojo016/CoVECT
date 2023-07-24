@@ -233,6 +233,7 @@
 
         tick: function () {
           if (!this.raycaster) { 
+            console.log("Not intersecting " + this.el.getAttribute('name'));
             this.el.setAttribute('material', 'color: #ffffff');
             return;
           }  // Not intersecting.
@@ -241,6 +242,7 @@
           if (!intersection) { return; }
 
           // Intersecting
+          console.log("Intersecting " + this.el.getAttribute('name'));
           this.el.setAttribute('material', 'color: #0000ff');
           
         }
@@ -331,8 +333,8 @@
         raycaster="objects: .collidable; showLine: true"
         ></a-entity>
       </a-entity>
-      <a-entity class="collidable" raycaster-listen geometry="primitive: box" material="color: #ff0000" position="5 0 0"></a-entity>
-      <a-entity class="collidable" raycaster-listen geometry="primitive: box" material="color: #00ff00" position="6 0 0"></a-entity>
+      <a-entity name="o1" class="collidable" raycaster-listen geometry="primitive: box" material="color: #ff0000" position="5 0 0"></a-entity>
+      <a-entity name="o2" class="collidable" raycaster-listen geometry="primitive: box" material="color: #00ff00" position="6 0 0"></a-entity>
 
 
       <!-- Environment -->
