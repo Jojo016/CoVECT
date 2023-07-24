@@ -235,8 +235,12 @@
           if (!this.raycaster) { return; }  // Not intersecting.
 
           let intersection = this.raycaster.components.raycaster.getIntersection(this.el);
-          if (!intersection) { return; }
+          if (!intersection) { 
+            this.el.setAttribute('material', 'color: #ffffff');
+            return;
+          }
 
+          // Intersecting
           this.el.setAttribute('material', 'color: #0000ff');
           
         }
@@ -320,14 +324,15 @@
 
 
       <a-entity oculus-touch-controls="hand: left">
-        <a-entity class="collidable" geometry="primitive: box" material="color: #000000" scale="0.1 0.1 0.1"></a-entity>
+        <a-entity class="collidable" geometry="primitive: box" material="color: #ffffff" scale="0.1 0.1 0.1"></a-entity>
       </a-entity>
       <a-entity 
         oculus-touch-controls="hand: right"
         raycaster="objects: .collidable; showLine: true"
         ></a-entity>
       </a-entity>
-      <a-entity class="collidable" raycaster-listen geometry="primitive: box" material="color: #000000" position="5 0 0"></a-entity>
+      <a-entity class="collidable" raycaster-listen geometry="primitive: box" material="color: #ff0000" position="5 0 0"></a-entity>
+      <a-entity class="collidable" raycaster-listen geometry="primitive: box" material="color: #00ff00" position="6 0 0"></a-entity>
 
 
       <!-- Environment -->
