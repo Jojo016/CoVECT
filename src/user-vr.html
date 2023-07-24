@@ -206,6 +206,17 @@
         }
       });
     </script>
+    <script>
+      AFRAME.registerComponent('collider-check', {
+        dependencies: ['raycaster'],
+
+        init: function () {
+          this.el.addEventListener('raycaster-intersection', function () {
+            console.log('Player hit something!');
+          });
+        }
+      });
+    </script>
     <link rel="stylesheet" type="text/css" href="/css/style.css" />
   </head>
   <body>
@@ -283,11 +294,13 @@
 
 
       <a-entity oculus-touch-controls="hand: left">
-        <a-sphere scale="0.05 0.05 0.05"></a-sphere>
+        <a-sphere scale="0.1 0.1 0.1" color="#ffaaff"></a-sphere>
       </a-entity>
       <a-entity oculus-touch-controls="hand: right">
-        <a-sphere scale="0.05 0.05 0.05"></a-sphere>
+        <a-entity raycaster="objects: .collidable" position="0 -0.9 0" rotation="90 0 0"></a-entity>
       </a-entity>
+
+      <a-entity class="collidable" geometry="primitive: box" position="5 0 0"></a-entity>
 
       <!-- Environment -->
       <a-entity position="0 0 0"
