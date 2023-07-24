@@ -211,21 +211,35 @@
         dependencies: ['raycaster'],
 
         init: function () {
-          var el = this.el; 
           this.el.addEventListener('raycaster-intersection', function () {
-            // Get component id
-            var componentId = el.getAttribute('cid');
-
-            // Create data object to stringify
-            var obj = new Object();
-            obj.cid = componentId;
-
-            var entityData = JSON.stringify(obj); 
-            // TODO: Add server-communication for intersecting
-
-            el.setAttribute('color', '#FF0000');
-            el.setAttribute('scale', '0.1 0.1 0.1');
           });
+        }
+      });
+
+      AFRAME.registerComponent('raycaster-listen', {
+        init: function () {
+          var el = this.el;
+          // Use events to figure out what raycaster is listening so we don't have to
+          // hardcode the raycaster.
+          this.el.addEventListener('raycaster-intersected', evt => {
+            this.raycaster = evt.detail.el;
+            el.setAttribute('color', '#FF0000');
+          });
+
+
+          this.el.addEventListener('raycaster-intersected-cleared', evt => {
+
+            el.setAttribute('color', '#000000');
+            this.raycaster = null;
+          });
+        },
+
+        tick: function () {
+          if (!this.raycaster) { return; }  // Not intersecting.
+
+          let intersection = this.raycaster.components.raycaster.getIntersection(this.el);
+          if (!intersection) { return; }
+          
         }
       });
     </script>
@@ -313,7 +327,7 @@
         raycaster="objects: .collidable; showLine: true"
         ></a-entity>
       </a-entity>
-      <a-entity class="collidable" geometry="primitive: box" position="5 0 0"></a-entity>
+      <a-entity class="collidable" raycaster-listen  color="#FFFFFF" geometry="primitive: box" position="5 0 0"></a-entity>
 
 
       <!-- Environment -->
