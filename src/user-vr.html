@@ -223,7 +223,7 @@
             var entityData = JSON.stringify(obj); 
             // TODO: Add server-communication for intersecting
 
-            el.setAttribute('color', '#ffffff');
+            el.setAttribute('color', '#ff0000');
           });
         }
       });
@@ -305,13 +305,13 @@
 
 
       <a-entity oculus-touch-controls="hand: left">
-        <a-sphere scale="0.1 0.1 0.1" color="#ffaaff"></a-sphere>
+        <a-sphere scale="0.1 0.1 0.1" color="#0000ff"></a-sphere>
       </a-entity>
       <a-entity oculus-touch-controls="hand: right">
         <a-entity raycaster="objects: .collidable; showLine: true" position="0 -0.9 0" rotation="90 0 0"></a-entity>
       </a-entity>
 
-      <a-entity class="collidable" geometry="primitive: box" position="5 0 0"></a-entity>
+      <a-entity class="collidable" geometry="primitive: box" color="#00ff00" position="5 0 0"></a-entity>
 
       <!-- Environment -->
       <a-entity position="0 0 0"
