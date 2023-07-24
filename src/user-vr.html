@@ -244,7 +244,7 @@
 
         <!-- Grid -->
         <img id="grid" src="/img/grid.png">
-        <img id="sky" src="/img/sky.jpg" />
+        <img id="sky" src="/img/sky.jpg">
       </a-assets>
 
       <!-- TODO: REMOVE THIS TEMPORARY TEST ENTITY -->
@@ -266,8 +266,7 @@
               vr-menu
             >
             </a-box>
-          </a-plane>
-
+      </a-plane>
       <a-entity id="rig">
         <a-entity
           id="player"
@@ -276,50 +275,16 @@
           position="0 1.6 0"
           spawn-in-circle="radius:3"
           object-control-vr="template:#block-template"
-          wasd-controls
-          look-controls
-          cursor="rayOrigin: mouse"
-          raycaster="objects: .cursor-listener"
-        >
-          <!--a-plane 
-            class="vr-menu-panel" 
-            color="#80160e" 
-            position="0 -0.4 -0.9"
-            rotation="-30 0 0" 
-            scale="1 0.3 0.3"
-            visible="true"
-          >
-            <a-box
-              class="box" 
-              color="#23ddeb" 
-              position="0.33 -0.1 0"
-              rotation="0 0 0" 
-              scale="0.3 1 0.3"
-              visible="true"
-              vr-menu
-            >
-            </a-box>
-          </a-plane-->
-          <a-sphere id="playerhead" class="head" visible="false" random-color></a-sphere>
-          <!--a-cursor></a-cursor-->
-        </a-entity>
-      </a-entity>
-      <a-entity id="rig">
-        <a-entity
-          id="player"
-          networked="template:#avatar-template;attachTemplateToLocal:false;"
-          camera
-          position="0 1.6 0"
-          spawn-in-circle="radius:3"
-          object-control-vr="template:#block-template"
-          wasd-controls
-          look-controls
-          thumbstick-controls
         >
           <a-sphere id="playerhead" class="head" visible="false" random-color></a-sphere>
           <a-cursor></a-cursor>
         </a-entity>
-        <a-entity oculus-touch-controls="hand: right"></a-entity>
+        <a-entity oculus-touch-controls="hand: left">
+          <a-sphere></a-sphere>
+        </a-entity>
+        <a-entity oculus-touch-controls="hand: right">
+          <a-sphere></a-sphere>
+        </a-entity>
       </a-entity>
 
     <!-- Environment -->
