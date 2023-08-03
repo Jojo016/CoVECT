@@ -219,16 +219,14 @@
       AFRAME.registerComponent('raycaster-listen', {
         init: function () {
           var el = this.el;
+          var baseColor = el.getAttribute('material').color;
           // Use events to figure out what raycaster is listening so we don't have to
           // hardcode the raycaster.
           this.el.addEventListener('raycaster-intersected', evt => {
-            this.el.setAttribute('material', 'color: #0000ff');
             this.raycaster = evt.detail.el;
           });
 
-
           this.el.addEventListener('raycaster-intersected-cleared', evt => {
-            this.el.setAttribute('material', 'color: #ffffff');
             this.raycaster = null;
           });
         },
@@ -236,6 +234,7 @@
         tick: function () {
           if (!this.raycaster) { 
             //console.log("Not intersecting " + this.el.getAttribute('name'));
+            this.el.setAttribute('material', 'color: #ffffff');
             return;
           }  // Not intersecting.
 
@@ -243,6 +242,7 @@
           if (!intersection) { return; }
 
           // Intersecting
+          this.el.setAttribute('material', 'color: #0000ff');
           //console.log("Intersecting " + this.el.getAttribute('name'));
           
         }
@@ -326,7 +326,7 @@
 
 
       <a-entity oculus-touch-controls="hand: left">
-        <a-entity class="collidable" geometry="primitive: box" material="color: #ffffff" scale="0.1 0.1 0.1"></a-entity>
+        <!--a-entity class="collidable" geometry="primitive: box" material="color: #ffffff" scale="0.1 0.1 0.1"></a-entity-->
       </a-entity>
       <a-entity 
         oculus-touch-controls="hand: right"
