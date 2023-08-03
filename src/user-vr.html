@@ -219,7 +219,8 @@
       AFRAME.registerComponent('raycaster-listen', {
         init: function () {
           var el = this.el;
-          var baseColor = el.getAttribute('material').color;
+          var baseColor = this.el.getAttribute('material').color;
+          this.el.setAttribute('baseColor', baseColor);
           // Use events to figure out what raycaster is listening so we don't have to
           // hardcode the raycaster.
           this.el.addEventListener('raycaster-intersected', evt => {
@@ -230,21 +231,92 @@
             this.raycaster = null;
           });
         },
+        
+        setBaseColor: function() {
+          var material = this.el.getAttribute('material');
+          var currentColor = material.color;
+          var baseColor = this.el.getAttribute('baseColor');
+
+          if(currentColor != baseColor){
+            material.color = baseColor;
+            this.el.setAttribute('material', material);
+
+            // Check if wireframe exists and make it visible
+            if(this.el.getAttribute('wireframed') == "true") {
+              var name = this.el.getAttribute('name');
+              var wfObjectName = name + "-wireframe";
+              var wfObjects = document.querySelectorAll("[wireframe]");
+              var wfObject = null;
+
+              wfObjects.forEach(obj => {
+                var objName = obj.getAttribute('name');
+                if(objName == wfObjectName) {
+                  wfObject = obj;
+                }
+              });
+
+              wfObject.setAttribute('visible', true);
+            }
+          }
+        },
+
+        setHoverColor: function() {
+          var material = this.el.getAttribute('material');
+          var currentColor = material.color;
+          var baseColor = this.el.getAttribute('baseColor');
+
+          if(currentColor == baseColor){
+            material.color = '#ffffff';
+            this.el.setAttribute('material', material);
+
+            // Check if wireframe exists and make it insivible
+            if(this.el.getAttribute('wireframed') == "true") {
+              var name = this.el.getAttribute('name');
+              var wfObjectName = name + "-wireframe";
+              var wfObjects = document.querySelectorAll("[wireframe]");
+              var wfObject = null;
+
+              wfObjects.forEach(obj => {
+                var objName = obj.getAttribute('name');
+                if(objName == wfObjectName) {
+                  wfObject = obj;
+                }
+              });
+
+              wfObject.setAttribute('visible', false);
+            }
+          }
+        },
 
         tick: function () {
           if (!this.raycaster) { 
-            //console.log("Not intersecting " + this.el.getAttribute('name'));
-            this.el.setAttribute('material', 'color: #ffffff');
+            this.setBaseColor();
             return;
           }  // Not intersecting.
-
-          let intersection = this.raycaster.components.raycaster.getIntersection(this.el);
-          if (!intersection) { return; }
-
-          // Intersecting
-          this.el.setAttribute('material', 'color: #0000ff');
-          //console.log("Intersecting " + this.el.getAttribute('name'));
           
+          // Check if intersecting
+          let intersection = this.raycaster.components.raycaster.getIntersection(this.el);
+          if (!intersection) { return; } 
+          
+          // Check if it is the first intersection
+          var intersectionIndex = this.raycaster.components.raycaster.intersectedEls.indexOf(this.el);
+          if(intersectionIndex != 0) {
+            // if not first intersection, set base color
+            this.setBaseColor();
+            return;
+          } 
+
+          this.setHoverColor();
+        }
+      });
+    </script>
+    <script>
+       AFRAME.registerComponent("overlay", {
+        dependencies: ['material'],
+        init: function () {
+          this.el.sceneEl.renderer.sortObjects = true;
+          this.el.object3D.renderOrder = 100;
+          this.el.components.material.material.depthTest = false;
         }
       });
     </script>
@@ -333,8 +405,9 @@
         raycaster="objects: .collidable; showLine: true"
         ></a-entity>
       </a-entity>
-      <a-entity name="o1" class="collidable" raycaster-listen geometry="primitive: box" material="color: #ff0000" position="5 0 0"></a-entity>
-      <a-entity name="o2" class="collidable" raycaster-listen geometry="primitive: box" material="color: #00ff00" position="5.5 0 0.5"></a-entity>
+      <a-entity name="o1" class="collidable" geometry="primitive: box" material="color: #0000ff" raycaster-listen position="5 0 0"></a-entity>
+      <a-entity name="o2" class="collidable" geometry="primitive: box" material="color: #00ff00" raycaster-listen position="5.5 0.5 0.5" wireframed="true"></a-entity>
+      <a-entity name="o2-wireframe" geometry="primitive: box" material="color: #ff0000; wireframe: true" wireframe overlay raycaster-listen position="5.5 0.5 0.5"></a-entity>
 
 
       <!-- Environment -->
