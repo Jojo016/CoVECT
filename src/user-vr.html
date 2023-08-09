@@ -21,6 +21,9 @@
 
           if (evt.detail.y > 0.95) { 
             console.log("DOWN"); 
+            var pos = this.el.getAttribute("position");
+            pos.x = pos.x + 1;
+            this.el.setAttribute("position", pos);
           }
           if (evt.detail.y < -0.95) { 
             console.log("UP"); 
@@ -189,33 +192,6 @@
       }
     </script>
     <script>
-      AFRAME.registerComponent('cursor-listener', {
-        init: function () {
-          this.el.addEventListener('raycaster-intersected', evt => {
-            this.raycaster = evt.detail.el;
-          });
-          this.el.addEventListener('raycaster-intersected-cleared', evt => {
-            this.raycaster = null;
-          });
-        },
-        tick: function () {
-            if (!this.raycaster) { return; }  // Not intersecting.
-            let intersection = this.raycaster.components.raycaster.getIntersection(this.el);
-            if (!intersection) { return; } // Not intersecting
-            // intersecting
-        }
-      });
-    </script>
-    <script>
-      AFRAME.registerComponent('collider-check', {
-        dependencies: ['raycaster'],
-
-        init: function () {
-          this.el.addEventListener('raycaster-intersection', function () {
-          });
-        }
-      });
-
       AFRAME.registerComponent('raycaster-listen', {
         init: function () {
           var el = this.el;
@@ -311,12 +287,74 @@
       });
     </script>
     <script>
-       AFRAME.registerComponent("overlay", {
+      AFRAME.registerComponent('a-button-listener', {
+        init: function () {
+          var el = this.el;
+          el.addEventListener('abuttondown', function (evt) {
+
+            var componentId = el.getAttribute('intersectCid');
+
+            console.log(componentId);
+
+            if(componentId == 0) {
+              return;
+            }
+
+            // Create data object to stringify
+            var obj = new Object();
+            obj.cid = componentId;
+
+            var entityData = JSON.stringify(obj); 
+
+            var targetable = true; // TODO
+            if(targetable) {
+              console.log("Sending: 'Select object with component-id:' " + entityData);
+              easyrtc.sendDataWS(clientRtcId, "selectComponent", entityData);
+            }else{
+              console.log("Tried to select untargetable entity.");
+            }
+          });
+        }
+      });
+
+      AFRAME.registerComponent('b-button-listener', {
+        init: function () {
+          var el = this.el;
+          el.addEventListener('bbuttondown', function (evt) {
+            // Hide virtual controller
+            el.setAttribute('visible', !el.getAttribute('visible'));
+          });
+        }
+      });
+    </script>
+    <script>
+       AFRAME.registerComponent("priority", {
+        schema: {
+          level: {default: "standard"}
+        },
         dependencies: ['material'],
         init: function () {
+          var level = this.data.level;
           this.el.sceneEl.renderer.sortObjects = true;
-          this.el.object3D.renderOrder = 100;
           this.el.components.material.material.depthTest = false;
+          var renderOrder;
+          switch (level) {
+            case "standard":
+              renderOrder = 0;
+              break;
+            case "wireframe":
+              renderOrder = 10;
+              break;
+            case "selected":
+              renderOrder = 20;
+              break;
+            case "hud":
+              renderOrder = 30;
+              break;
+            default:
+              break;
+          }
+          this.el.object3D.renderOrder = renderOrder;
         }
       });
     </script>
@@ -352,7 +390,7 @@
         <!-- Entity -->
         <template id="block-template">
           <a-entity>
-            <a-box class="block" arrow-control selectable></a-box>
+            <a-box class="block"></a-box>
           </a-entity>
         </template>
 
@@ -386,28 +424,30 @@
           id="player"
           networked="template:#avatar-template;attachTemplateToLocal:false;"
           camera
-          look-controls
           position="0 1.6 0"
           spawn-in-circle="radius:3"
           object-control-vr="template:#block-template"
+          thumbstick-controls
         >
           <a-sphere id="playerhead" class="head" visible="false" random-color></a-sphere>
-          <a-cursor></a-cursor>
+          <!--a-cursor></a-cursor-->
         </a-entity>
+        
+        <a-entity 
+        oculus-touch-controls="hand: right"
+        a-button-listener
+        b-button-listener
+        raycaster="objects: .collidable; showLine: true"
+        ></a-entity>
       </a-entity>
 
 
       <a-entity oculus-touch-controls="hand: left">
         <!--a-entity class="collidable" geometry="primitive: box" material="color: #ffffff" scale="0.1 0.1 0.1"></a-entity-->
       </a-entity>
-      <a-entity 
-        oculus-touch-controls="hand: right"
-        raycaster="objects: .collidable; showLine: true"
-        ></a-entity>
-      </a-entity>
       <a-entity name="o1" class="collidable" geometry="primitive: box" material="color: #0000ff" raycaster-listen position="5 0 0"></a-entity>
       <a-entity name="o2" class="collidable" geometry="primitive: box" material="color: #00ff00" raycaster-listen position="5.5 0.5 0.5" wireframed="true"></a-entity>
-      <a-entity name="o2-wireframe" geometry="primitive: box" material="color: #ff0000; wireframe: true" wireframe overlay raycaster-listen position="5.5 0.5 0.5"></a-entity>
+      <a-entity name="o2-wireframe" geometry="primitive: box" material="color: #ff0000; wireframe: true" wireframe priority="level: wireframe" position="5.5 0.5 0.5"></a-entity>
 
 
       <!-- Environment -->
