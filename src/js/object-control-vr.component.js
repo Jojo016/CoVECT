@@ -24,7 +24,6 @@ AFRAME.registerComponent('object-control-vr', {
 
       // Handle other attributes
       el.setAttribute('material', 'color: #0000FF');
-      el.setAttribute('selectable', 'targetable: true');
       
       var cid = data.cid;
       el.setAttribute('cid', cid);
@@ -34,37 +33,32 @@ AFRAME.registerComponent('object-control-vr', {
 
       el.setAttribute('entityName', 'New ' + shape);
 
-      el.setAttribute('class', 'cursor-listener');
-      el.setAttribute('cursor-listener', '');
+      // Handle raycaster attribute 
+      el.setAttribute('raycaster-listen', '');
+
+      // Check for selection
+      var selectedById = data.selectedBy;
+      if(selectedById != -1) {
+        // Make selected object transparent and untargetable
+        var mat = el.getDOMAttribute('material');
+        mat.opacity = 0.4;
+        el.setAttribute('material', mat);
+
+        // Set as untargetable for raycaster
+        el.setAttribute('class', 'selected-collidable');
+
+        // Set easyRtcId of source
+        el.setAttribute('selectedby', selectedById);
+      }else{
+        // Set as targetable for raycaster & add select handler
+        el.setAttribute('class', 'collidable');
+        el.setAttribute('select-button-listener', '');
+      }
 
       var scene = this.el.sceneEl;
       scene.appendChild(el);
 
-      // Add object to list 'Scene Objects'
-      // TODO: Add menu for this??
-      /*
-      var table = parent.document.getElementById('scene-objects');
-      var tr = table.insertRow();
-      tr.setAttribute("id", "cid" + cid);
-
-      var cidCell = tr.insertCell();
-      cidCell.appendChild(document.createTextNode(cid));
-      var elementNameCell = tr.insertCell();
-      elementNameCell.appendChild(document.createTextNode(shape));
-      var buttonCell = tr.insertCell();
-      var button = document.createElement('button');
-      button.innerText = "X";
-      button.onclick = function()
-      {
-        // TODO: Get correct easyrtcid
-        var easyrtcId = 0;
-        var obj = new Object();
-        obj.cid = cid; 
-        var newData = JSON.stringify(obj);
-        easyrtc.sendDataWS(easyrtcId, "removeComponent", newData);
-      }
-      buttonCell.appendChild(button);
-      */
+      // TODO: Add object to list 'Scene Objects' for "Object Overview Menu"
   },
 
   onMouseMove: function(event){
@@ -284,35 +278,46 @@ AFRAME.registerComponent('object-control-vr', {
 
       
       //*
-      // Decide whether to select or deselect the object
-      var pPanel = window.parent.document.getElementById('properties-panel');
+      // TODO: Convert Panel to 'Overview Menu' for VR
+      //var pPanel = window.parent.document.getElementById('properties-panel');
 
+      // Decide whether to select or deselect the object
       if(sourceRtcId == clientRtcId) {
         // Client's own EasyRTCid
         if(selectBool) {
-          // Select object
+          // Select object: Add AxesHelper
           var axesHelper = new THREE.AxesHelper(5);
           el.setObject3D("axes-helper", axesHelper);
 
-          // Update properties view
-          while (pPanel.firstChild) {
-            // Remove all children
-            pPanel.removeChild(pPanel.firstChild);
-          }
+          // Revert hover color back to base color
+          var material = el.getAttribute('material');
+          var currentColor = material.color;
+          var baseColor = el.getAttribute('baseColor');
 
-          this.addPropertiesRow(pPanel, 'select-aframe-entity', el);
+          if(currentColor != baseColor){
+            material.color = baseColor;
+            el.setAttribute('material', material);
+
+            // Check if wireframe exists and make it visible
+            if(el.getAttribute('wireframed') == "true") {
+              var name = el.getAttribute('name');
+              var wfObjectName = name + "-wireframe";
+              var wfObjects = document.querySelectorAll("[wireframe]");
+              var wfObject = null;
+
+              wfObjects.forEach(obj => {
+                var objName = obj.getAttribute('name');
+                if(objName == wfObjectName) {
+                  wfObject = obj;
+                }
+              });
+
+              wfObject.setAttribute('visible', true);
+            }
+          }
 
         }else{
-          // Deselect object
-          while (pPanel.firstChild) {
-            // Remove all children
-            pPanel.removeChild(pPanel.firstChild);
-          }
-
-          // Set properties panel to 'no selection'
-          this.addPropertiesRow(pPanel, 'properties-no-selection', null);
-
-          // Remove AxesHelper
+          // Deselect object: Remove AxesHelper
           var axesHelper = el.getObject3D('axes-helper');
           el.removeObject3D('axes-helper');
         }
@@ -324,40 +329,39 @@ AFRAME.registerComponent('object-control-vr', {
           var mat = el.getAttribute('material');
           mat.opacity = 0.4;
           el.setAttribute('material', mat);
+
+          // VR - Make selected object untargetable
+          el.setAttribute('class', 'selected-collidable');
+          
         }else {
           // Make deselected object fully visible
           var mat = el.getAttribute('material');
           mat.opacity = 1.0;
           el.setAttribute('material', mat);
+        
+          // VR - Make selected object targetable again
+          el.setAttribute('class', 'collidable');
         }
       }
 
-      // Further A-FRAME actions
+      // VR - Further A-FRAME actions
       if(selectBool) {
-        // Make selected object untargetable
-        var selectable = el.getAttribute('selectable');
-        selectable.targetable = false;
-        el.setAttribute('selectable', selectable);
-
         // Set easyRtcId of source
         el.setAttribute('selectedby', sourceRtcId);
-      }else {
-        // Make selected object targetable again
-        var selectable = el.getAttribute('selectable');
-        selectable.targetable = true;
-        el.setAttribute('selectable', selectable);
 
+        // Remove 'select-button-listener' and the listener it adds
+        //el.removeAttribute('select-button-listener');
+        //el.removeEventListener("select-object", handleSendSelect);
+      }else {
         // Remove easyRtcId of source
         el.removeAttribute('selectedby');
+
+        // Add 'select-button-listener' again
+        //el.setAttribute('select-button-listener', '');
       }
   },
 
   removeComponent: function(componentId) {
-
-      // Remove row from table
-      var tr = parent.document.getElementById("cid" + componentId);
-      tr.parentNode.removeChild(tr);
-
       // Remove entity from scene
       var el = null;
       var els = this.el.sceneEl.querySelectorAll('[cid]');

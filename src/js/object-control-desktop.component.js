@@ -34,6 +34,7 @@ AFRAME.registerComponent('object-control-desktop', {
 
       el.setAttribute('entityName', 'New ' + shape);
 
+      // Handle Cursor attributes
       el.setAttribute('class', 'cursor-listener');
       el.setAttribute('cursor-listener', '');
 
@@ -348,7 +349,7 @@ AFRAME.registerComponent('object-control-desktop', {
         }
       }
 
-      // Further A-FRAME actions
+      // DESKTOP - Further A-FRAME actions
       if(selectBool) {
         // Make selected object untargetable
         var selectable = el.getAttribute('selectable');
