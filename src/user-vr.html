@@ -412,28 +412,31 @@
         <!-- Grid -->
         <img id="grid" src="/img/grid.png">
         <img id="sky" src="/img/sky.jpg">
+        <img id="plus" src="/img/plus.png">
       </a-assets>
 
       <!-- TODO: REMOVE THIS TEMPORARY TEST ENTITY -->
-      <a-plane 
-            class="vr-menu-panel" 
-            color="#80160e" 
-            position="0 1.4 -0.9"
-            rotation="-30 0 0" 
-            scale="1 0.3 0.3"
-            visible="true"
-          >
-            <a-box
-              class="box" 
-              color="#23ddeb" 
-              position="0.33 0 -0.03"
-              rotation="0 0 0" 
-              scale="0.3 0.9 0.1"
-              visible="true"
-              vr-menu
-            >
-            </a-box>
-      </a-plane>
+      <a-entity
+        class="vr-menu-panel" 
+        geometry="primitive: plane"
+        material="color: #323236"
+        position="0 1.4 -0.9"
+        rotation="-30 0 0" 
+        scale="1 0.3 0.3"
+        visible="true"
+      >
+        <a-box
+          class="box" 
+          material="src: #plus; transparent: true"
+          position="0.33 0 -0.03"
+          rotation="0 0 0" 
+          scale="0.3 0.9 0.1"
+          visible="true"
+          vr-menu
+        ></a-box>
+      </a-entity>
+
+
       <a-entity id="rig">
         <a-entity
           id="player"
