@@ -341,6 +341,34 @@
           });
         }
       });
+
+      AFRAME.registerComponent('x-button-listener', {
+        init: function () {
+          var el = this.el;
+          
+          var mainmenu = document.querySelector('[class="vr-mainmenu"]');
+          console.log("mainmenu:");
+          console.log(mainmenu);
+
+          var mainMenuPlusButton = document.querySelector('[class="vr-mainmenu"]').components['[class="vr-mainmenu-plus"]'];
+          console.log("mainMenuPlusButton:");
+          console.log(mainMenuPlusButton);
+
+          el.addEventListener('xbuttondown', function (evt) {
+            mainmenu.setAttribute('visible', !mainmenu.getAttribute('visible'));
+          });
+        }
+      });
+
+      AFRAME.registerComponent('y-button-listener', {
+        init: function () {
+          var el = this.el;
+          el.addEventListener('ybuttondown', function (evt) {
+            // Hide virtual controller
+            el.setAttribute('visible', !el.getAttribute('visible'));
+          });
+        }
+      });
     </script>
     <script>
        AFRAME.registerComponent("priority", {
@@ -415,27 +443,6 @@
         <img id="plus" src="/img/plus.png">
       </a-assets>
 
-      <!-- TODO: REMOVE THIS TEMPORARY TEST ENTITY -->
-      <a-entity
-        class="vr-menu-panel" 
-        geometry="primitive: plane"
-        material="color: #323236"
-        position="0 1.4 -0.9"
-        rotation="-30 0 0" 
-        scale="1 0.3 0.3"
-        visible="true"
-      >
-        <a-box
-          class="box" 
-          material="src: #plus; transparent: true"
-          position="0.33 0 -0.03"
-          rotation="0 0 0" 
-          scale="0.3 0.9 0.1"
-          visible="true"
-          vr-menu
-        ></a-box>
-      </a-entity>
-
 
       <a-entity id="rig">
         <a-entity
@@ -452,6 +459,7 @@
         </a-entity>
         
         <a-entity 
+          id="hand-right"
           name="hand-right"
           oculus-touch-controls="hand: right"
           a-button-listener
@@ -461,9 +469,33 @@
         ></a-entity>
 
         <a-entity 
+          id="hand-left"
           name="hand-left"
           oculus-touch-controls="hand: left"
-        ></a-entity>
+          x-button-listener
+          y-button-listener
+        >
+          <a-entity
+            class="vr-mainmenu" 
+            geometry="primitive: plane"
+            material="color: #323236"
+            position="0.2 0.1 -0.1"
+            rotation="-45 0 0" 
+            scale="0.33 0.1 0.1"
+            visible="true"
+          >
+            <a-entity
+              class="vr-mainmenu-plus" 
+              geometry="primitive: box"
+              material="src: #plus; transparent: true"
+              position="0.33 0 -0.03"
+              rotation="0 0 0" 
+              scale="0.3 0.9 0.1"
+              visible="true"
+              vr-menu
+            ></a-entity>
+          </a-entity>
+        </a-entity>
 
       </a-entity>
 
