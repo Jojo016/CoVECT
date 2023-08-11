@@ -286,7 +286,7 @@ AFRAME.registerComponent('object-control-vr', {
         // Client's own EasyRTCid
         if(selectBool) {
           // Select object: Add AxesHelper
-          var axesHelper = new THREE.AxesHelper(5);
+          var axesHelper = new THREE.AxesHelper(2);
           el.setObject3D("axes-helper", axesHelper);
 
           // Revert hover color back to base color

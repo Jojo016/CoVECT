@@ -312,8 +312,8 @@
         init: function () {
           const selectObjectEvent = new Event("select-object");
           var el = this.el;
-          //el.addEventListener('abuttondown', function (evt) {
-          el.addEventListener('click', function (evt) {
+          //el.addEventListener('click', function (evt) { // Testing with Mouse
+          el.addEventListener('abuttondown', function (evt) { // Actual implementation
             // Get raycaster
             var rc = el.components.raycaster;
             
