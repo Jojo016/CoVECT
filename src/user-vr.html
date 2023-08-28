@@ -313,19 +313,27 @@
           const selectObjectEvent = new Event("select-object");
 
           var el = this.el;
-          //el.addEventListener('click', function (evt) { // Testing with Mouse
-          el.addEventListener('abuttondown', function (evt) { // Actual implementation
+          el.addEventListener('click', function (evt) { // Testing with Mouse
+          //el.addEventListener('abuttondown', function (evt) { // Actual implementation
+            console.log("click!");
             // Get raycaster
             var rc = el.components.raycaster;
             
+            console.log("rc: ");
+            console.log(rc);
+            
             // Get intersections
             var intersectedEls = rc.intersectedEls;
+            console.log("intersectedEls length: ");
+            console.log(intersectedEls.length);
             if(intersectedEls.length < 1) {
               return;
             }
             
             // Get first intersection
             var firstHit = rc.intersectedEls[0];
+            console.log("firstHit: ");
+            console.log(firstHit);
 
             // Trigger event 'Send select'
             firstHit.dispatchEvent(selectObjectEvent);
@@ -410,9 +418,14 @@
           var el = this.el;
           var submenu = document.querySelector('#vr-submenu-add');
 
+          // TODO: Add refs to other submenus and make them invisible
+          var otherSubMenu1;
+          var otherSubMenu2;
+
           el.addEventListener('select-object', function handleSendSelect(event) {
             // Open or close the 'Add'-Menu
             if(submenu.getAttribute('visible') == false) {
+              // TODO: make other submenus invisible
               submenu.setAttribute('visible', true);
             }else{
               submenu.setAttribute('visible', false);
@@ -420,6 +433,70 @@
           });
         }
       });
+
+      AFRAME.registerComponent("vr-submenu-plus", {
+        init: function () {
+          var el = this.el;
+          var hand = document.querySelector('hand-right');
+          var raycaster = document.querySelector('hand-right[raycaster]').components.raycaster;
+
+          console.log("raycaster-submenu-plus:");
+          console.log(raycaster);
+
+          el.addEventListener('select-object', function handleSendSelect(event) {
+            // Close the GUI
+            // TODO: submenu.setAttribute('visible', false);
+
+            // Attach box to the raycaster
+            var shape = 'box';
+            var box = document.createElement('a-entity');
+
+            // Handle geometry/shape attribute
+            box.setAttribute('geometry', 'primitive: ' + shape + ';');
+
+            // Handle other attributes
+            box.setAttribute('material', 'color: #00ff00');
+
+            // Handle Position
+            var pos3 = hand.getAttribute('position');
+            var vector = this.raycaster.direction;
+            pos3 = pos3 + vector*2;
+            box.setAttribute('position', pos3);
+
+            // Add obj to scene
+            var scene = this.el.sceneEl;
+            scene.appendChild(el);
+
+            // Handle placeable attribute 
+            box.setAttribute('placeable', '');
+          });
+        }
+      });
+
+      AFRAME.registerComponent("placeable", {
+        init: function () {
+          var el = this.el;
+          var hand = document.querySelector('hand-right');
+          var raycaster = document.querySelector('hand-right[raycaster]').components.raycaster;
+          var bla = 1;
+          console.log('RAYCASTER:');
+          console.log(raycaster);
+          console.log(raycaster.components.raycaster);
+        },
+
+        tick: function () {
+          console.log("Tick Raycaster!" + bla + " " + this.bla);
+
+          /*
+          var pos3 = hand.getAttribute('position');
+          var vector = this.raycaster.direction;
+          pos3 = pos3 + vector*2;
+          box.setAttribute('position', pos3);
+          */
+        }
+
+      });
+
     </script>
     <link rel="stylesheet" type="text/css" href="/css/style.css" />
   </head>
@@ -460,6 +537,8 @@
         <!-- Grid -->
         <img id="grid" src="/img/grid.png">
         <img id="sky" src="/img/sky.jpg">
+
+        <!-- GUI -->
         <img id="plus" src="/img/plus.png">
       </a-assets>
 
@@ -473,9 +552,12 @@
           spawn-in-circle="radius:3"
           object-control-vr="template:#block-template"
           thumbstick-controls
+          look-controls
+          wasd-controls
+          cursor
         >
           <a-sphere id="playerhead" class="head" visible="false" random-color></a-sphere>
-          <!--a-cursor></a-cursor-->
+          <a-cursor></a-cursor>
         </a-entity>
         
         <a-entity 
@@ -485,7 +567,6 @@
           a-button-listener
           b-button-listener
           raycaster="objects: .collidable, .vr-menu, .vr-menu-plus, .vr-submenu-add; showLine: true"
-          cursor
         ></a-entity>
 
         <a-entity 
@@ -545,8 +626,19 @@
               visible="false"
               priority="level: hud"
               raycaster-listen
+              cursor-listener
               vr-submenu-add
-            ></a-entity>
+            >
+              <a-entity
+                class="vr-submenu-add-box" 
+                geometry="primitive: box"
+                material="color: #00ffff"
+                visible="true"
+                priority="level: hud"
+                raycaster-listen
+                vr-submenu-add-box
+              ></a-entity>
+            </a-entity>
           </a-entity>
         </a-entity>
       </a-entity>
@@ -558,10 +650,10 @@
 
 
       <!-- Environment -->
-      <a-entity position="0 0 0"
+      <!--a-entity position="0 0 0"
         geometry="primitive: plane; width: 10000; height: 10000;" rotation="-90 0 0"
         material="src: #grid; repeat: 10000 10000; transparent: true; metalness:0.6; roughness: 0.4; sphericalEnvMap: #sky;"
-      ></a-entity>
+      ></a-entity-->
       <a-entity light="color: #ccccff; intensity: 1; type: ambient;" visible=""></a-entity>
       <a-entity light="color: #ffaaff; intensity: 1.5" position="5 5 5"></a-entity>
       <a-sky src="#sky" rotation="0 -90 0"></a-sky>
