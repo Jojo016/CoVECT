@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Description pending...</title>
+    <title id="title">Description pending...</title>
     <meta name="description" content="VREUD Example - Aframe" />
 
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
@@ -313,27 +313,19 @@
           const selectObjectEvent = new Event("select-object");
 
           var el = this.el;
-          el.addEventListener('click', function (evt) { // Testing with Mouse
-          //el.addEventListener('abuttondown', function (evt) { // Actual implementation
-            console.log("click!");
+          //el.addEventListener('click', function (evt) { // Testing with Mouse
+          el.addEventListener('abuttondown', function (evt) { // Actual implementation
             // Get raycaster
             var rc = el.components.raycaster;
             
-            console.log("rc: ");
-            console.log(rc);
-            
             // Get intersections
             var intersectedEls = rc.intersectedEls;
-            console.log("intersectedEls length: ");
-            console.log(intersectedEls.length);
             if(intersectedEls.length < 1) {
               return;
             }
             
             // Get first intersection
             var firstHit = rc.intersectedEls[0];
-            console.log("firstHit: ");
-            console.log(firstHit);
 
             // Trigger event 'Send select'
             firstHit.dispatchEvent(selectObjectEvent);
@@ -355,13 +347,7 @@
         init: function () {
           var el = this.el;
           
-          var mainmenu = document.querySelector('[class="vr-menu"]');
-          console.log("mainmenu:");
-          console.log(mainmenu);
-
-          var mainMenuPlusButton = document.querySelector('[class="vr-menu"]').components['[class="vr-menu-plus"]'];
-          console.log("mainMenuPlusButton:");
-          console.log(mainMenuPlusButton);
+          var mainmenu = document.getElementById('container-vr-menu');
 
           el.addEventListener('xbuttondown', function (evt) {
             mainmenu.setAttribute('visible', !mainmenu.getAttribute('visible'));
@@ -413,10 +399,46 @@
 
     <!-- VR Menu -->
     <script>
-      AFRAME.registerComponent("vr-menu-plus", {
+      AFRAME.registerComponent("placeable", {
         init: function () {
           var el = this.el;
-          var submenu = document.querySelector('#vr-submenu-add');
+        },
+
+        tick: function () {
+          var hand = null;
+          var raycaster = null;
+          var el = this.el;
+          
+          try{
+            console.log("Trying to get raycaster!");
+            hand = document.querySelector('hand-right');
+            raycaster = hand.components.raycaster;
+          }catch(e) {
+            return;
+          }
+
+          if(raycaster == null) {
+            return;
+          }
+
+          console.log("Tick Raycaster!");
+
+
+          // Handle Position
+          var multiplier = 1;
+          var pos3 = hand.getAttribute('position');
+          var direction = raycaster.lineData.start;
+          debug.setAttribute('value', 'z: ' + direction.z);
+
+          var newPos3 = new THREE.Vector3(pos3.x + multiplier*direction.x, pos3.y + multiplier*direction.y, pos3.z + multiplier*direction.z);
+          el.setAttribute('position', newPos3);
+        }
+      });
+
+      AFRAME.registerComponent("vr-menu-add", {
+        init: function () {
+          var el = this.el;
+          var submenu = document.getElementById('container-vr-submenu-add');
 
           // TODO: Add refs to other submenus and make them invisible
           var otherSubMenu1;
@@ -434,69 +456,53 @@
         }
       });
 
-      AFRAME.registerComponent("vr-submenu-plus", {
+      AFRAME.registerComponent("vr-submenu-add", {
+        schema: {
+          shape: { default: "sphere" }
+        },
         init: function () {
           var el = this.el;
-          var hand = document.querySelector('hand-right');
-          var raycaster = document.querySelector('hand-right[raycaster]').components.raycaster;
+          var shape = this.data.shape;
+          var scene = el.sceneEl;
 
-          console.log("raycaster-submenu-plus:");
-          console.log(raycaster);
+          var hand = document.getElementById('hand-right');
+          var raycaster = hand.components.raycaster;
+          console.log(hand.components.raycaster);
+          var debug = document.getElementById('debugtext');
 
           el.addEventListener('select-object', function handleSendSelect(event) {
-            // Close the GUI
-            // TODO: submenu.setAttribute('visible', false);
+            // TODO: Close the GUI
+            // submenu.setAttribute('visible', false);
 
             // Attach box to the raycaster
-            var shape = 'box';
             var box = document.createElement('a-entity');
 
             // Handle geometry/shape attribute
-            box.setAttribute('geometry', 'primitive: ' + shape + ';');
+            var geometry = 'primitive: ' + shape + ';';
+            box.setAttribute('geometry', geometry);
 
             // Handle other attributes
             box.setAttribute('material', 'color: #00ff00');
+            box.setAttribute('scale', '0.1 0.1 0.1');
 
             // Handle Position
+            var multiplier = 1;
             var pos3 = hand.getAttribute('position');
-            var vector = this.raycaster.direction;
-            pos3 = pos3 + vector*2;
-            box.setAttribute('position', pos3);
+            var direction1 = raycaster.lineData.start;
+            var direction2 = raycaster.lineData.end;
+            //debug.setAttribute('value', direction2.x);
 
-            // Add obj to scene
-            var scene = this.el.sceneEl;
-            scene.appendChild(el);
-
+            var newPos3 = new THREE.Vector3(pos3.x + direction1.x, pos3.y + direction1.y, pos3.z + direction1.z);
+            box.setAttribute('position', newPos3);
+            
             // Handle placeable attribute 
             box.setAttribute('placeable', '');
+
+            // Add obj to scene
+            scene.appendChild(box);
           });
         }
       });
-
-      AFRAME.registerComponent("placeable", {
-        init: function () {
-          var el = this.el;
-          var hand = document.querySelector('hand-right');
-          var raycaster = document.querySelector('hand-right[raycaster]').components.raycaster;
-          var bla = 1;
-          console.log('RAYCASTER:');
-          console.log(raycaster);
-          console.log(raycaster.components.raycaster);
-        },
-
-        tick: function () {
-          console.log("Tick Raycaster!" + bla + " " + this.bla);
-
-          /*
-          var pos3 = hand.getAttribute('position');
-          var vector = this.raycaster.direction;
-          pos3 = pos3 + vector*2;
-          box.setAttribute('position', pos3);
-          */
-        }
-
-      });
-
     </script>
     <link rel="stylesheet" type="text/css" href="/css/style.css" />
   </head>
@@ -566,7 +572,15 @@
           oculus-touch-controls="hand: right"
           a-button-listener
           b-button-listener
-          raycaster="objects: .collidable, .vr-menu, .vr-menu-plus, .vr-submenu-add; showLine: true"
+          raycaster="objects: .collidable,
+                              .vr-menu, 
+                              .vr-menu-add, 
+                              .vr-submenu-add, 
+                              .vr-submenu-add-box,
+                              .vr-submenu-add-cyllinder,
+                              .vr-submenu-add-plane,
+                              .vr-submenu-add-sphere; 
+                              showLine: true"
         ></a-entity>
 
         <a-entity 
@@ -576,11 +590,12 @@
           x-button-listener
           y-button-listener
         >
+          <!-- VR MENU -->
           <a-entity 
+            id="container-vr-menu"
             scale="0.1 0.1 0.1"
             rotation="-45 0 0"
-            >
-            <!-- VR MENU OBJECTS -->
+          >
             <a-entity
               class="vr-menu" 
               geometry="primitive: plane"
@@ -591,53 +606,71 @@
               visible="true"
               priority="level: hud"
             ></a-entity>
-            <!-- Menu PLUS -->
+            
+            <!-- Menu ADD -->
             <a-entity
               position="0 -1 0"
               rotation="0 0 0" 
               scale="0.9 0.9 0.1"
             >
               <a-entity
-                class="vr-menu-plus" 
+                class="vr-menu-add" 
                 geometry="primitive: box"
                 material="color: #0377fc"
                 visible="true"
                 priority="level: hud"
                 raycaster-listen
-                vr-menu-plus
+                vr-menu-add
               ></a-entity>
               <a-entity
-                class="vr-menu-plus-img" 
+                class="vr-menu-add-img" 
                 geometry="primitive: plane"
                 material="src: #plus; transparent: true"
                 visible="true"
                 priority="level: hud"
               ></a-entity>
             </a-entity>
-            <!-- SubMenu ADD -->
+
+            <!-- Submenu ADD -->
             <a-entity
-              id="vr-submenu-add" 
-              class="vr-submenu-add" 
-              geometry="primitive: plane"
-              material="color: #34c0eb"
-              position="2.05 0 0"
-              rotation="0 0 0" 
+              id="container-vr-submenu-add" 
+              position="2.05 0 0" 
               scale="3 3 1"
-              visible="false"
-              priority="level: hud"
-              raycaster-listen
-              cursor-listener
-              vr-submenu-add
-            >
+            >  
               <a-entity
-                class="vr-submenu-add-box" 
-                geometry="primitive: box"
-                material="color: #00ffff"
+                class="vr-submenu-add"
+                geometry="primitive: plane"
+                material="color: #31b5cc"
+                rotation="0 0 0" 
                 visible="true"
                 priority="level: hud"
-                raycaster-listen
-                vr-submenu-add-box
               ></a-entity>
+
+              <!-- Submenu ADD BOX -->
+              <a-entity
+                id="container-vr-submenu-add-box" 
+                position="-0.3 0.3 0"
+                rotation="0 0 0" 
+                scale="0.3 0.3 0.1"
+                priority="level: hud"
+              >
+                <a-entity
+                  class="vr-submenu-add-box" 
+                  geometry="primitive: box"
+                  material="color: #0377fc"
+                  visible="true"
+                  priority="level: hud"
+                  raycaster-listen
+                  vr-submenu-add="shape: box"
+                ></a-entity>
+                <a-entity
+                  class="vr-submenu-add-box-img" 
+                  geometry="primitive: plane"
+                  material="src: #plus; transparent: true"
+                  visible="true"
+                  priority="level: hud"
+                ></a-entity>
+              </a-entity>
             </a-entity>
           </a-entity>
         </a-entity>
@@ -647,11 +680,14 @@
       <a-entity name="o1" class="collidable" geometry="primitive: box" material="color: #0000ff" raycaster-listen position="5 0 0"></a-entity>
       <a-entity name="o2" class="collidable" geometry="primitive: box" material="color: #00ff00" raycaster-listen position="5.5 0.5 0.5" wireframed="true"></a-entity>
       <a-entity name="o2-wireframe" geometry="primitive: box" material="color: #ff0000; wireframe: true" wireframe priority="level: wireframe" position="5.5 0.5 0.5"></a-entity>
-
+      <a-entity name="floor" geometry="primitive: plane" material="color: #51524c" rotation="-90 0 0" scale="6 6 0.1" position="0 -1 0"></a-entity>
+      <a-text id='debugtext' value="DEBUG TEXT" geometry="primitive: plane;" material="color: #20d67e" position="0 1 -6"></a-text>
+      
+      <a-entity name="o3" class="collidable" geometry="primitive: box" material="color: #0000ff" placeable position="3 0 0"></a-entity>
 
       <!-- Environment -->
-      <!--a-entity position="0 0 0"
-        geometry="primitive: plane; width: 10000; height: 10000;" rotation="-90 0 0"
+      <!--a-entity 
+        position="0 -0.95 0" geometry="primitive: plane; width: 10000; height: 10000;" rotation="-90 0 0"
         material="src: #grid; repeat: 10000 10000; transparent: true; metalness:0.6; roughness: 0.4; sphericalEnvMap: #sky;"
       ></a-entity-->
       <a-entity light="color: #ccccff; intensity: 1; type: ambient;" visible=""></a-entity>
