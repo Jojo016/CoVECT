@@ -408,10 +408,10 @@
           var hand = null;
           var raycaster = null;
           var el = this.el;
-          
-          try{
-            console.log("Trying to get raycaster!");
-            hand = document.querySelector('hand-right');
+          var debug = document.getElementById('debugtext');
+                    
+          try {
+            hand = document.getElementById('hand-right');
             raycaster = hand.components.raycaster;
           }catch(e) {
             return;
@@ -421,17 +421,18 @@
             return;
           }
 
-          console.log("Tick Raycaster!");
-
 
           // Handle Position
           var multiplier = 1;
           var pos3 = hand.getAttribute('position');
-          var direction = raycaster.lineData.start;
-          debug.setAttribute('value', 'z: ' + direction.z);
+          var newPos3 = pos3.clone();
+          var quaternion = raycaster.el.object3D.quaternion;
+          var vector = new THREE.Vector3(0, 0, -1);
+          vector.applyQuaternion( quaternion );
+          newPos3 = newPos3.add(vector);
 
-          var newPos3 = new THREE.Vector3(pos3.x + multiplier*direction.x, pos3.y + multiplier*direction.y, pos3.z + multiplier*direction.z);
           el.setAttribute('position', newPos3);
+          
         }
       });
 
@@ -467,7 +468,8 @@
 
           var hand = document.getElementById('hand-right');
           var raycaster = hand.components.raycaster;
-          console.log(hand.components.raycaster);
+          var quaternion = raycaster.el.object3D.quaternion;
+          console.log(quaternion);
           var debug = document.getElementById('debugtext');
 
           el.addEventListener('select-object', function handleSendSelect(event) {
@@ -476,6 +478,7 @@
 
             // Attach box to the raycaster
             var box = document.createElement('a-entity');
+            box.setAttribute('class', 'collidable');
 
             // Handle geometry/shape attribute
             var geometry = 'primitive: ' + shape + ';';
@@ -569,6 +572,7 @@
         <a-entity 
           id="hand-right"
           name="hand-right"
+          rotation="0 0 0"
           oculus-touch-controls="hand: right"
           a-button-listener
           b-button-listener
@@ -683,7 +687,8 @@
       <a-entity name="floor" geometry="primitive: plane" material="color: #51524c" rotation="-90 0 0" scale="6 6 0.1" position="0 -1 0"></a-entity>
       <a-text id='debugtext' value="DEBUG TEXT" geometry="primitive: plane;" material="color: #20d67e" position="0 1 -6"></a-text>
       
-      <a-entity name="o3" class="collidable" geometry="primitive: box" material="color: #0000ff" placeable position="3 0 0"></a-entity>
+      <!--a-entity geometry="primitive: box" placeable position="3 0 0" scale="0.2 0.2 0.2"></a-entity-->
+      
 
       <!-- Environment -->
       <!--a-entity 
