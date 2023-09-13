@@ -52,7 +52,8 @@ AFRAME.registerComponent('object-control-vr', {
       }else{
         // Set as targetable for raycaster & add select handler
         el.setAttribute('class', 'collidable');
-        el.setAttribute('select-button-listener', '');
+        el.setAttribute('select-listener', '');
+        el.setAttribute('grab-listener', '');
       }
 
       var scene = this.el.sceneEl;

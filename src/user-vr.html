@@ -17,7 +17,6 @@
         thumbstickControl: function (evt) {
 
           var pos = this.getAttribute('position');
-          console.log(pos);
 
           if (evt.detail.y > 0.95) { 
             console.log("DOWN"); 
@@ -82,6 +81,37 @@
             });
           }
         }
+
+        if (!NAF.schemas.hasTemplate('#hand-right-template')) {
+          NAF.schemas.add({
+            template: '#hand-right-template',
+            components: [
+              'position',
+              'rotation',
+              {
+                selector: '.righthand',
+                component: 'material',
+                property: 'color'
+              }
+            ]
+          });
+        }
+
+        if (!NAF.schemas.hasTemplate('#hand-left-template')) {
+          NAF.schemas.add({
+            template: '#hand-left-template',
+            components: [
+              'position',
+              'rotation',
+              {
+                selector: '.lefthand',
+                component: 'material',
+                property: 'color'
+              }
+            ]
+          });
+        }
+
         const components = NAF.schemas.getComponentsOriginal(template);
         return components;
       };
@@ -279,7 +309,7 @@
       });
     </script>
     <script>
-      AFRAME.registerComponent('select-button-listener', {
+      AFRAME.registerComponent('select-listener', {
         init: function () {
           var el = this.el;
           el.addEventListener('select-object', function handleSendSelect(event) {
@@ -308,13 +338,38 @@
         }
       });
 
-      AFRAME.registerComponent('a-button-listener', {
+      AFRAME.registerComponent('grab-listener', {
+        init: function () {
+          var el = this.el;
+          el.addEventListener('grab-object-start', function handleSendSelect(event) {
+            // Start moving the object
+            el.setAttribute('placeable', '');
+          });
+
+          el.addEventListener('grab-object-end', function handleSendSelect(event) {
+            // Stop moving the object
+            el.removeAttribute('placeable');
+
+            // Send the updated object position to server
+            var obj = new Object();
+            var pos = el.getAttribute('position');
+            var cid = el.getAttribute('cid');
+            obj.cid = cid; 
+            obj.updatetype = 'position';
+            obj.updatedata = pos;
+            var newData = JSON.stringify(obj);
+            easyrtc.sendDataWS(clientRtcId, "updateComponent", newData);
+          });
+        }
+      });
+
+      AFRAME.registerComponent('trigger-button-listener', {
         init: function () {
           const selectObjectEvent = new Event("select-object");
 
           var el = this.el;
           //el.addEventListener('click', function (evt) { // Testing with Mouse
-          el.addEventListener('abuttondown', function (evt) { // Actual implementation
+          el.addEventListener('triggerdown', function (evt) { // Actual implementation
             // Get raycaster
             var rc = el.components.raycaster;
             
@@ -330,6 +385,45 @@
             // Trigger event 'Send select'
             firstHit.dispatchEvent(selectObjectEvent);
           });
+        }
+      });
+
+      AFRAME.registerComponent('grip-button-listener', {
+        init: function () {
+          const grabObjectStartEvent = new Event("grab-object-start");
+          const grabObjectEndEvent = new Event("grab-object-end");
+
+          var el = this.el;
+          var firstHit;
+          el.addEventListener('gripdown', function (evt) { 
+            // Get raycaster
+            var rc = el.components.raycaster;
+            
+            // Get intersections
+            var intersectedEls = rc.intersectedEls;
+            if(intersectedEls.length < 1) {
+              return;
+            }
+            
+            // Get first intersection
+            firstHit = rc.intersectedEls[0];
+
+            // Trigger event 'Start Grab Object'
+            firstHit.dispatchEvent(grabObjectStartEvent);
+          });
+          
+          el.addEventListener('gripup', function (evt) { 
+            // Trigger event 'End Grab Object'
+            if(firstHit == null) {
+              return;
+            }
+            firstHit.dispatchEvent(grabObjectEndEvent);
+          });
+        }
+      });
+
+      AFRAME.registerComponent('a-button-listener', {
+        init: function () {
         }
       });
 
@@ -361,6 +455,20 @@
           el.addEventListener('ybuttondown', function (evt) {
             // Hide virtual controller
             el.setAttribute('visible', !el.getAttribute('visible'));
+          });
+        }
+      });
+
+      AFRAME.registerComponent('thumbstick-object-listener', {
+        init: function () {
+          var el = this.el;
+          var hand = document.getElementById('hand-right');
+          el.addEventListener('thumbstickdown', function (evt) {
+            var multiplier = hand.getAttribute('range-multiplier');
+            if(multiplier < 0.2 || multiplier > 5) {
+              return;
+            }
+            hand.setAttribute('range-multiplier', multiplier + 0.2);
           });
         }
       });
@@ -421,13 +529,12 @@
             return;
           }
 
-
           // Handle Position
-          var multiplier = 1;
+          var multiplier = hand.getAttribute('range-multiplier');
           var pos3 = hand.getAttribute('position');
           var newPos3 = pos3.clone();
           var quaternion = raycaster.el.object3D.quaternion;
-          var vector = new THREE.Vector3(0, 0, -1);
+          var vector = new THREE.Vector3(0, 0, -multiplier);
           vector.applyQuaternion( quaternion );
           newPos3 = newPos3.add(vector);
 
@@ -466,13 +573,21 @@
           var shape = this.data.shape;
           var scene = el.sceneEl;
 
+          /*
           var hand = document.getElementById('hand-right');
           var raycaster = hand.components.raycaster;
+
           var quaternion = raycaster.el.object3D.quaternion;
-          console.log(quaternion);
           var debug = document.getElementById('debugtext');
+          */
 
           el.addEventListener('select-object', function handleSendSelect(event) {
+            var hand = document.getElementById('hand-right');
+            var raycaster = hand.components.raycaster;
+
+            var quaternion = raycaster.el.object3D.quaternion;
+            var debug = document.getElementById('debugtext');
+
             // TODO: Close the GUI
             // submenu.setAttribute('visible', false);
 
@@ -488,22 +603,42 @@
             box.setAttribute('material', 'color: #00ff00');
             box.setAttribute('scale', '0.1 0.1 0.1');
 
-            // Handle Position
-            var multiplier = 1;
-            var pos3 = hand.getAttribute('position');
-            var direction1 = raycaster.lineData.start;
-            var direction2 = raycaster.lineData.end;
-            //debug.setAttribute('value', direction2.x);
-
-            var newPos3 = new THREE.Vector3(pos3.x + direction1.x, pos3.y + direction1.y, pos3.z + direction1.z);
-            box.setAttribute('position', newPos3);
-            
-            // Handle placeable attribute 
+            // Handle Position with 'placeable' attribute 
             box.setAttribute('placeable', '');
 
             // Add obj to scene
             scene.appendChild(box);
           });
+        }
+      });
+    </script>
+    <script>
+      AFRAME.registerComponent('mimic-head-color', {
+        init: function () {
+          
+        },
+
+        tick: function() {
+          var nafEntities = NAF.entities.entities;
+          var objProperties = Object.getOwnPropertyNames(nafEntities);
+          var ownNetworkedPlayerObject;
+
+          if(objProperties == null || objProperties.length < 1) {
+            return;
+          }
+
+          objProperties.forEach((property) => {
+            var entity = nafEntities[property];
+            if(entity.getAttribute('id') == 'player') {
+              ownNetworkedPlayerObject = entity;
+            }
+          });
+
+          var material = ownNetworkedPlayerObject.children[0].getAttribute('material');
+
+          var el = this.el;
+          el.setAttribute('material', material);
+          el.removeAttribute('mimic-head-color');
         }
       });
     </script>
@@ -536,6 +671,18 @@
           </a-entity>
         </template>
 
+        <template id="hand-right-template">
+          <a-entity class="rightarm">
+            <a-box class="righthand" scale="0.2 0.2 0.2"></a-box>
+          </a-entity>
+        </template>
+
+        <template id="hand-left-template">
+          <a-entity class="leftarm">
+            <a-box class="lefthand" scale="0.2 0.2 0.2"></a-box>
+          </a-entity>
+        </template>
+
         <!-- Entity -->
         <template id="block-template">
           <a-entity>
@@ -560,7 +707,6 @@
           position="0 1.6 0"
           spawn-in-circle="radius:3"
           object-control-vr="template:#block-template"
-          thumbstick-controls
           look-controls
           wasd-controls
           cursor
@@ -572,10 +718,16 @@
         <a-entity 
           id="hand-right"
           name="hand-right"
+          class="hand-right"
+          networked="template:#hand-right-template;attachTemplateToLocal:false;"
           rotation="0 0 0"
+          range-multiplier="1";
           oculus-touch-controls="hand: right"
           a-button-listener
           b-button-listener
+          grip-listener
+          trigger-listener
+          thumbstick-object-listener
           raycaster="objects: .collidable,
                               .vr-menu, 
                               .vr-menu-add, 
@@ -585,15 +737,23 @@
                               .vr-submenu-add-plane,
                               .vr-submenu-add-sphere; 
                               showLine: true"
-        ></a-entity>
+        >
+          <!-- NAF Hand -->
+          <a-entity class="righthand" visible="false" mimic-head-color></a-entity>
+        </a-entity>
 
         <a-entity 
           id="hand-left"
           name="hand-left"
+          class="hand-left"
+          networked="template:#hand-left-template;attachTemplateToLocal:false;"
           oculus-touch-controls="hand: left"
           x-button-listener
           y-button-listener
         >
+          <!-- NAF Hand -->
+          <a-entity class="lefthand" visible="false" mimic-head-color></a-entity>
+
           <!-- VR MENU -->
           <a-entity 
             id="container-vr-menu"
@@ -686,6 +846,8 @@
       <a-entity name="o2-wireframe" geometry="primitive: box" material="color: #ff0000; wireframe: true" wireframe priority="level: wireframe" position="5.5 0.5 0.5"></a-entity>
       <a-entity name="floor" geometry="primitive: plane" material="color: #51524c" rotation="-90 0 0" scale="6 6 0.1" position="0 -1 0"></a-entity>
       <a-text id='debugtext' value="DEBUG TEXT" geometry="primitive: plane;" material="color: #20d67e" position="0 1 -6"></a-text>
+
+      <!--a-entity networked="template:#hand-right-template;attachTemplateToLocal:true;" test-comp></a-entity-->
       
       <!--a-entity geometry="primitive: box" placeable position="3 0 0" scale="0.2 0.2 0.2"></a-entity-->
       
