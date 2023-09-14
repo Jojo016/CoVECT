@@ -12,6 +12,7 @@ None
 1. Open the root folder in the console.
 1. Input "npm install" to install the dependencies of the editor
 1. Input "npm run-script build" to build the client-side of the editor.
+1. From there, run command *cp node_modules/aframe-colorwheel-component/dist/\* src/js/*
 
 If you have trouble during the build, use *--unsafe-perm* on both *npm install* commands.
 

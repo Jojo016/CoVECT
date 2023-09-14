@@ -290,6 +290,9 @@ AFRAME.registerComponent('object-control-vr', {
           var axesHelper = new THREE.AxesHelper(2);
           el.setObject3D("axes-helper", axesHelper);
 
+          // Add color-listener for Colorwheel
+          el.setAttribute('color-listener', '');
+
           // Revert hover color back to base color
           var material = el.getAttribute('material');
           var currentColor = material.color;
@@ -321,6 +324,9 @@ AFRAME.registerComponent('object-control-vr', {
           // Deselect object: Remove AxesHelper
           var axesHelper = el.getObject3D('axes-helper');
           el.removeObject3D('axes-helper');
+
+          // Remove colorlistener TODO: May be put into the 'Open/Close Color-Menu'
+          el.removeAttribute('color-listener');
         }
       }else{
 

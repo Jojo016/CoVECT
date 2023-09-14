@@ -7,7 +7,8 @@
 
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.5.0/socket.io.slim.js"></script>
-    <script src="https://unpkg.com/aframe-colorwheel-component/dist/aframe-colorwheel-component.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/16.3.5/Tween.min.js"></script>
+    <script src="/js/aframe-colorwheel-component.min.js"></script>
     <script src="/easyrtc/easyrtc.js"></script>
     <script src="/dist/networked-aframe.js"></script>
     <script>
@@ -612,6 +613,24 @@
           });
         }
       });
+      
+      AFRAME.registerComponent('color-listener', {
+        init: function(){
+          const el = this.el;
+          document.body.addEventListener('didchangecolor', function(evt){
+
+              //Available return formats from colorwheel
+              let style = evt.detail.style
+              let rgb = evt.detail.rgb
+              let hsv = evt.detail.hsv
+              let hex = evt.detail.hex
+
+              //el.setAttribute('color', hex)
+              el.setAttribute('material', 'color: ' + hex)
+              el.setAttribute('basecolor', hex)
+          })
+        }
+      })
     </script>
     <script>
       AFRAME.registerComponent('mimic-head-color', {
@@ -640,6 +659,20 @@
           var el = this.el;
           el.setAttribute('material', material);
           el.removeAttribute('mimic-head-color');
+        }
+      });
+    </script>
+    <script>
+      AFRAME.registerComponent('test-comp', {
+        init: function () {
+          var el = this.el;
+          /* REMOVE FAULTY PLANE FROM COLORWHEEL
+          var faultyPlane = el.children[1];
+          faultyPlane.remove();
+          console.log(el);
+          //*/
+
+
         }
       });
     </script>
@@ -756,9 +789,13 @@
           <a-entity class="lefthand" visible="false" mimic-head-color></a-entity>
 
           
-          <a-entity colorwheel></a-entity>
+          
 
           <!-- VR MENU -->
+          <a-entity scale="0.5 0.5 0.5" rotation="-45 0 0" visible="true">
+            <a-colorwheel position="0 1 0" showhexvalue="true" showswatches="true"></a-colorwheel>
+          </a-entity>
+
           <a-entity 
             id="container-vr-menu"
             scale="0.1 0.1 0.1"
