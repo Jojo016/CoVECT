@@ -172,11 +172,11 @@
 
           } else if(msgType === 'userJoined') {
             var data = JSON.parse(msgData);
-            window.parent.addUserToStatusBar(data.easyrtcid, data.name, false);
+            //window.parent.addUserToStatusBar(data.easyrtcid, data.name, false);
 
           }else if(msgType === 'userLeft') {
             var data = JSON.parse(msgData);
-            window.parent.removeUserFromStatusBar(data.easyrtcid);
+            //window.parent.removeUserFromStatusBar(data.easyrtcid);
           }
         });
 
@@ -193,6 +193,7 @@
       AFRAME.registerComponent('raycaster-listen', {
         init: function () {
           var el = this.el;
+          // TODO: GET MATERIAL PROPERTY OF TEMPORARY AXIS SLIDERS
           var baseColor = this.el.getAttribute('material').color;
           this.el.setAttribute('baseColor', baseColor);
           // Use events to figure out what raycaster is listening so we don't have to
@@ -362,6 +363,75 @@
             var newData = JSON.stringify(obj);
             easyrtc.sendDataWS(clientRtcId, "updateComponent", newData);
           });
+          
+        }
+      });
+
+      AFRAME.registerComponent('grab-axisslider-listener', {
+        init: function () {
+          var el = this.el;
+          var axis = this.el.getAttribute('axis');
+          el.addEventListener('grab-object-start', function handleSendSelect(event) {
+            // Start moving the object
+            el.setAttribute('axis-grabbed', 'axis: ' + axis);
+          });
+
+          el.addEventListener('grab-object-end', function handleSendSelect(event) {
+            // Stop moving the object
+            el.removeAttribute('axis-grabbed');
+
+            // Send the updated object position to server
+            var obj = new Object();
+            var pos = el.getAttribute('position');
+            var cid = el.getAttribute('cid');
+            obj.cid = cid; 
+            obj.updatetype = 'position';
+            obj.updatedata = pos;
+            var newData = JSON.stringify(obj);
+            easyrtc.sendDataWS(clientRtcId, "updateComponent", newData);
+          });
+        }
+      });
+
+      AFRAME.registerComponent('axis-grabbed', {
+        schema: {
+          axis: { default: "x" }
+        },
+        init: function () {
+          var axis = this.data.axis;
+        },
+
+        tick: function () {
+          var hand = null;
+          var raycaster = null;
+          var el = this.el;
+          var pEl = el.parentEl;
+          var axis = this.data.axis;
+          var debug = document.getElementById('debugtext');
+                    
+          try {
+            hand = document.getElementById('hand-right');
+            raycaster = hand.components.raycaster;
+          }catch(e) {
+            return;
+          }
+
+          if(raycaster == null) {
+            return;
+          }
+
+          // Handle Position
+          var pos3 = hand.getAttribute('position');
+          var tempPos3 = pos3.clone();
+          var quaternion = raycaster.el.object3D.quaternion;
+          var vector = new THREE.Vector3(0, 0, -1);
+          vector.applyQuaternion( quaternion );
+          tempPos3 = tempPos3.add(vector);
+          
+          var pPosition3 = pEl.getAttribute('position');
+          var newPos3 = pPosition3.clone();
+          newPos3[axis] = tempPos3[axis];
+          el.setAttribute('position', newPos3);
         }
       });
 
@@ -763,6 +833,7 @@
           trigger-listener
           thumbstick-object-listener
           raycaster="objects: .collidable,
+                              .axis-slider,
                               .vr-menu, 
                               .vr-menu-add, 
                               .vr-submenu-add, 
@@ -792,7 +863,7 @@
           
 
           <!-- VR MENU -->
-          <a-entity scale="0.5 0.5 0.5" rotation="-45 0 0" visible="true">
+          <a-entity scale="0.5 0.5 0.5" rotation="-45 0 0" visible="false">
             <a-colorwheel position="0 1 0" showhexvalue="true" showswatches="true"></a-colorwheel>
           </a-entity>
 
@@ -800,7 +871,7 @@
             id="container-vr-menu"
             scale="0.1 0.1 0.1"
             rotation="-45 0 0"
-            visible="false"
+            visible="true"
           >
             <a-entity
               class="vr-menu" 
