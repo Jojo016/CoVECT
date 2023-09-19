@@ -189,6 +189,7 @@
 
         // Init Listeners
         easyrtc.setServerListener( function(msgType, msgData, targeting) {
+          console.log(msgType + ' = ' + msgData);
           if(msgType === 'spawnComponent') {
             var newData = JSON.parse(msgData);
             var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];

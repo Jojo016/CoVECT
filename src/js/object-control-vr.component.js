@@ -11,12 +11,14 @@ AFRAME.registerComponent('object-control-vr', {
   spawnEntity: function(data) {
       var cid = data.cid;
       var shape = data.shape;
+      var scale = data.scale;
       var pos3 = new THREE.Vector3(data.posX, data.posY, data.posZ);
 
       // Create container element
       var pEl = document.createElement('a-entity');
       pEl.setAttribute('cid', cid);
       pEl.setAttribute('position', pos3);
+      pEl.setAttribute('scale', scale);
 
       // Create actual element
       var el = document.createElement('a-entity');
@@ -56,6 +58,7 @@ AFRAME.registerComponent('object-control-vr', {
         // Set as targetable for raycaster & add select handler
         el.setAttribute('class', 'collidable');
         el.setAttribute('select-listener', '');
+        el.setAttribute('trigger-button-listener');
         el.setAttribute('grab-listener', '');
       }
 
@@ -67,32 +70,9 @@ AFRAME.registerComponent('object-control-vr', {
   },
 
   createAxes: function(pEl) {
-    
     var xSlider = document.createElement('a-entity');
     var ySlider = document.createElement('a-entity');
     var zSlider = document.createElement('a-entity');
-
-    /*
-    var geometry = new THREE.CylinderGeometry( 0.05, 0.05, 2, 4 );
-    var material = new THREE.MeshBasicMaterial( {color: 0xff0000} );
-    var x = new THREE.Mesh( geometry, material );
-    material = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
-    var y = new THREE.Mesh( geometry, material );
-    material = new THREE.MeshBasicMaterial( {color: 0x0000ff} );
-    var z = new THREE.Mesh( geometry, material );
-
-    x.rotateZ(-1.5708);
-    z.rotateX(1.5708);
-
-    x.translateY(1);
-    y.translateY(1);
-    z.translateY(1);
-
-    xSlider.object3D.add(x);
-    ySlider.object3D.add(y);
-    zSlider.object3D.add(z);
-    */
-
 
     xSlider.setAttribute('material', 'color: #00ff00');
     ySlider.setAttribute('material', 'color: #ff0000');
@@ -130,11 +110,23 @@ AFRAME.registerComponent('object-control-vr', {
     pEl.appendChild(zSlider);
   },
 
+  removeAxes: function(pEl) {
+    var firstChild = null;
+  
+    Array.from(pEl.children).forEach(child => {
+      if(firstChild != null) {
+        pEl.removeChild(child);
+      }else{
+        firstChild = child;
+      }
+    });
+  },
+
   selectEntity: function(componentId, sourceRtcId, selectBool) {
 
     var el = null;
     var pEl = null;
-    var els = this.el.sceneEl.querySelectorAll('[cid]');
+    var els = document.querySelectorAll('[cid]');
 
     for (var i = 0; i < els.length; i++) {
 
@@ -150,8 +142,7 @@ AFRAME.registerComponent('object-control-vr', {
       // Client's own EasyRTCid
       if(selectBool) {
         // Select object: Add AxesHelper
-        var axesHelper = new THREE.AxesHelper(2);
-        el.setObject3D("axes-helper", axesHelper);
+        this.createAxes(pEl);
 
         // Add color-listener for Colorwheel
         el.setAttribute('color-listener', '');
@@ -186,8 +177,7 @@ AFRAME.registerComponent('object-control-vr', {
 
       }else{
         // Deselect object: Remove AxesHelper
-        var axesHelper = el.getObject3D('axes-helper');
-        el.removeObject3D('axes-helper');
+        this.removeAxes(pEl);
 
         // Remove colorlistener TODO: May be put into the 'Open/Close Color-Menu'
         el.removeAttribute('color-listener');
@@ -221,18 +211,14 @@ AFRAME.registerComponent('object-control-vr', {
       el.setAttribute('selectedby', sourceRtcId);
 
       // Remove 'select-button-listener' and the listener it adds
-      //el.removeAttribute('select-button-listener');
-      //el.removeEventListener("select-object", handleSendSelect);
+      el.removeAttribute('raycaster-listen');
     }else {
       // Remove easyRtcId of source
       el.removeAttribute('selectedby');
 
       // Add 'select-button-listener' again
-      //el.setAttribute('select-button-listener', '');
+      el.setAttribute('raycaster-listen', '');
     }
-
-    // TODO: Remove this temporary test code
-    this.createAxes(pEl);
   },
 
   removeComponent: function(componentId) {

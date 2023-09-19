@@ -125,6 +125,7 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       var newObj = JSON.parse(data);
       newObj['cid'] = componentCounter;
       newObj.selectedBy = -1;
+      newObj.scale = '0.2 0.2 0.2';
       listOfComponentData.push(newObj);  
 
       // Create new message

@@ -144,6 +144,7 @@
 
         // Init Listeners
         easyrtc.setServerListener( function(msgType, msgData, targeting) {
+
           if(msgType === 'spawnComponent') {
             var newData = JSON.parse(msgData);
             var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
@@ -204,10 +205,12 @@
 
           this.el.addEventListener('raycaster-intersected-cleared', evt => {
             // var hand = evt.detail.el;
-            var cid = this.el.getAttribute('cid');
-            var intersectCid = this.el.getAttribute('intersect-cid');
+            var el = this.el;
+            var pEl = el.parentEl;
+            var cid = pEl.getAttribute('cid');
+            var intersectCid = el.getAttribute('intersect-cid');
             if(cid == intersectCid) {
-              this.el.setAttribute('intersect-cid', null);
+              el.setAttribute('intersect-cid', null);
             }
             this.raycaster = null;
           });
@@ -255,10 +258,12 @@
 
         setHoverOver: function() {
           var intersectCid = this.el.getAttribute('intersect-cid');
-          var cid = this.el.getAttribute('cid');
+          var el = this.el;
+          var pEl = el.parentEl;
+          var cid = pEl.getAttribute('cid');
 
           if(cid != intersectCid) {
-            this.el.setAttribute('intersect-cid', cid);
+            el.setAttribute('intersect-cid', cid);
 
             // Update color
             var material = this.el.getAttribute('material');
@@ -323,8 +328,10 @@
             }
 
             // Check if the component is the first intersected
-            var componentId = el.getAttribute('cid');
+            var pEl = el.parentEl;
+            var componentId = pEl.getAttribute('cid');
             var intersectCid = el.getAttribute('intersect-cid');
+
             if(componentId != intersectCid) {
               return;
             }
@@ -344,19 +351,20 @@
       AFRAME.registerComponent('grab-listener', {
         init: function () {
           var el = this.el;
+          var pEl = el.parentEl;
           el.addEventListener('grab-object-start', function handleSendSelect(event) {
             // Start moving the object
-            el.setAttribute('placeable', '');
+            pEl.setAttribute('placeable', '');
           });
 
           el.addEventListener('grab-object-end', function handleSendSelect(event) {
             // Stop moving the object
-            el.removeAttribute('placeable');
+            pEl.removeAttribute('placeable');
 
             // Send the updated object position to server
             var obj = new Object();
-            var pos = el.getAttribute('position');
-            var cid = el.getAttribute('cid');
+            var pos = pEl.getAttribute('position');
+            var cid = pEl.getAttribute('cid');
             obj.cid = cid; 
             obj.updatetype = 'position';
             obj.updatedata = pos;
@@ -370,7 +378,8 @@
       AFRAME.registerComponent('grab-axisslider-listener', {
         init: function () {
           var el = this.el;
-          var axis = this.el.getAttribute('axis');
+          var pEl = el.parentEl;
+          var axis = el.getAttribute('axis');
           el.addEventListener('grab-object-start', function handleSendSelect(event) {
             // Start moving the object
             el.setAttribute('axis-grabbed', 'axis: ' + axis);
@@ -382,8 +391,8 @@
 
             // Send the updated object position to server
             var obj = new Object();
-            var pos = el.getAttribute('position');
-            var cid = el.getAttribute('cid');
+            var pos = pEl.getAttribute('position');
+            var cid = pEl.getAttribute('cid');
             obj.cid = cid; 
             obj.updatetype = 'position';
             obj.updatedata = pos;
@@ -407,7 +416,6 @@
           var el = this.el;
           var pEl = el.parentEl;
           var axis = this.data.axis;
-          var debug = document.getElementById('debugtext');
                     
           try {
             hand = document.getElementById('hand-right');
@@ -431,7 +439,7 @@
           var pPosition3 = pEl.getAttribute('position');
           var newPos3 = pPosition3.clone();
           newPos3[axis] = tempPos3[axis];
-          el.setAttribute('position', newPos3);
+          pEl.setAttribute('position', newPos3);
         }
       });
 
@@ -444,7 +452,7 @@
           el.addEventListener('triggerdown', function (evt) { // Actual implementation
             // Get raycaster
             var rc = el.components.raycaster;
-            
+
             // Get intersections
             var intersectedEls = rc.intersectedEls;
             if(intersectedEls.length < 1) {
@@ -496,6 +504,36 @@
 
       AFRAME.registerComponent('a-button-listener', {
         init: function () {
+          var el = this.el;
+          el.addEventListener('abuttondown', function (evt) {
+            // Approve & upload object the right hand is currently placing
+            var element = document.getElementById('currently-placing');
+            
+            if(element == null) {
+              return;
+            }
+
+            // Get data from 'element'
+            var shape = element.getAttribute('geometry').primitive;
+            var pos3 = element.getAttribute('position');
+
+            // Create data object to stringify
+            var obj = new Object();
+            obj.shape = shape;
+            obj.posX = pos3.x;
+            obj.posY = pos3.y;
+            obj.posZ = pos3.z;
+            obj.color = "#FF00FF"; 
+
+            var data = JSON.stringify(obj);
+            
+            // Remove temporary 'element'
+            element.parentEl.removeChild(element);
+
+            // Send 'create new component'
+            console.log("Sending: 'Create new object with data:' " + data);
+            easyrtc.sendDataWS(clientRtcId, "addNewObject", data);
+          });
         }
       });
 
@@ -663,23 +701,28 @@
             // TODO: Close the GUI
             // submenu.setAttribute('visible', false);
 
+            // TODO: Delete other 'currently-placing' objects WITH IF-NOT-EMPTY-CLAUSE
+            // var toDelete = document.getElementById('currently-placing');
+            // toDelete.parentEl.removeChild(toDelete);
+
             // Attach box to the raycaster
-            var box = document.createElement('a-entity');
-            box.setAttribute('class', 'collidable');
+            var newElement = document.createElement('a-entity');
+            newElement.setAttribute('class', 'collidable');
+            newElement.setAttribute('id', 'currently-placing');
 
             // Handle geometry/shape attribute
             var geometry = 'primitive: ' + shape + ';';
-            box.setAttribute('geometry', geometry);
+            newElement.setAttribute('geometry', geometry);
 
             // Handle other attributes
-            box.setAttribute('material', 'color: #00ff00');
-            box.setAttribute('scale', '0.1 0.1 0.1');
+            newElement.setAttribute('material', 'color: #00ff00');
+            newElement.setAttribute('scale', '0.2 0.2 0.2');
 
             // Handle Position with 'placeable' attribute 
-            box.setAttribute('placeable', '');
+            newElement.setAttribute('placeable', '');
 
             // Add obj to scene
-            scene.appendChild(box);
+            scene.appendChild(newElement);
           });
         }
       });
@@ -813,10 +856,8 @@
           object-control-vr="template:#block-template"
           look-controls
           wasd-controls
-          cursor
         >
           <a-sphere id="playerhead" class="head" visible="false" random-color></a-sphere>
-          <a-cursor></a-cursor>
         </a-entity>
         
         <a-entity 
@@ -829,8 +870,8 @@
           oculus-touch-controls="hand: right"
           a-button-listener
           b-button-listener
-          grip-listener
-          trigger-listener
+          grip-button-listener
+          trigger-button-listener
           thumbstick-object-listener
           raycaster="objects: .collidable,
                               .axis-slider,
