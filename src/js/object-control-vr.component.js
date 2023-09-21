@@ -258,7 +258,6 @@ AFRAME.registerComponent('object-control-vr', {
       // All other types should be changed for el itself
       el.setAttribute(type, data);
     }
-
   }
 });
 

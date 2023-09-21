@@ -89,9 +89,10 @@
         init: function () {
           var data = this.data;
           var el = this.el; 
+          var pEl = el.parentEl;
 
           // Get component id
-          var componentId = el.getAttribute('cid');
+          var componentId = pEl.getAttribute('cid');
 
           // Create data object to stringify
           var obj = new Object();
@@ -255,6 +256,158 @@
             let intersection = this.raycaster.components.raycaster.getIntersection(this.el);
             if (!intersection) { return; } // Not intersecting
             // intersecting
+            /*
+            console.log('Tick: ');
+            console.log(this.el);
+            */
+        }
+      });
+    </script>
+    <script>
+      AFRAME.registerComponent('grab-axisslider-listener', {
+        init: function () {
+          var el = this.el;
+          var pEl = el.parentEl;
+          var axis = el.getAttribute('axis');
+          var player = document.getElementById('player');
+          var origin = null;
+
+          el.addEventListener('mousedown', function handleSendSelect(event) {
+            // Disable look-controls for the drag
+            var lookController = player.getAttribute('look-controls');
+            lookController.enabled = false;
+            player.setAttribute('look-controls', lookController);
+
+            // Start moving the object
+            el.setAttribute('axis-grabbed', 'axis: ' + axis);
+          });
+
+          document.addEventListener("mousemove", (e) => {
+            var axisGrabbed = el.getAttribute('axis-grabbed');
+            if (axisGrabbed != null) {
+
+              if(origin == null) {
+                origin = new Object();
+                origin.x = e.offsetX;
+                origin.y = e.offsetY;
+                return;
+              }
+
+              // Determine axis & offset
+              var axis = axisGrabbed.axis;
+              var offset;
+              var offsetX = e.offsetX;
+              var offsetY = e.offsetY;
+             
+              offset = offsetX - origin.x;
+              origin.x = offsetX;
+
+              // Map offset to position
+              offset = offset/1000;
+              var pos3 = pEl.getAttribute('position');
+              pos3[axis] = pos3[axis] + offset;
+              pEl.setAttribute('position', pos3);
+
+              // Send changes to server
+              var obj = new Object();
+              var cid = pEl.getAttribute('cid');
+              obj.cid = cid; 
+              obj.updatetype = 'position';
+              obj.updatedata = pos3;
+              var newData = JSON.stringify(obj);
+              easyrtc.sendDataWS(clientRtcId, "updateComponent", newData);
+
+              // TODO: UPDATE POSITION IN PROPERTY WINDOW
+              /*
+              // Determine axis & offset
+              var axis = axisGrabbed.axis;
+              var offsetX = e.offsetX;
+              var offsetY = e.offsetY;
+
+              var diffX = offsetX - origin.x;
+              var diffY = offsetY - origin.y;
+
+              var offset = Math.sqrt(diffX*diffX + diffY*diffY)/1000;
+
+              origin.x = e.offsetX;
+              origin.y = e.offsetY;
+
+              // Determine positive or negative
+              var presign = this.posOrNeg(origin.x, origin.y, offsetX, offsetY);
+              console.log(presign);
+
+              // Map offset to position
+              var pos3 = pEl.getAttribute('position');
+              pos3[axis] = pos3[axis] + presign * offset;
+              pEl.setAttribute('position', pos3);
+              */
+            }
+          });
+
+          el.addEventListener('mouseup', function handleSendSelect(event) {
+            // Stop moving the object
+            el.removeAttribute('axis-grabbed');
+            origin = null;
+
+            // Enable the look-controls after the drag
+            var lookController = player.getAttribute('look-controls');
+            lookController.enabled = true;
+            player.setAttribute('look-controls', lookController);
+
+            // Send the updated object position to server
+            var obj = new Object();
+            var pos = pEl.getAttribute('position');
+            var cid = pEl.getAttribute('cid');
+            obj.cid = cid; 
+            obj.updatetype = 'position';
+            obj.updatedata = pos;
+            var newData = JSON.stringify(obj);
+            easyrtc.sendDataWS(clientRtcId, "updateComponent", newData);
+          });
+        }
+      });
+
+      AFRAME.registerComponent('axis-grabbed', {
+        schema: {
+          axis: { default: "x" }
+        },
+        init: function () {
+          var axis = this.data.axis;
+          var mousePos = "";
+        },
+
+        tick: function () {
+          /*
+          var hand = null;
+          var raycaster = null;
+          var el = this.el;
+          var pEl = el.parentEl;
+          var axis = this.data.axis;
+                    
+          try {
+            hand = document.getElementById('hand-right');
+            raycaster = hand.components.raycaster;
+          }catch(e) {
+            return;
+          }
+
+          if(raycaster == null) {
+            return;
+          }
+
+          // Handle Position
+          var pos3 = hand.getAttribute('position');
+          var tempPos3 = pos3.clone();
+          var quaternion = raycaster.el.object3D.quaternion;
+          var vector = new THREE.Vector3(0, 0, -1);
+          vector.applyQuaternion( quaternion );
+          tempPos3 = tempPos3.add(vector);
+          
+          var pPosition3 = pEl.getAttribute('position');
+          var newPos3 = pPosition3.clone();
+          newPos3[axis] = tempPos3[axis];
+          pEl.setAttribute('position', newPos3);
+          */
         }
       });
     </script>
@@ -311,8 +464,10 @@
             wasd-controls="fly:true;"
             look-controls
             cursor="rayOrigin: mouse"
-            raycaster="objects: .cursor-listener"
           >
+          <!-- 
+            raycaster="objects: .cursor-listener"
+          -->
             <a-sphere id="playerhead" class="head" visible="false" random-color></a-sphere>
           </a-entity>
         </a-entity>

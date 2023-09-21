@@ -9,84 +9,80 @@ AFRAME.registerComponent('object-control-desktop', {
   },
 
   spawnEntity: function(data) {
-      var shape = data.shape;
-      var el = document.createElement('a-entity');
+    var cid = data.cid;
+    var shape = data.shape;
+    var scale = data.scale;
+    var pos3 = new THREE.Vector3(data.posX, data.posY, data.posZ);
 
-      // Handle geometry/shape attribute
-      if(shape == 'sphere') {
-        el.setAttribute('geometry', 'primitive: sphere; segmentsWidth: 16; segmentsHeight: 16');
-      }else if(shape == 'plane') {
-        el.setAttribute('geometry', 'primitive: plane;');
-        el.setAttribute('rotation', {x: -90, y: 0, z: 0});
-      }else{
-        el.setAttribute('geometry', 'primitive: ' + shape + ';');
-      }
+    // Create container element
+    var pEl = document.createElement('a-entity');
+    pEl.setAttribute('cid', cid);
+    pEl.setAttribute('position', pos3);
+    pEl.setAttribute('scale', scale);
 
-      // Handle other attributes
-      el.setAttribute('material', 'color: ' + data.color);
-      el.setAttribute('selectable', 'targetable: true');
-      
-      var cid = data.cid;
-      el.setAttribute('cid', cid);
+    // Create actual element
+    var el = document.createElement('a-entity');
 
-      var pos3 = new THREE.Vector3(data.posX, data.posY, data.posZ);
-      el.setAttribute('position', pos3);
+    // Handle geometry/shape attribute
+    if(shape == 'sphere') {
+      el.setAttribute('geometry', 'primitive: sphere; segmentsWidth: 16; segmentsHeight: 16');
+    }else if(shape == 'plane') {
+      el.setAttribute('geometry', 'primitive: plane;');
+      el.setAttribute('rotation', {x: -90, y: 0, z: 0});
+    }else{
+      el.setAttribute('geometry', 'primitive: ' + shape + ';');
+    }
 
-      el.setAttribute('entityName', 'New ' + shape);
+    // Handle other attributes
+    el.setAttribute('material', 'color: #00FFFF');
 
-      // Handle Cursor attributes
-      el.setAttribute('class', 'cursor-listener');
-      el.setAttribute('cursor-listener', '');
+    el.setAttribute('entityName', 'New ' + shape);
 
-      // Check for selection
-      var selectedById = data.selectedBy;
-      if(selectedById != -1) {
-        // Make selected object transparent and untargetable
-        var mat = el.getDOMAttribute('material');
-        var selectable = el.getDOMAttribute('selectable');
+    // Check for selection
+    var selectedById = data.selectedBy;
+    if(selectedById != -1) {
+      // Make selected object transparent and untargetable
+      var mat = el.getDOMAttribute('material');
+      mat.opacity = 0.4;
+      el.setAttribute('material', mat);
 
-        mat.opacity = 0.4;
-        selectable.targetable = false;
+      // Set as untargetable for raycaster
+      el.removeAttribute('selectable');
 
-        el.setAttribute('material', mat);
-        el.setAttribute('selectable', selectable);
+      // Set easyRtcId of source
+      el.setAttribute('selectedby', selectedById);
+    }else{
+      // Set as targetable for raycaster & add select handler
+      el.setAttribute('selectable', '');
+    }
 
-        // Set easyRtcId of source
-        el.setAttribute('selectedby', selectedById);
-      }else{
+    var scene = this.el.sceneEl;
+    pEl.appendChild(el);
+    scene.appendChild(pEl);
 
-      }
+    // Add object to list 'Scene Objects'
+    var table = parent.document.getElementById('scene-objects');
+    var tr = table.insertRow();
+    tr.setAttribute("id", "cid" + cid);
 
-      var scene = this.el.sceneEl;
-      scene.appendChild(el);
-
-      // Add object to list 'Scene Objects'
-      var table = parent.document.getElementById('scene-objects');
-      var tr = table.insertRow();
-      tr.setAttribute("id", "cid" + cid);
-
-      var cidCell = tr.insertCell();
-      cidCell.appendChild(document.createTextNode(cid));
-      var elementNameCell = tr.insertCell();
-      elementNameCell.appendChild(document.createTextNode(shape));
-      var buttonCell = tr.insertCell();
-      var button = document.createElement('button');
-      button.innerText = "X";
-      button.onclick = function()
-      {
-        // TODO: Get correct easyrtcid
-        var easyrtcId = 0;
-        var obj = new Object();
-        obj.cid = cid; 
-        var newData = JSON.stringify(obj);
-        easyrtc.sendDataWS(easyrtcId, "removeComponent", newData);
-      }
-      buttonCell.appendChild(button);
+    var cidCell = tr.insertCell();
+    cidCell.appendChild(document.createTextNode(cid));
+    var elementNameCell = tr.insertCell();
+    elementNameCell.appendChild(document.createTextNode(shape));
+    var buttonCell = tr.insertCell();
+    var button = document.createElement('button');
+    button.innerText = "X";
+    button.onclick = function()
+    {
+      var obj = new Object();
+      obj.cid = cid; 
+      var newData = JSON.stringify(obj);
+      easyrtc.sendDataWS(clientRtcId, "removeComponent", newData);
+    }
+    buttonCell.appendChild(button);
   },
 
   onMouseMove: function(event){
-
-
       var mouse;
 
       document.addEventListener('click', event => {
@@ -95,45 +91,66 @@ AFRAME.registerComponent('object-control-desktop', {
       });
   },
 
-  createAxes: function(object) {
+  createAxes: function(pEl) {
+    var xSlider = document.createElement('a-entity');
+    var ySlider = document.createElement('a-entity');
+    var zSlider = document.createElement('a-entity');
 
-    var geometry = new THREE.CylinderGeometry( 0.05, 0.05, 2, 4 );
-    var material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
-    var x = new THREE.Mesh( geometry, material );
-    var y = new THREE.Mesh( geometry, material );
-    var z = new THREE.Mesh( geometry, material );
+    xSlider.setAttribute('material', 'color: #00ff00');
+    ySlider.setAttribute('material', 'color: #ff0000');
+    zSlider.setAttribute('material', 'color: #0000ff');
 
-    x.rotateZ(1.5708);
-    z.rotateX(1.5708);
+    xSlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.15; height: 4; segmentsRadial: 4');
+    ySlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.15; height: 4; segmentsRadial: 4');
+    zSlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.15; height: 4; segmentsRadial: 4');
+    
+    xSlider.setAttribute('rotation', '0 0 -90');
+    zSlider.setAttribute('rotation', '90 0 0');
+    
+    var el = pEl.children[0];
 
-    x.name = "xAxis";
-    y.name = "yAxis";
-    z.name = "zAxis";
-
-    x.translateY(1);
-    y.translateY(1);
-    z.translateY(1);
-
-    object.object3D.add(x);
-    object.object3D.add(y);
-    object.object3D.add(z);
-
-    var clickMouse = new THREE.Vector2();
-
-    if(false){
-      var window = null;
-      window.addEventListener('click', event => {
-        clickMouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-        clickMouse.y = ( event.clientY / window.innerHeight ) * 2 + 1;
-
-        //raycaster.setFromCamera(clickMouse, camera);
-        //const found = raycaster.intersectObjects(scene.children);
-      });
+    if(el.getAttribute('geometry').primitive == 'box') {
+      xSlider.setAttribute('position', '1.5 -0.5 -0.5');
+      ySlider.setAttribute('position', '-0.5 1.5 -0.5');
+      zSlider.setAttribute('position', '-0.5 -0.5 1.5');
+    }else{
+      xSlider.setAttribute('position', '1 -1 -1');
+      ySlider.setAttribute('position', '-1 1 -1');
+      zSlider.setAttribute('position', '-1 -1 1');
     }
+
+    xSlider.setAttribute('grab-axisslider-listener', '');
+    ySlider.setAttribute('grab-axisslider-listener', '');
+    zSlider.setAttribute('grab-axisslider-listener', '');
+
+    xSlider.setAttribute('axis', "x");
+    ySlider.setAttribute('axis', "y");
+    zSlider.setAttribute('axis', "z");
+
+    xSlider.setAttribute('class', 'axis-slider');
+    ySlider.setAttribute('class', 'axis-slider');
+    zSlider.setAttribute('class', 'axis-slider');
+
+    pEl.appendChild(xSlider);
+    pEl.appendChild(ySlider);
+    pEl.appendChild(zSlider);
+  },
+
+  removeAxes: function(pEl) {
+    var firstChild = null;
+  
+    Array.from(pEl.children).forEach(child => {
+      if(firstChild != null) {
+        pEl.removeChild(child);
+      }else{
+        firstChild = child;
+      }
+    });
   },
 
   colorChanged: function(event) {
     var el = event.currentTarget.el;
+    var pEl = el.parentEl;
     var mat = el.getAttribute('material');
 
     mat.color = event.target.value;
@@ -143,21 +160,19 @@ AFRAME.registerComponent('object-control-desktop', {
     // Send changes to server
     var type = event.type;
     if(type == 'change') {
-      // TODO: Get correct easyrtcid
-      var easyrtcId = 0;
       var obj = new Object();
-      var cid = el.getAttribute('cid');
+      var cid = pEl.getAttribute('cid');
       obj.cid = cid; 
       obj.updatetype = 'material';
       obj.updatedata = mat;
       var newData = JSON.stringify(obj);
-      easyrtc.sendDataWS(easyrtcId, "updateComponent", newData);
+      easyrtc.sendDataWS(clientRtcId, "updateComponent", newData);
     }
   },
 
   positionChanged: function(event) {
-    var el = event.currentTarget.el;
-    var pos = el.getAttribute('position');
+    var pEl = event.currentTarget.el;
+    var pos = pEl.getAttribute('position');
     var value = event.target.value;
 
     // Get the correct  x-/y- or z-coord and update it
@@ -166,18 +181,16 @@ AFRAME.registerComponent('object-control-desktop', {
     pos[coord] = value; 
 
     // Update local data 
-    el.setAttribute('position', pos);
+    pEl.setAttribute('position', pos);
 
     // Send changes to server
-    // TODO: Get correct easyrtcid
-    var easyrtcId = 0;
     var obj = new Object();
-    var cid = el.getAttribute('cid');
+    var cid = pEl.getAttribute('cid');
     obj.cid = cid; 
     obj.updatetype = 'position';
     obj.updatedata = pos;
     var newData = JSON.stringify(obj);
-    easyrtc.sendDataWS(easyrtcId, "updateComponent", newData);
+    easyrtc.sendDataWS(clientRtcId, "updateComponent", newData);
   },
 
   addPropertiesRow: function(pPanel, action, data) {
@@ -192,18 +205,19 @@ AFRAME.registerComponent('object-control-desktop', {
       pPanel.appendChild(div);
 
     }else if(action == 'select-aframe-entity') {
-      var el = data;
+      var pEl = data;
+      var el = pEl.children[0];
       var div = document.createElement('div');
 
       // Object Name
       var name = el.getAttribute('entityName');
-      div.className = 'properties-category-content';
+      div.className = 'property-row';
       div.innerHTML = `
-        <span class="properties-category-name">
+        <span class="property-row-element">
           <b>Name</b>
         </span>
-        <div class="properties-parameter">
-          <input type="text" name="name" value="${name}"/>
+        <div class="property-row-element-name">
+          <input class="property-row-big-input" type="text" name="name" value="${name}"/>
         </div>
       `;
 
@@ -214,17 +228,17 @@ AFRAME.registerComponent('object-control-desktop', {
       pPanel.appendChild(div);
 
       // Position
-      var position = el.getAttribute('position');
+      var position = pEl.getAttribute('position');
       div = document.createElement('div');
-      div.className = 'properties-category-content';
+      div.className = 'property-row';
       div.innerHTML = `
-          <span class="properties-category-name">
+          <span class="property-row-element">
             <b>Position</b>
           </span>
         `;
       for(const coord of ['x', 'y', 'z']) {
         div.innerHTML += `
-          <div class="properties-parameter">
+          <div class="property-row-element">
             <span class="properties-parameter-name">
               ${coord}:
             </span>
@@ -233,7 +247,7 @@ AFRAME.registerComponent('object-control-desktop', {
         `;
       };
 
-      div.el = el;
+      div.el = pEl;
       div.addEventListener("change", this.positionChanged, false);
       pPanel.appendChild(div);
 
@@ -241,13 +255,13 @@ AFRAME.registerComponent('object-control-desktop', {
       var material = el.getAttribute('material');
       var color = material.color;
       div = document.createElement('div');
-      div.className = 'properties-category-content';
+      div.className = 'property-row';
       div.innerHTML = `
-        <span class="properties-category-name">
+        <span class="property-row-element">
           <b>Color</b>
         </span>
-        <div class="properties-parameter">
-          <input type="color" name="color" value="${material.color}"/>
+        <div class="property-row-element">
+          <input type="color" name="color" value="${color}"/>
         </div>
       `;
 
@@ -263,44 +277,18 @@ AFRAME.registerComponent('object-control-desktop', {
   selectEntity: function(componentId, sourceRtcId, selectBool) {
 
       var el = null;
+      var pEl = null;
       var els = this.el.sceneEl.querySelectorAll('[cid]');
 
       for (var i = 0; i < els.length; i++) {
 
         if(els[i].getAttribute('cid') == componentId) {
-          el = els[i];
+          pEl = els[i];
+          el = pEl.children[0];
           break;
         }
       }
-
-      //this.createAxes(el);
-
-
-
-      // Direction: up
-      /*
-      var dir = new THREE.Vector3( 0, 1, 0 );
-      dir.normalize();
-      var origin = new THREE.Vector3( 0, 0, 0 );
-      var length = 3;
-      var hex = 0x00ff00;
-
-      var arrowHelper = new THREE.ArrowHelper( dir, origin, length, hex );
-
-      console.log(arrowHelper);
-
-      //this.el.sceneEl.object3D.add( arrowHelper );
-
-      el.object3D.add( arrowHelper );
-
-      /*
-      console.log(el);
-      var axesHelper = new THREE.AxesHelper(5);
-      el.setObject3D("axes-Helper", axesHelper);
-      //*/
-
       
-      //*
       // Decide whether to select or deselect the object
       var pPanel = window.parent.document.getElementById('properties-panel');
 
@@ -308,8 +296,8 @@ AFRAME.registerComponent('object-control-desktop', {
         // Client's own EasyRTCid
         if(selectBool) {
           // Select object
-          var axesHelper = new THREE.AxesHelper(5);
-          el.setObject3D("axes-helper", axesHelper);
+          // Create AxesHelper
+          this.createAxes(pEl);
 
           // Update properties view
           while (pPanel.firstChild) {
@@ -317,7 +305,7 @@ AFRAME.registerComponent('object-control-desktop', {
             pPanel.removeChild(pPanel.firstChild);
           }
 
-          this.addPropertiesRow(pPanel, 'select-aframe-entity', el);
+          this.addPropertiesRow(pPanel, 'select-aframe-entity', pEl);
 
         }else{
           // Deselect object
@@ -330,8 +318,7 @@ AFRAME.registerComponent('object-control-desktop', {
           this.addPropertiesRow(pPanel, 'properties-no-selection', null);
 
           // Remove AxesHelper
-          var axesHelper = el.getObject3D('axes-helper');
-          el.removeObject3D('axes-helper');
+          this.removeAxes(pEl);
         }
       }else{
 
@@ -377,38 +364,43 @@ AFRAME.registerComponent('object-control-desktop', {
 
       // Remove entity from scene
       var el = null;
+      var pEl = null;
       var els = this.el.sceneEl.querySelectorAll('[cid]');
 
       for (var i = 0; i < els.length; i++) {
 
         if(els[i].getAttribute('cid') == componentId) {
-          el = els[i];
+          pEl = els[i];
+          el = pEl.children[0];
           break;
         }
       }
 
-      el.parentNode.removeChild(el);
+      pEl.parentNode.removeChild(pEl);
   },
 
   updateComponent: function(componentId, type, data) {
     console.log("updateComponent");
     var el = null;
+    var pEl = null;
     var els = this.el.sceneEl.querySelectorAll('[cid]');
 
     for (var i = 0; i < els.length; i++) {
 
       if(els[i].getAttribute('cid') == componentId) {
-        el = els[i];
+        pEl = els[i];
+        el = pEl.children[0];
         break;
       }
     }
 
-    if(type == 'material') {
-      console.log("material:");
-      console.log(data);
+    if(type == 'position') {
+      // Position has to be changed for parentEl
+      pEl.setAttribute(type, data);
+    }else{
+      // All other types should be changed for el itself
+      el.setAttribute(type, data);
     }
-
-    el.setAttribute(type, data);
   }
 });
 
