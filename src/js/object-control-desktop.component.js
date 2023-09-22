@@ -18,10 +18,11 @@ AFRAME.registerComponent('object-control-desktop', {
     var pEl = document.createElement('a-entity');
     pEl.setAttribute('cid', cid);
     pEl.setAttribute('position', pos3);
-    pEl.setAttribute('scale', scale);
+    pEl.setAttribute('class', 'entity');
 
     // Create actual element
     var el = document.createElement('a-entity');
+    el.setAttribute('scale', scale);
 
     // Handle geometry/shape attribute
     if(shape == 'sphere') {
@@ -100,9 +101,9 @@ AFRAME.registerComponent('object-control-desktop', {
     ySlider.setAttribute('material', 'color: #ff0000');
     zSlider.setAttribute('material', 'color: #0000ff');
 
-    xSlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.15; height: 4; segmentsRadial: 4');
-    ySlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.15; height: 4; segmentsRadial: 4');
-    zSlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.15; height: 4; segmentsRadial: 4');
+    xSlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.03; height: 0.8; segmentsRadial: 6');
+    ySlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.03; height: 0.8; segmentsRadial: 6');
+    zSlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.03; height: 0.8; segmentsRadial: 6');
     
     xSlider.setAttribute('rotation', '0 0 -90');
     zSlider.setAttribute('rotation', '90 0 0');
@@ -110,13 +111,13 @@ AFRAME.registerComponent('object-control-desktop', {
     var el = pEl.children[0];
 
     if(el.getAttribute('geometry').primitive == 'box') {
-      xSlider.setAttribute('position', '1.5 -0.5 -0.5');
-      ySlider.setAttribute('position', '-0.5 1.5 -0.5');
-      zSlider.setAttribute('position', '-0.5 -0.5 1.5');
+      xSlider.setAttribute('position', '0.2 -0.2 -0.2');
+      ySlider.setAttribute('position', '-0.2 0.2 -0.2');
+      zSlider.setAttribute('position', '-0.2 -0.2 0.2');
     }else{
-      xSlider.setAttribute('position', '1 -1 -1');
-      ySlider.setAttribute('position', '-1 1 -1');
-      zSlider.setAttribute('position', '-1 -1 1');
+      xSlider.setAttribute('position', '0 -0.4 -0.4');
+      ySlider.setAttribute('position', '-0.4 0 -0.4');
+      zSlider.setAttribute('position', '-0.4 -0.4 0');
     }
 
     xSlider.setAttribute('grab-axisslider-listener', '');
@@ -193,9 +194,206 @@ AFRAME.registerComponent('object-control-desktop', {
     easyrtc.sendDataWS(clientRtcId, "updateComponent", newData);
   },
 
-  addPropertiesRow: function(pPanel, action, data) {
+  interactionPropertyChanged: function(event) {
+    var pEl = event.currentTarget.el;
+    var eventTarget = event.target;
+    var property = eventTarget.name;
+    var value = eventTarget.value;
+    var doc = window.parent.document;    
 
-    if(action == "properties-no-selection") {
+    var data = new Object();
+    data.cid = pEl.getAttribute('cid');
+
+    var easyPropertyList = ['toheight', 'toradius'];
+    var complexPropertyList = ['toshape'];
+
+    // TODO: ADD 'easyPropertyList' HERE for e.g. 'toheight' and 'toradius'
+    /*
+    propertyList.forEach(function(prop) {
+      var element = doc.getElementById(prop);
+      console.log(element);
+      if(element != null & element.length > 0) {
+        data[prop] = element[0].value;
+        console.log(prop + ' = ' + data[prop]);
+      }
+    });
+    */
+
+    complexPropertyList.forEach(function(prop) {
+      var element = doc.getElementById(prop);
+      console.log(element);
+      if(element != null) {
+        data[prop] = element.value;
+        console.log(prop + ' = ' + data[prop]);
+      }
+    });
+    
+
+    // Add properties row for the given value
+    /*
+    var attribute = doc.getElementsByName('attribute');
+    if(attribute != "none") {
+      data.attribute = attribute;
+      console.log("attribute:");
+      console.log(attribute);
+
+      switch(attribute) {
+        case 'radius':
+          data.radius = Math.abs(value);
+          break;
+  
+        case 'height':
+          data.height = Math.abs(value);
+          break;
+  
+        case 'shape':
+          // Check if primitive exists
+          inputList = doc.getElementById('shapes');
+          var list = [];
+          for(let i = 0; i<inputList.length; i++) {
+            list.push(inputList[i].value);
+          }
+  
+          if(!list.includes(value)) {
+            eventTarget.value = '';
+            return;
+          }
+
+          data.primivite = value;
+          break;
+  
+        default:
+          break;
+      }
+    }
+    */
+    
+    // Send changes to server
+    var newData = JSON.stringify(data);
+    console.log("newData:");
+    console.log(newData);
+    //easyrtc.sendDataWS(clientRtcId, "updateInteraction", newData);
+  },
+
+  interactionChanged: function(event) {
+    var pEl = event.currentTarget.el;
+    var eventTarget = event.target;
+    var name = eventTarget.name;
+    var value = eventTarget.value;
+    
+    if(name == 'action') {
+
+      if(value == 'Modify') {
+        var eventParent = eventTarget.parentElement.parentElement;
+        var propertyDiv = eventParent.children[3];
+
+        propertyDiv.innerHTML = `
+          <span class="properties-parameter-name">
+            <b>Attribute</b>
+          </span>
+          <select name="attribute" >
+            <option value="none">Keep current</option>
+            <option value="geometry">Geometry</option>
+            <option value="material">Material</option>
+            <option value="position">Position</option>
+            <option value="scale">Scale</option>
+          </select>
+        `;
+      }else{
+        return;
+      }
+
+
+    }else if(name == 'target') {
+
+    }else if(name == 'property') {
+      var doc = window.parent.document;
+      var propertyOptions = doc.getElementById('properties').children;
+
+      var propertyList = [];
+      for(let i = 0; i<propertyOptions.length; i++) {
+        propertyList.push(propertyOptions[i].value);
+      }
+
+      if(!propertyList.includes(value)) {
+        eventTarget.value = '';
+        return;
+      }
+
+      // Add properties row for the given value
+      var pPanel = doc.getElementById('properties-panel');
+      var oldDiv = pPanel.children[3];
+      var newDiv = document.createElement('div');
+
+      switch(value) {
+        case 'material':
+          break;
+
+        case 'position':
+          break;
+
+        case 'scale':
+          break;
+
+        case 'geometry':
+          // Geometry
+          newDiv.className = 'property-row-append';
+          newDiv.innerHTML = `
+            <span class="property-row-element">
+            </span>
+            <div class="property-row-element">
+              <span class="properties-parameter-name">
+                <b>To Shape</b>
+              </span>
+              <select name="shape" >
+                <option value="none">Keep current</option>
+                <option value="box">Box</option>
+                <option value="cylinder">Cylinder</option>
+                <option value="plane">Plane</option>
+                <option value="sphere">Sphere</option>
+              </select>
+            </div>
+            <div class="property-row-element">
+              <span class="properties-parameter-name">
+                <b>To Height</b>
+              </span>
+              <input type="number" name="height" value="1"/>
+            </div>
+            <div class="property-row-element">
+              <span class="properties-parameter-name">
+                <b>To Radius</b>
+              </span>
+              <input type="number" name="radius" value="1"/>
+            </div>
+          `;
+
+          var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+          newDiv.addEventListener("change", controller.interactionPropertyChanged, false);
+          newDiv.el = pEl;
+          break;
+
+        default:
+          break;
+      }
+
+      pPanel.replaceChild(newDiv, oldDiv);
+    }
+
+    // Send changes to server
+    /*
+    var obj = new Object();
+    var cid = pEl.getAttribute('cid');
+    obj.cid = cid; 
+    obj.updatetype = 'position';
+    obj.updatedata = pos;
+    var newData = JSON.stringify(obj);
+    easyrtc.sendDataWS(clientRtcId, "updateComponent", newData);
+    */
+  },
+
+  addPropertiesRow: function(pPanel, classType, data) {
+
+    if(classType == "no-selection") {
       var div = document.createElement('div');
 
       div.className = 'properties-no-selection';
@@ -204,7 +402,8 @@ AFRAME.registerComponent('object-control-desktop', {
       `;
       pPanel.appendChild(div);
 
-    }else if(action == 'select-aframe-entity') {
+    }else if(classType == 'entity') {
+      // ###### ENTITY ######
       var pEl = data;
       var el = pEl.children[0];
       var div = document.createElement('div');
@@ -236,13 +435,13 @@ AFRAME.registerComponent('object-control-desktop', {
             <b>Position</b>
           </span>
         `;
-      for(const coord of ['x', 'y', 'z']) {
+      for(const coord of ['X', 'Y', 'Z']) {
         div.innerHTML += `
           <div class="property-row-element">
             <span class="properties-parameter-name">
-              ${coord}:
+              <b>${coord}</b>
             </span>
-            <input type="number" name="${coord}Position" value="${position[coord]}"/>
+            <input type="number" name="${coord.toLowerCase()}Position" value="${position[coord.toLowerCase()]}"/>
           </div>
         `;
       };
@@ -260,8 +459,8 @@ AFRAME.registerComponent('object-control-desktop', {
         <span class="property-row-element">
           <b>Color</b>
         </span>
-        <div class="property-row-element">
-          <input type="color" name="color" value="${color}"/>
+        <div class="property-row-element-name">
+          <input class="property-row-big-input" type="color" name="color" value="${color}"/>
         </div>
       `;
 
@@ -270,6 +469,231 @@ AFRAME.registerComponent('object-control-desktop', {
       div.addEventListener("change", this.colorChanged, false);
 
       pPanel.appendChild(div);
+
+    }else if(classType == 'interaction') {
+      // ###### INTERACTION ######
+      var pEl = data;
+      var el = pEl.children[0];
+      var div = document.createElement('div');
+
+      // Object Name
+      var name = el.getAttribute('entityName');
+      div.className = 'property-row';
+      div.innerHTML = `
+        <span class="property-row-element">
+          <b>Name</b>
+        </span>
+        <div class="property-row-element-name">
+          <input class="property-row-big-input" type="text" name="name" value="${name}"/>
+        </div>
+      `;
+
+      div.el = el;
+      // TODO: Add Name Change Event Listener + Function
+      //div.addEventListener("change", this.nameChanged, false);
+
+      pPanel.appendChild(div);
+
+      // Position
+      var position = pEl.getAttribute('position');
+      div = document.createElement('div');
+      div.className = 'property-row';
+      div.innerHTML = `
+          <span class="property-row-element">
+            <b>Position</b>
+          </span>
+        `;
+      for(const coord of ['X', 'Y', 'Z']) {
+        div.innerHTML += `
+          <div class="property-row-element">
+            <span class="properties-parameter-name">
+              <b>${coord}</b>
+            </span>
+            <input type="number" name="${coord.toLowerCase()}Position" value="${position[coord.toLowerCase()]}"/>
+          </div>
+        `;
+      };
+
+      div.el = pEl;
+      div.addEventListener("change", this.positionChanged, false);
+      pPanel.appendChild(div);
+
+      // Interaction
+      div = document.createElement('div');
+      var appendDiv = document.createElement('div');
+
+      div.className = 'property-row';
+
+      var data = pEl.interaction;
+
+      var target = data.target;
+      var action = data.action;
+      var attribute = data.attribute;
+      var toshape = data.toshape;
+      var toheight = data.toheight;
+      var toradius = data.toradius;
+
+      // Append actual property rows
+      var actionOptions = [['none', 'Keep current'], ['modify', 'Modify'], ['remove', 'Remove']];
+      var actionOptionsText = ``;
+
+      for(var i=0; i<actionOptions.length; i++) {
+        var act = actionOptions[i];
+
+        if(act[0] == action) {
+          actionOptionsText += `
+            <option selected="selected" value="${act[0]}">${act[1]}</option>
+          `;
+        }else{
+          actionOptionsText += `
+            <option value="${act[0]}">${act[1]}</option>
+          `;
+        }
+      }
+
+      div.innerHTML += `
+        <span class="property-row-element">
+          <b>Interaction</b>
+        </span>
+        <div class="property-row-element">
+          <span class="properties-parameter-name">
+            <b>Target</b>
+          </span>
+          <input type="text" name="target" list="cids"/>
+        </div>
+        <div class="property-row-element">
+          <span class="properties-parameter-name">
+            <b>Action</b>
+          </span>
+          <select name="action">
+            ${actionOptionsText}
+          </select>
+        </div>
+        `;
+
+        // Check if attribute is needed
+        if(action == 'modify') {
+          // Check for attribute
+          var attrOptions = [['none', 'Keep current'], ['geometry', 'Geometry'], ['material', 'Material'], ['position', 'Position'], ['scale', 'Scale']];
+          var attrOptionsText = ``;
+
+          for(var i=0; i<attrOptions.length; i++) {
+            var attr = attrOptions[i];
+
+            if(attr[0] == attribute) {
+              attrOptionsText += `
+                <option selected="selected" value="${attr[0]}">${attr[1]}</option>
+              `;
+            }else{
+              attrOptionsText += `
+                <option value="${attr[0]}">${attr[1]}</option>
+              `;
+            }
+          }
+
+          div.innerHTML += `
+            <div class="property-row-element">
+              <span class="properties-parameter-name">
+                <b>Attribute</b>
+              </span>
+              <select name="attribute">
+                ${attrOptionsText}
+              </select>
+            </div>
+          `;
+
+          appendDiv.className = 'property-row-append';
+
+          switch(attribute) {
+            case 'material':
+              break;
+    
+            case 'position':
+              break;
+    
+            case 'scale':
+              break;
+    
+            case 'geometry':
+              // Geometry
+              var shapeOptions = [['none', 'Keep current'], ['box', 'Box'], ['cylinder', 'Cylinder'], ['plane', 'Plane'], ['sphere', 'Sphere']];
+              var shapeOptionsText = ``;
+
+              for(var i=0; i<shapeOptions.length; i++) {
+                var sha = shapeOptions[i];
+
+                if(sha[0] == toshape) {
+                  shapeOptionsText += `
+                    <option selected="selected" value="${sha[0]}">${sha[1]}</option>
+                  `;
+                }else{
+                  shapeOptionsText += `
+                    <option value="${sha[0]}">${sha[1]}</option>
+                  `;
+                }
+              }
+              appendDiv.innerHTML = `
+                <span class="property-row-element">
+                </span>
+                <div class="property-row-element">
+                  <span class="properties-parameter-name">
+                    <b>To Shape</b>
+                  </span>
+                  <select id="toshape">
+                    ${shapeOptionsText}
+                  </select>
+                </div>
+                <div class="property-row-element">
+                  <span class="properties-parameter-name">
+                    <b>To Height</b>
+                  </span>
+                  <input type="number" id="toheight" value="${toheight}"/>
+                </div>
+                <div class="property-row-element">
+                  <span class="properties-parameter-name">
+                    <b>To Radius</b>
+                  </span>
+                  <input type="number" id="toradius" value="${toradius}"/>
+                </div>
+              `;
+    
+              var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+              appendDiv.addEventListener("change", controller.interactionPropertyChanged, false);
+              appendDiv.el = pEl;
+              break;
+    
+            default:
+              break;
+          }
+
+        }else{
+          // No modify-action
+          div.innerHTML += `
+            <div class="property-row-element">
+              <span class="properties-parameter-name">
+                <b>Attribute</b>
+              </span>
+              <select disabled name="attribute" >
+                <option value="none">Keep current</option>
+                <option value="geometry">Geometry</option>
+                <option value="material">Material</option>
+                <option value="position">Position</option>
+                <option value="scale">Scale</option>
+              </select>
+            </div>
+            `;
+          
+          appendDiv.innerHTML += `
+          <div class="property-row-element-fill">
+          </div>
+          `;
+        }
+
+        div.el = el;
+        div.addEventListener("change", this.interactionChanged, false);
+  
+        pPanel.appendChild(div);
+        pPanel.appendChild(appendDiv);
     }
 
   },
@@ -291,6 +715,7 @@ AFRAME.registerComponent('object-control-desktop', {
       
       // Decide whether to select or deselect the object
       var pPanel = window.parent.document.getElementById('properties-panel');
+      var objectType = pEl.getAttribute('class');
 
       if(sourceRtcId == clientRtcId) {
         // Client's own EasyRTCid
@@ -305,20 +730,20 @@ AFRAME.registerComponent('object-control-desktop', {
             pPanel.removeChild(pPanel.firstChild);
           }
 
-          this.addPropertiesRow(pPanel, 'select-aframe-entity', pEl);
+          this.addPropertiesRow(pPanel, objectType, pEl);
 
         }else{
           // Deselect object
+          this.removeAxes(pEl);
+
+          // Remove object from properties panel
           while (pPanel.firstChild) {
             // Remove all children
             pPanel.removeChild(pPanel.firstChild);
           }
 
           // Set properties panel to 'no selection'
-          this.addPropertiesRow(pPanel, 'properties-no-selection', null);
-
-          // Remove AxesHelper
-          this.removeAxes(pEl);
+          this.addPropertiesRow(pPanel, 'no-selection', null);
         }
       }else{
 
@@ -326,12 +751,20 @@ AFRAME.registerComponent('object-control-desktop', {
         if(selectBool) {
           // Make selected object transparent 
           var mat = el.getAttribute('material');
-          mat.opacity = 0.4;
+          if(objectType == 'interaction') {
+            mat.opacity = 0.1;
+          }else{
+            mat.opacity = 0.4;
+          }
           el.setAttribute('material', mat);
         }else {
           // Make deselected object fully visible
           var mat = el.getAttribute('material');
-          mat.opacity = 1.0;
+          if(objectType == 'interaction') {
+            mat.opacity = 0.4;
+          }else{
+            mat.opacity = 1.0;
+          }
           el.setAttribute('material', mat);
         }
       }
@@ -400,6 +833,83 @@ AFRAME.registerComponent('object-control-desktop', {
     }else{
       // All other types should be changed for el itself
       el.setAttribute(type, data);
+    }
+  },
+
+  spawnInteraction: function(data) {
+    var type = data.type;
+
+    if(type == 'actionarea') {
+      
+      var cid = data.cid;
+      var scale = data.scale;
+      var pos3 = new THREE.Vector3(data.posX, data.posY, data.posZ);
+
+      // Create container element
+      var pEl = document.createElement('a-entity');
+      pEl.setAttribute('class', 'interaction');
+      pEl.setAttribute('type', 'type');
+      pEl.setAttribute('cid', cid);
+      pEl.setAttribute('position', pos3);
+      
+      var interaction = new Object();
+      interaction.action = 'modify';
+      interaction.attribute = 'geometry';
+      interaction.target = 1;
+      interaction.toshape = 'cylinder';
+      interaction.toheight = '0.05';
+      interaction.toradius = '0.1';
+      pEl.interaction = interaction;
+
+      // Create actual element & handle attributes
+      var el = document.createElement('a-entity');
+      el.setAttribute('geometry', data.geometry);
+      el.setAttribute('material', data.material);
+      el.setAttribute('entityName', 'New ' + type);
+      el.setAttribute('scale', scale);
+
+      // Check for selection
+      var selectedById = data.selectedBy;
+      if(selectedById != -1) {
+        // Make selected object transparent and untargetable
+        var mat = el.getDOMAttribute('material');
+        mat.opacity = 0.1;
+        el.setAttribute('material', mat);
+
+        // Set as untargetable for raycaster
+        el.removeAttribute('selectable');
+
+        // Set easyRtcId of source
+        el.setAttribute('selectedby', selectedById);
+      }else{
+        // Set as targetable for raycaster & add select handler
+        el.setAttribute('selectable', '');
+      }
+
+      var scene = this.el.sceneEl;
+      pEl.appendChild(el);
+      scene.appendChild(pEl);
+
+      // Add object to list 'Scene Objects'
+      var table = parent.document.getElementById('scene-objects');
+      var tr = table.insertRow();
+      tr.setAttribute("id", "cid" + cid);
+
+      var cidCell = tr.insertCell();
+      cidCell.appendChild(document.createTextNode(cid));
+      var elementNameCell = tr.insertCell();
+      elementNameCell.appendChild(document.createTextNode('Action Area'));
+      var buttonCell = tr.insertCell();
+      var button = document.createElement('button');
+      button.innerText = "X";
+      button.onclick = function()
+      {
+        var obj = new Object();
+        obj.cid = cid; 
+        var newData = JSON.stringify(obj);
+        easyrtc.sendDataWS(clientRtcId, "removeComponent", newData);
+      }
+      buttonCell.appendChild(button);
     }
   }
 });

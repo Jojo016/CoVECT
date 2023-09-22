@@ -64,6 +64,7 @@ con.connect(function(err) {
 // Temporary list for data store (later handled by MySql)
 var componentCounter = 0;
 var listOfComponentData = [];
+var listOfInteractions = [];
 var dictOfSelectedComponents = new Object();
 
 // Serve the files from the examples folder
@@ -464,6 +465,63 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       });
       
     });
+  }else if(msgType === "addInteraction") {
+    var data = msg.msgData;
+    var newObj = JSON.parse(data);
+    componentCounter++;
+
+    switch(newObj.type) {
+      case 'actionarea': 
+        // Add the new object to existing ones
+        newObj['cid'] = componentCounter;
+        newObj.selectedBy = -1;
+        listOfComponentData.push(newObj);
+        listOfInteractions.push(newObj);
+
+        // Create new message & set msgType
+        var message = {};
+        message.msgType = 'spawnInteraction';
+
+        // Set message data
+        data = JSON.stringify(newObj);
+        message.msgData = data;
+
+        // Set targetRoom name
+        var targetRoom = 'dev';
+        connectionObj.getRoomNames((err, roomNames) => {
+          if(roomNames.length > 0) {
+              targetRoom = roomNames[0];
+          }
+        });
+        message.targetRoom = targetRoom;
+
+        // Emit message to all room members
+        console.log("Server emitting 'interaction' creation event!");
+        
+        var roomObj; 
+        connectionObj.generateRoomClientList("update", null, function(err, callback){
+          roomObj = callback;
+        });
+
+        var clientList = roomObj['dev'].clientList;
+
+        for (var currentEasyrtcid in clientList) {
+          (function(innerCurrentEasyrtcid, innerMsg){
+            connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
+              easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
+                if(err) {
+                  console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+                }
+              });
+            });
+          })(currentEasyrtcid, msg);
+        }
+        break;
+
+      default:
+        return;
+    }
+
   }else if(msgType === "userJoined") {
     // Only for client side --> SKIP
   }else if(msgType === "userLeft") {

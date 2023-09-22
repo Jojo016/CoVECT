@@ -55,7 +55,12 @@
     display: grid;
     grid-template-columns: 100px 2fr 2fr 2fr;
     grid-auto-rows: 30px;
-
+    border-top: 1px solid #ccc;
+}
+.property-row-append{
+    display: grid;
+    grid-template-columns: 100px 2fr 2fr 2fr;
+    grid-auto-rows: 30px;
 }
 .property-row-element{
     background-color: #414141;
@@ -67,8 +72,14 @@
     grid-column-start: 2;
     grid-column-end: fill;
 }
+.property-row-element-fill{
+    background-color: #414141;
+    color: #ffffff;
+    grid-column-start: 1;
+    grid-column-end: fill;
+}
 .property-row-big-input{
-    width: 95%;
+    width: 99%;
 }
 .properties-parameter{
     text-align: left;

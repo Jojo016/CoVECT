@@ -170,14 +170,8 @@
         }else if(command == 'addInteraction'){
           // Get type & position from data
           var type = data[0];
-          var pos = data[1];
 
-          // Create data object to stringify
-          var obj = new Object();
-          obj.type = type;
-          //obj.pos = pos;
-
-          data = JSON.stringify(obj);
+          data = JSON.stringify(data);
 
           console.log("Sending: 'Add interaction of type:' " + type);
           easyrtc.sendDataWS(clientRtcId, "addInteraction", data);
@@ -224,6 +218,11 @@
           }else if(msgType === 'userLeft') {
             var data = JSON.parse(msgData);
             window.parent.removeUserFromStatusBar(data.easyrtcid);
+
+          }else if(msgType === 'spawnInteraction') {
+            var newData = JSON.parse(msgData);
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.spawnInteraction(newData);
           }
         });
 
