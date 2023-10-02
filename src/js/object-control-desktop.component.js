@@ -197,96 +197,38 @@ AFRAME.registerComponent('object-control-desktop', {
   interactionPropertyChanged: function(event) {
     var pEl = event.currentTarget.el;
     var eventTarget = event.target;
-    var property = eventTarget.name;
-    var value = eventTarget.value;
-    var doc = window.parent.document;    
+    var property = eventTarget.id;
+    var value = eventTarget.value; 
 
-    var data = new Object();
-    data.cid = pEl.getAttribute('cid');
-
-    var easyPropertyList = ['toheight', 'toradius'];
-    var complexPropertyList = ['toshape'];
-
-    // TODO: ADD 'easyPropertyList' HERE for e.g. 'toheight' and 'toradius'
-    /*
-    propertyList.forEach(function(prop) {
-      var element = doc.getElementById(prop);
-      console.log(element);
-      if(element != null & element.length > 0) {
-        data[prop] = element[0].value;
-        console.log(prop + ' = ' + data[prop]);
-      }
-    });
-    */
-
-    complexPropertyList.forEach(function(prop) {
-      var element = doc.getElementById(prop);
-      console.log(element);
-      if(element != null) {
-        data[prop] = element.value;
-        console.log(prop + ' = ' + data[prop]);
-      }
-    });
-    
-
-    // Add properties row for the given value
-    /*
-    var attribute = doc.getElementsByName('attribute');
-    if(attribute != "none") {
-      data.attribute = attribute;
-      console.log("attribute:");
-      console.log(attribute);
-
-      switch(attribute) {
-        case 'radius':
-          data.radius = Math.abs(value);
-          break;
-  
-        case 'height':
-          data.height = Math.abs(value);
-          break;
-  
-        case 'shape':
-          // Check if primitive exists
-          inputList = doc.getElementById('shapes');
-          var list = [];
-          for(let i = 0; i<inputList.length; i++) {
-            list.push(inputList[i].value);
-          }
-  
-          if(!list.includes(value)) {
-            eventTarget.value = '';
-            return;
-          }
-
-          data.primivite = value;
-          break;
-  
-        default:
-          break;
-      }
-    }
-    */
+    // Fill data object
+    var newObj = new Object();
+    newObj.cid = pEl.getAttribute('cid');
+    newObj.updatetype = 'interaction';
+    newObj.attribute = property;
+    newObj.value = value;
     
     // Send changes to server
-    var newData = JSON.stringify(data);
-    console.log("newData:");
-    console.log(newData);
-    //easyrtc.sendDataWS(clientRtcId, "updateInteraction", newData);
+    var updateData = JSON.stringify(newObj);
+    easyrtc.sendDataWS(clientRtcId, "updateComponent", updateData);
   },
 
   interactionChanged: function(event) {
-    var pEl = event.currentTarget.el;
+    var pEl = event.currentTarget.el.parentEl;
     var eventTarget = event.target;
     var name = eventTarget.name;
     var value = eventTarget.value;
-    
-    if(name == 'action') {
 
+    /* OLD APPROACH
+    if(name == 'action') {
+      
+      console.log("Value: " + value);
       if(value == 'Modify') {
+
         var eventParent = eventTarget.parentElement.parentElement;
         var propertyDiv = eventParent.children[3];
-
+        var selectInput = propertyDiv.children[1];
+        selectInput.value = value;
+        /*
         propertyDiv.innerHTML = `
           <span class="properties-parameter-name">
             <b>Attribute</b>
@@ -299,7 +241,11 @@ AFRAME.registerComponent('object-control-desktop', {
             <option value="scale">Scale</option>
           </select>
         `;
+        * /
+      }else if(value == 'Remove') {
+
       }else{
+        console.log("Unimplemented action!");
         return;
       }
 
@@ -378,17 +324,20 @@ AFRAME.registerComponent('object-control-desktop', {
 
       pPanel.replaceChild(newDiv, oldDiv);
     }
+    //*/
+    
+    // Add updated data to data object
+    var newObj = new Object();
+    var cid = pEl.getAttribute('cid');
+    newObj.cid = cid; 
+    newObj.updatetype = 'interaction';
+    newObj.attribute = name;
+    newObj.value = value;
 
     // Send changes to server
-    /*
-    var obj = new Object();
-    var cid = pEl.getAttribute('cid');
-    obj.cid = cid; 
-    obj.updatetype = 'position';
-    obj.updatedata = pos;
-    var newData = JSON.stringify(obj);
-    easyrtc.sendDataWS(clientRtcId, "updateComponent", newData);
-    */
+    var updateData = JSON.stringify(newObj);
+    easyrtc.sendDataWS(clientRtcId, "updateComponent", updateData);
+    
   },
 
   addPropertiesRow: function(pPanel, classType, data) {
@@ -518,23 +467,23 @@ AFRAME.registerComponent('object-control-desktop', {
       div.addEventListener("change", this.positionChanged, false);
       pPanel.appendChild(div);
 
-      // Interaction
-      div = document.createElement('div');
-      var appendDiv = document.createElement('div');
-
-      div.className = 'property-row';
-
-      var data = pEl.interaction;
+      // Interaction DIVs
+      var data = pEl.data;
 
       var target = data.target;
       var action = data.action;
       var attribute = data.attribute;
       var toshape = data.toshape;
       var toheight = data.toheight;
-      var toradius = data.toradius;
+      var toradius = data.toradius; 
+
+      div = document.createElement('div');
+      var appendDiv = document.createElement('div');
+
+      div.className = 'property-row';
 
       // Append actual property rows
-      var actionOptions = [['none', 'Keep current'], ['modify', 'Modify'], ['remove', 'Remove']];
+      var actionOptions = [['none', 'Keep current'], ['grabbable', 'Grabbable'], ['modify', 'Modify'], ['remove', 'Remove'], ['rotation', 'Rotation']];
       var actionOptionsText = ``;
 
       for(var i=0; i<actionOptions.length; i++) {
@@ -571,7 +520,7 @@ AFRAME.registerComponent('object-control-desktop', {
         </div>
         `;
 
-        // Check if attribute is needed
+        // Different actions require different property rows
         if(action == 'modify') {
           // Check for attribute
           var attrOptions = [['none', 'Keep current'], ['geometry', 'Geometry'], ['material', 'Material'], ['position', 'Position'], ['scale', 'Scale']];
@@ -666,27 +615,20 @@ AFRAME.registerComponent('object-control-desktop', {
               break;
           }
 
-        }else{
-          // No modify-action
+        }else if(action == 'grabbable'){
+
+        }else if(action == 'remove'){
+
+        }else if(action == 'rotation'){
+
+        }else if(action == 'none'){
           div.innerHTML += `
             <div class="property-row-element">
-              <span class="properties-parameter-name">
-                <b>Attribute</b>
-              </span>
-              <select disabled name="attribute" >
-                <option value="none">Keep current</option>
-                <option value="geometry">Geometry</option>
-                <option value="material">Material</option>
-                <option value="position">Position</option>
-                <option value="scale">Scale</option>
-              </select>
             </div>
             `;
-          
-          appendDiv.innerHTML += `
-          <div class="property-row-element-fill">
-          </div>
-          `;
+        }else{
+          // No modify-action
+          console.log("Action '" + action + "' not defined.");
         }
 
         div.el = el;
@@ -836,14 +778,60 @@ AFRAME.registerComponent('object-control-desktop', {
     }
   },
 
-  spawnInteraction: function(data) {
-    var type = data.type;
+  updateInteraction: function(data) {
+    var componentId = data.cid;
+    var el = null;
+    var pEl = null;
+    var els = this.el.sceneEl.querySelectorAll('[cid]');
+
+    for (var i = 0; i < els.length; i++) {
+
+      if(els[i].getAttribute('cid') == componentId) {
+        pEl = els[i];
+        el = pEl.children[0];
+        break;
+      }
+    }
+
+    // TODO: Update interaction and remove from old target if necessary
+    var attribute = data.attribute;
+    var value = data.value;
+
+    pEl.data[attribute] = value;
+
+    // Update property rows if element is currently selected by client
+    if(data.sourceRtcId == clientRtcId) {
+      this.selectEntity(componentId, clientRtcId, true);
+    }
+  },
+
+  removeInteraction: function(componentId) {
+    console.log("removeInteraction");
+    var el = null;
+    var pEl = null;
+    var els = this.el.sceneEl.querySelectorAll('[cid]');
+
+    for (var i = 0; i < els.length; i++) {
+
+      if(els[i].getAttribute('cid') == componentId) {
+        pEl = els[i];
+        el = pEl.children[0];
+        break;
+      }
+    }
+
+    // TODO: Remove interaction from target component, if existent
+  },
+
+  spawnInteraction: function(interaction) {
+    var type = interaction.type;
 
     if(type == 'actionarea') {
       
-      var cid = data.cid;
-      var scale = data.scale;
-      var pos3 = new THREE.Vector3(data.posX, data.posY, data.posZ);
+      var cid = interaction.cid;
+      var data = interaction.data;
+      var scale = interaction.scale;
+      var pos3 = new THREE.Vector3(interaction.posX, interaction.posY, interaction.posZ);
 
       // Create container element
       var pEl = document.createElement('a-entity');
@@ -851,25 +839,18 @@ AFRAME.registerComponent('object-control-desktop', {
       pEl.setAttribute('type', 'type');
       pEl.setAttribute('cid', cid);
       pEl.setAttribute('position', pos3);
-      
-      var interaction = new Object();
-      interaction.action = 'modify';
-      interaction.attribute = 'geometry';
-      interaction.target = 1;
-      interaction.toshape = 'cylinder';
-      interaction.toheight = '0.05';
-      interaction.toradius = '0.1';
-      pEl.interaction = interaction;
+
+      pEl.data = data;
 
       // Create actual element & handle attributes
       var el = document.createElement('a-entity');
-      el.setAttribute('geometry', data.geometry);
-      el.setAttribute('material', data.material);
+      el.setAttribute('geometry', interaction.geometry);
+      el.setAttribute('material', interaction.material);
       el.setAttribute('entityName', 'New ' + type);
       el.setAttribute('scale', scale);
 
       // Check for selection
-      var selectedById = data.selectedBy;
+      var selectedById = interaction.selectedBy;
       if(selectedById != -1) {
         // Make selected object transparent and untargetable
         var mat = el.getDOMAttribute('material');

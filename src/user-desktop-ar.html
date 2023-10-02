@@ -169,7 +169,7 @@
 
         }else if(command == 'addInteraction'){
           // Get type & position from data
-          var type = data[0];
+          var type = data.type;
 
           data = JSON.stringify(data);
 
@@ -184,7 +184,6 @@
 
         // Init Listeners
         easyrtc.setServerListener( function(msgType, msgData, targeting) {
-          console.log(msgType + ' = ' + msgData);
           if(msgType === 'spawnComponent') {
             var newData = JSON.parse(msgData);
             var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
@@ -203,6 +202,7 @@
             var cid = data.cid;
             var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
             controller.removeComponent(cid);
+
           }else if(msgType === 'updatedComponent') {
             var data = JSON.parse(msgData);
             var cid = data.cid;
@@ -223,6 +223,19 @@
             var newData = JSON.parse(msgData);
             var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
             controller.spawnInteraction(newData);
+
+          }else if(msgType === 'updatedInteraction') {
+            var newData = JSON.parse(msgData);
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.updateInteraction(newData);
+
+          }else if(msgType === 'removedInteraction') {
+            var newData = JSON.parse(msgData);
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.removeInteraction(newData);
+
+          }else{
+            console.log("Received unknown message type '" + msgType + "'.");
           }
         });
 

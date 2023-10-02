@@ -347,13 +347,23 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       }
     }
   }else if(msgType === "updateComponent") {
-    // TODO: Check if object is selected by the user
     // Update the given component
     var data = msg.msgData;
     var dataObj = JSON.parse(data);
     var cid = dataObj.cid;
 
-    // Update object in 'component' list
+    // TODO: Check if object is selected by the user forcing the update
+    /*
+    var selectedBy = dictOfSelectedComponents[cid];
+    var senderEasyrtcid = connectionObj.getEasyrtcid();
+
+    if(selectedBy != senderEasyrtcid) {
+      console.log(selectedBy + ' = ' + senderEasyrtcid);
+      return;
+    }
+    */
+
+    // Find object in 'component' list
     var dataIndex = -1;
 
     for(let i = 0; i < listOfComponentData.length; i++){
@@ -367,24 +377,12 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
     if (dataIndex != -1) {
       // Get component from 'componentData' list
       var component = listOfComponentData[dataIndex];
+
       // TODO: update the data 
       var updateType = dataObj.updatetype;
-      var updateData = dataObj.updatedata;
-
-      // Set opacity to '0.4' for all users but the one who edits the component
-      if(updateType == 'material') {
-        updateData.opacity = 0.4;
-        dataObj.updatedata = updateData;
-        data = JSON.stringify(dataObj);
-      }
-
-      component[updateType] = updateData;
-
-      // Send update message
       var message = {};
-      message.msgType = 'updatedComponent';
-      message.msgData = data;
 
+      // Get room object + Clientlist
       var roomObj; 
       connectionObj.generateRoomClientList("update", null, function(err, callback){
         roomObj = callback;
@@ -392,6 +390,56 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
 
       var clientList = roomObj['dev'].clientList;
 
+      // Check for update type
+      if(updateType == 'interaction') {
+        // Get data
+        var attribute = dataObj.attribute;
+        var value = dataObj.value;
+
+        // Update the data on server
+        component[attribute] = value;
+
+        // Set message data
+        dataObj.sourceRtcId = easyrtcid;
+        data = JSON.stringify(dataObj);
+        message.msgData = data;
+        message.msgType = 'updatedInteraction';
+
+        console.log("Broadcasting 'updatedInteraction'...");
+
+        // Send updated interaction message
+        for (var currentEasyrtcid in clientList) {
+          (function(innerCurrentEasyrtcid, innerMsg){
+            connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
+              easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
+                if(err) {
+                  console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+                }
+              });
+            });
+          })(currentEasyrtcid, msg);
+        }
+
+      }else{
+        // Update data of 'normal' entities 
+        var updateData = dataObj.updatedata;
+
+        // Set opacity to '0.4' for all users but the one who edits the component
+        if(updateType == 'material') {
+          updateData.opacity = 0.4;
+          dataObj.updatedata = updateData;
+          data = JSON.stringify(dataObj);
+        }
+
+        // Update server data
+        component[updateType] = updateData;
+
+        // Set message data
+        message.msgData = data;
+        message.msgType = 'updatedComponent';
+      }
+
+      // Send the update message
       for (var currentEasyrtcid in clientList) {
         (function(innerCurrentEasyrtcid, innerMsg){
           connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
@@ -476,11 +524,20 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
         newObj['cid'] = componentCounter;
         newObj.selectedBy = -1;
         listOfComponentData.push(newObj);
-        listOfInteractions.push(newObj);
 
         // Create new message & set msgType
         var message = {};
         message.msgType = 'spawnInteraction';
+
+        // Add default interaction data
+        var interactionData = new Object();
+        interactionData.action = 'modify';
+        interactionData.attribute = 'geometry';
+        interactionData.target = 1;
+        interactionData.toshape = 'cylinder';
+        interactionData.toheight = '0.05';
+        interactionData.toradius = '0.1';
+        newObj.data = interactionData;
 
         // Set message data
         data = JSON.stringify(newObj);
