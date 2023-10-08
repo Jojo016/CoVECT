@@ -30,12 +30,12 @@
         var data = new Object();
         data.type = type;
 
-        // TODO: Get position
-        data.posX = -1; //iframe.contentWindow.scene;
-        data.posY = 2;
-        data.posZ = -1;
-
         if(type == 'actionarea') {
+          // TODO: Get position
+          data.posX = 1; //iframe.contentWindow.scene;
+          data.posY = 1;
+          data.posZ = -1;
+
           data.geometry = "primitive: box";
           data.scale = "0.2 0.1 0.4";
           data.material = "color: #a8a8a8; opacity: 0.4";
@@ -135,6 +135,15 @@
                   <td class="td1">
                     <div style="width: 100%;">
                       <button class="seamless-button" onClick="addInteraction('actionarea')">Action Area</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+              <tbody class="hide">
+                <tr class="tr1">
+                  <td class="td1">
+                    <div style="width: 100%;">
+                      <button class="seamless-button" onClick="addInteraction('rotation')">Rotation</button>
                     </div>
                   </td>
                 </tr>

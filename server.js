@@ -127,6 +127,12 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       newObj['cid'] = componentCounter;
       newObj.selectedBy = -1;
       newObj.scale = '0.2 0.2 0.2';
+      var interactable = new Object();
+      interactable.type = 'none';
+      interactable.axis = 'X';
+      interactable.offset = 0;
+      newObj.interactable = interactable;
+
       listOfComponentData.push(newObj);  
 
       // Create new message
@@ -421,37 +427,50 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
         }
 
       }else{
-        // Update data of 'normal' entities 
         var updateData = dataObj.updatedata;
 
-        // Set opacity to '0.4' for all users but the one who edits the component
-        if(updateType == 'material') {
-          updateData.opacity = 0.4;
-          dataObj.updatedata = updateData;
-          data = JSON.stringify(dataObj);
+        // Update data of 'normal' entities 
+        if(updateType == 'interactable') {
+          // Update server data
+          component.interactable[updateData.property] = updateData.value;
+
+          // Set message type
+          message.msgType = 'updatedInteractable';
+
+        }else{
+          // Set opacity to '0.4' for all users but the one who edits the component
+          if(updateType == 'material') {
+            updateData.opacity = 0.4;
+            dataObj.updatedata = updateData;
+          }
+
+          // Update server data
+          component[updateType] = updateData;
+
+          // Set message type
+          message.msgType = 'updatedComponent';
         }
 
-        // Update server data
-        component[updateType] = updateData;
+        // Add sourceRtcId to data
+        dataObj.sourcertcid = easyrtcid;
+        data = JSON.stringify(dataObj);
 
         // Set message data
         message.msgData = data;
-        message.msgType = 'updatedComponent';
-      }
 
-      // Send the update message
-      for (var currentEasyrtcid in clientList) {
-        (function(innerCurrentEasyrtcid, innerMsg){
-          connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
-            if(currentEasyrtcid != easyrtcid) {
+        // Send the update message
+        console.log("Broadcasting '" + message.msgType + "'...");
+        for (var currentEasyrtcid in clientList) {
+          (function(innerCurrentEasyrtcid, innerMsg){
+            connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
               easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
                 if(err) {
                   console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
                 }
               });
-            }
-          });
-        })(currentEasyrtcid, msg);
+            });
+          })(currentEasyrtcid, msg);
+        }
       }
     }
   }else if(msgType === "broadcastUserName") {
@@ -573,6 +592,10 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
             });
           })(currentEasyrtcid, msg);
         }
+        break;
+      
+      case 'rotation':
+
         break;
 
       default:

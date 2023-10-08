@@ -78,6 +78,18 @@
     grid-column-start: 1;
     grid-column-end: fill;
 }
+.property-row-element-fill1{
+    background-color: #414141;
+    color: #ffffff;
+    grid-column-start: 4;
+    grid-column-end: fill;
+}
+.property-row-element-fill2{
+    background-color: #414141;
+    color: #ffffff;
+    grid-column-start: 3;
+    grid-column-end: fill;
+}
 .property-row-big-input{
     width: 99%;
 }

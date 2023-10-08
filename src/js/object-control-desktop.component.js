@@ -13,6 +13,7 @@ AFRAME.registerComponent('object-control-desktop', {
     var shape = data.shape;
     var scale = data.scale;
     var pos3 = new THREE.Vector3(data.posX, data.posY, data.posZ);
+    var interactable = data.interactable;
 
     // Create container element
     var pEl = document.createElement('a-entity');
@@ -38,6 +39,8 @@ AFRAME.registerComponent('object-control-desktop', {
     el.setAttribute('material', 'color: #00FFFF');
 
     el.setAttribute('entityName', 'New ' + shape);
+
+    el.interactable = interactable;
 
     // Check for selection
     var selectedById = data.selectedBy;
@@ -340,6 +343,26 @@ AFRAME.registerComponent('object-control-desktop', {
     
   },
 
+  interactableChanged: function(event) {
+    var pEl = event.currentTarget.el;
+    var eventTarget = event.target;
+    var property = eventTarget.id;
+    var value = eventTarget.value; 
+
+    // Fill data object
+    var newObj = new Object();
+    var updateData = new Object();
+    newObj.cid = pEl.getAttribute('cid');
+    newObj.updatetype = 'interactable';
+    updateData.property = property;
+    updateData.value = value;
+    newObj.updatedata = updateData;
+    
+    // Send changes to server
+    var updateData = JSON.stringify(newObj);
+    easyrtc.sendDataWS(clientRtcId, "updateComponent", updateData);
+  },
+
   addPropertiesRow: function(pPanel, classType, data) {
 
     if(classType == "no-selection") {
@@ -369,7 +392,7 @@ AFRAME.registerComponent('object-control-desktop', {
         </div>
       `;
 
-      div.el = el;
+      div.el = pEl;
       // TODO: Add Name Change Event Listener + Function
       //div.addEventListener("change", this.nameChanged, false);
 
@@ -413,9 +436,102 @@ AFRAME.registerComponent('object-control-desktop', {
         </div>
       `;
 
-      div.el = el;
+      div.el = pEl;
       div.addEventListener("input", this.colorChanged, false);
       div.addEventListener("change", this.colorChanged, false);
+
+      pPanel.appendChild(div);
+
+      // Interactable
+      var interactable = el.interactable;
+      var type = interactable.type;
+      div = document.createElement('div');
+      div.className = 'property-row';
+
+      var typeOptions = [['none', 'None'], ['grabbable', 'Grabbable'], ['rotatable', 'Rotatable']];
+      var typeOptionsText = ``;
+
+      for(var i=0; i<typeOptions.length; i++) {
+        var typeOpt = typeOptions[i];
+        if(typeOpt[0] == type) {
+          typeOptionsText += `
+            <option selected="selected" value="${typeOpt[0]}">${typeOpt[1]}</option>
+          `;
+        }else{
+          typeOptionsText += `
+            <option value="${typeOpt[0]}">${typeOpt[1]}</option>
+          `;
+        }
+      }
+      div.innerHTML = `
+        <span class="property-row-element">
+          <b>Interactable</b>
+        </span>
+        <div class="property-row-element">
+          <span class="properties-parameter-name">
+            <b>Type</b>
+          </span>
+          <select id="type">
+            ${typeOptionsText}
+          </select>
+        </div>
+      `;
+
+      switch(type) {
+        case 'none':
+        case 'grabbable':
+          div.innerHTML += `
+            <div class="property-row-element-fill2">
+              <span class="properties-parameter-name">
+              </span>
+            </div>
+          `;
+          break;
+
+        case 'rotatable':
+          var offset = interactable.offset;
+          var axisOptions = ['X', 'Y', 'Z'];
+          var axisOptionsText = ``;
+
+          for(var i=0; i<axisOptions.length; i++) {
+            var axOpt = axisOptions[i];
+            if(axOpt == interactable.axis) {
+              axisOptionsText += `
+                <option selected="selected" value="${axOpt}">${axOpt}</option>
+              `;
+            }else{
+              axisOptionsText += `
+                <option value="${axOpt}">${axOpt}</option>
+              `;
+            }
+          }
+
+          div.innerHTML += `
+            <div class="property-row-element">
+              <span class="properties-parameter-name">
+                <b>Rotation Axis</b>
+              </span>
+              <select id="axis">
+                ${axisOptionsText}
+              </select>
+            </div>
+            <div class="property-row-element">
+              <span class="properties-parameter-name">
+                <b>Offset</b>
+              </span>
+              <input type="number" id="offset" value="${offset}"/>
+            </div>
+          `;
+          break;
+
+        default:
+          console.log('Skipping unknown interactable type "' + type + '"...');
+          break;
+      }
+
+      
+      div.el = pEl;
+      div.addEventListener("change", this.interactableChanged, false);
 
       pPanel.appendChild(div);
 
@@ -437,7 +553,7 @@ AFRAME.registerComponent('object-control-desktop', {
         </div>
       `;
 
-      div.el = el;
+      div.el = pEl;
       // TODO: Add Name Change Event Listener + Function
       //div.addEventListener("change", this.nameChanged, false);
 
@@ -615,11 +731,7 @@ AFRAME.registerComponent('object-control-desktop', {
               break;
           }
 
-        }else if(action == 'grabbable'){
-
         }else if(action == 'remove'){
-
-        }else if(action == 'rotation'){
 
         }else if(action == 'none'){
           div.innerHTML += `
@@ -631,7 +743,7 @@ AFRAME.registerComponent('object-control-desktop', {
           console.log("Action '" + action + "' not defined.");
         }
 
-        div.el = el;
+        div.el = pEl;
         div.addEventListener("change", this.interactionChanged, false);
   
         pPanel.appendChild(div);
@@ -775,6 +887,34 @@ AFRAME.registerComponent('object-control-desktop', {
     }else{
       // All other types should be changed for el itself
       el.setAttribute(type, data);
+    }
+
+    // Update property rows if element is currently selected by client
+    if(data.sourceRtcId == clientRtcId) {
+      this.selectEntity(componentId, clientRtcId, true);
+    }
+  },
+
+  updateInteractable: function(componentId, sourceRtcId, property, value) {
+    console.log("updateInteractable");
+    var el = null;
+    var pEl = null;
+    var els = this.el.sceneEl.querySelectorAll('[cid]');
+
+    for (var i = 0; i < els.length; i++) {
+
+      if(els[i].getAttribute('cid') == componentId) {
+        pEl = els[i];
+        el = pEl.children[0];
+        break;
+      }
+    }
+
+    el.interactable[property] = value;
+
+    // Update property rows if element is currently selected by client
+    if(sourceRtcId == clientRtcId) {
+      this.selectEntity(componentId, clientRtcId, true);
     }
   },
 

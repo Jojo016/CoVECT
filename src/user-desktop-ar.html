@@ -211,6 +211,16 @@
             var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
             controller.updateComponent(cid, type, newData);
 
+          }else if(msgType === 'updatedInteractable') {
+            var data = JSON.parse(msgData);
+            var cid = data.cid;
+            var sourceRtcId = data.sourcertcid;
+            var newData = data.updatedata;
+            var property = newData.property;
+            var value = newData.value;
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.updateInteractable(cid, sourceRtcId, property, value);
+
           } else if(msgType === 'userJoined') {
             var data = JSON.parse(msgData);
             window.parent.addUserToStatusBar(data.easyrtcid, data.name, false);

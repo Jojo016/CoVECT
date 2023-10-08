@@ -653,6 +653,58 @@
         }
       });
 
+      AFRAME.registerComponent("vr-menu-edit", {
+        init: function () {
+          var el = this.el;
+          var submenu = document.getElementById('container-vr-submenu-edit');
+
+          // TODO: Add refs to other submenus and make them invisible
+          var otherSubMenu1;
+          var otherSubMenu2;
+
+          el.addEventListener('select-object', function handleSendSelect(event) {
+            // Open or close the 'Add'-Menu
+            if(submenu.getAttribute('visible') == false) {
+              // TODO: make other submenus invisible
+              submenu.setAttribute('visible', true);
+            }else{
+              submenu.setAttribute('visible', false);
+            }
+          });
+        }
+      });
+
+      AFRAME.registerComponent("vr-menu-play", {
+        init: function () {
+          var el = this.el;
+          var playImg = document.getElementById('vr-menu-play-img');
+          var stopImg = document.getElementById('vr-menu-stop-img');
+          var playing = false;
+
+          // TODO: Add refs to other submenus and make them invisible
+          var otherSubMenu1;
+          var otherSubMenu2;
+
+          el.addEventListener('select-object', function handleSendSelect(event) {
+            // Play or stop Demo
+            if(playing == false) {
+              // TODO: start demo
+              playImg.setAttribute('visible', false);
+              stopImg.setAttribute('visible', true);
+
+              console.log('Starting demo...');
+            }else{
+              // TODO: stop demo
+              playImg.setAttribute('visible', true);
+              stopImg.setAttribute('visible', false);
+
+              console.log('Stopping demo...');
+            }
+            playing = !playing;
+          });
+        }
+      });
+
       AFRAME.registerComponent("vr-menu-add", {
         init: function () {
           var el = this.el;
@@ -842,7 +894,10 @@
         <img id="sky" src="/img/sky.jpg">
 
         <!-- GUI -->
+        <img id="edit" src="/img/edit.png">
+        <img id="play" src="/img/play.png">
         <img id="plus" src="/img/plus.png">
+        <img id="stop" src="/img/stop.png">
       </a-assets>
 
 
@@ -918,13 +973,68 @@
               class="vr-menu" 
               geometry="primitive: plane"
               material="color: #323236"
-              position="0 0 0"
+              position="0 0.5 0"
               rotation="0 0 0" 
-              scale="1 3 1"
+              scale="1 4 1"
               visible="true"
               priority="level: hud"
             ></a-entity>
             
+            <!-- Menu EDIT -->
+            <a-entity
+              position = "0 0 0"
+              rotation="0 0 0" 
+              scale="0.9 0.9 0.1"
+            >
+              <a-entity
+                class="vr-menu-edit" 
+                geometry="primitive: box"
+                material="color: #0377fc"
+                visible="true"
+                priority="level: hud"
+                raycaster-listen
+                vr-menu-edit
+              ></a-entity>
+              <a-entity
+                class="vr-menu-edit-img" 
+                geometry="primitive: plane"
+                material="src: #edit; transparent: true"
+                visible="true"
+                priority="level: hud"
+              ></a-entity>
+            </a-entity>
+
+            <!-- Menu PLAY -->
+            <a-entity
+              position = "0 1 0"
+              rotation="0 0 0" 
+              scale="0.9 0.9 0.1"
+            >
+              <a-entity
+                class="vr-menu-play" 
+                geometry="primitive: box"
+                material="color: #0377fc"
+                visible="true"
+                priority="level: hud"
+                raycaster-listen
+                vr-menu-play
+              ></a-entity>
+              <a-entity
+                class="vr-menu-play-img" 
+                geometry="primitive: plane"
+                material="src: #play; transparent: true"
+                visible="true"
+                priority="level: hud"
+              ></a-entity>
+              <a-entity
+                class="vr-menu-stop-img" 
+                geometry="primitive: plane"
+                material="src: #stop; transparent: true"
+                visible="false"
+                priority="level: hud"
+              ></a-entity>
+            </a-entity>
+
             <!-- Menu ADD -->
             <a-entity
               position="0 -1 0"
