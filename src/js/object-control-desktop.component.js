@@ -448,7 +448,7 @@ AFRAME.registerComponent('object-control-desktop', {
       div = document.createElement('div');
       div.className = 'property-row';
 
-      var typeOptions = [['none', 'None'], ['grabbable', 'Grabbable'], ['rotatable', 'Rotatable']];
+      var typeOptions = [['none', 'Static'], ['grabbable', 'Grabbable'], ['rotatable', 'Rotatable']];
       var typeOptionsText = ``;
 
       for(var i=0; i<typeOptions.length; i++) {

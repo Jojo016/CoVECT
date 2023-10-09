@@ -4,13 +4,16 @@
     <meta charset="utf-8" />
     <title id="title">Description pending...</title>
     <meta name="description" content="VREUD Example - Aframe" />
-
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.5.0/socket.io.slim.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/16.3.5/Tween.min.js"></script>
     <script src="/js/aframe-colorwheel-component.min.js"></script>
     <script src="/easyrtc/easyrtc.js"></script>
     <script src="/dist/networked-aframe.js"></script>
+    <script src="/dist/aframe-material.js"></script>
+    <script type="text/javascript">
+      AFRAME.ASSETS_PATH = "./assets";
+    </script>
     <script>
       AFRAME.registerComponent('thumbstick-controls',{
         init: function () {
@@ -137,6 +140,17 @@
       }
     </script>
     <script>
+      function updateSelectionMenu(pEl, bool) {
+        if(bool) {
+          // Make correct submenu-entries visible
+          console.log("pEl");
+          console.log(pEl);
+
+        }else{
+          // Remove selection screen 
+        }
+      }
+
       function serverJoinedSetup() {
         // Add own name to statusbar
         // TODO: Make VR ready
@@ -157,6 +171,12 @@
             var bool = data.bool;
             var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
             controller.selectEntity(cid, sourceRtcId, bool);
+
+            if(sourceRtcId != clientRtcId) {
+              // TODO: ADD THIS FUNCTION
+              var pEl = controller.getEl(cid);
+              this.updateSelectionMenu(pEl, bool);
+            }
 
           }else if(msgType === 'removedComponent') {
             var data = JSON.parse(msgData);
@@ -666,6 +686,29 @@
             // Open or close the 'Add'-Menu
             if(submenu.getAttribute('visible') == false) {
               // TODO: make other submenus invisible
+              el.setAttribute('baseColor', '#186e44');
+              submenu.setAttribute('visible', true);
+            }else{
+              submenu.setAttribute('visible', false);
+              el.setAttribute('baseColor', '#0377fc');
+            }
+          });
+        }
+      });
+
+      AFRAME.registerComponent("vr-menu-task", {
+        init: function () {
+          var el = this.el;
+          var submenu = document.getElementById('container-vr-submenu-task');
+
+          // TODO: Add refs to other submenus and make them invisible
+          var otherSubMenu1;
+          var otherSubMenu2;
+
+          el.addEventListener('select-object', function handleSendSelect(event) {
+            // Open or close the 'Add'-Menu
+            if(submenu.getAttribute('visible') == false) {
+              // TODO: make other submenus invisible
               submenu.setAttribute('visible', true);
             }else{
               submenu.setAttribute('visible', false);
@@ -718,9 +761,11 @@
             // Open or close the 'Add'-Menu
             if(submenu.getAttribute('visible') == false) {
               // TODO: make other submenus invisible
+              el.setAttribute('baseColor', '#186e44');
               submenu.setAttribute('visible', true);
             }else{
               submenu.setAttribute('visible', false);
+              el.setAttribute('baseColor', '#0377fc');
             }
           });
         }
@@ -744,11 +789,13 @@
           */
 
           el.addEventListener('select-object', function handleSendSelect(event) {
+            
             var hand = document.getElementById('hand-right');
             var raycaster = hand.components.raycaster;
 
             var quaternion = raycaster.el.object3D.quaternion;
             var debug = document.getElementById('debugtext');
+            
 
             // TODO: Close the GUI
             // submenu.setAttribute('visible', false);
@@ -757,19 +804,32 @@
             // var toDelete = document.getElementById('currently-placing');
             // toDelete.parentEl.removeChild(toDelete);
 
-            // Attach box to the raycaster
             var newElement = document.createElement('a-entity');
+
+            switch(shape) {
+              
+              case 'wafflemaker':
+                // TODO: Get model from assets and set it as GLTF-attribute
+                newElement.setAttribute('gltf-model', '#' + shape);
+                break;
+
+              default:
+                // Load primitive
+                // Handle geometry/shape attribute
+                var geometry = 'primitive: ' + shape + ';';
+                newElement.setAttribute('geometry', geometry);
+
+                // Handle other attributes
+                newElement.setAttribute('material', 'color: #00ff00');
+                newElement.setAttribute('scale', '0.2 0.2 0.2');
+
+                break;
+            }
+
+            // Attach object to the raycaster
             newElement.setAttribute('class', 'collidable');
             newElement.setAttribute('id', 'currently-placing');
-
-            // Handle geometry/shape attribute
-            var geometry = 'primitive: ' + shape + ';';
-            newElement.setAttribute('geometry', geometry);
-
-            // Handle other attributes
-            newElement.setAttribute('material', 'color: #00ff00');
-            newElement.setAttribute('scale', '0.2 0.2 0.2');
-
+            
             // Handle Position with 'placeable' attribute 
             newElement.setAttribute('placeable', '');
 
@@ -844,6 +904,10 @@
     <link rel="stylesheet" type="text/css" href="/css/style.css" />
   </head>
   <body>
+    <!-- Credits -->
+    <a href="https://www.flaticon.com/free-icons/waffle-iron" title="waffle iron icons">Waffle iron icons created by Nikita Golubev - Flaticon</a>
+
+    <!-- AFRAME -->
     <a-scene
       networked-scene="
         room: dev;
@@ -898,6 +962,13 @@
         <img id="play" src="/img/play.png">
         <img id="plus" src="/img/plus.png">
         <img id="stop" src="/img/stop.png">
+        <img id="task-img" src="/img/task.png"-->>
+
+        <img id="box" src="/img/box.png">
+        <img id="cylinder" src="/img/cylinder.png">
+        <img id="plane" src="/img/plane.png">
+        <img id="sphere" src="/img/sphere.png">
+        <img id="wafflemaker" src="/img/waffle-iron.png">
       </a-assets>
 
 
@@ -914,6 +985,8 @@
         >
           <a-sphere id="playerhead" class="head" visible="false" random-color></a-sphere>
         </a-entity>
+
+        <a-input position="-0.7 1 -2.5" placeholder="Entity Name" color="black" width="1"></a-input>
         
         <a-entity 
           id="hand-right"
@@ -932,11 +1005,16 @@
                               .axis-slider,
                               .vr-menu, 
                               .vr-menu-add, 
+                              .vr-menu-edit, 
+                              .vr-menu-play, 
+                              .vr-menu-stop, 
+                              .vr-menu-task, 
                               .vr-submenu-add, 
                               .vr-submenu-add-box,
-                              .vr-submenu-add-cyllinder,
+                              .vr-submenu-add-cylinder,
                               .vr-submenu-add-plane,
-                              .vr-submenu-add-sphere; 
+                              .vr-submenu-add-sphere,
+                              .vr-submenu-add-wafflemaker; 
                               showLine: true"
         >
           <!-- NAF Hand -->
@@ -959,10 +1037,6 @@
           
 
           <!-- VR MENU -->
-          <a-entity scale="0.5 0.5 0.5" rotation="-45 0 0" visible="false">
-            <a-colorwheel position="0 1 0" showhexvalue="true" showswatches="true"></a-colorwheel>
-          </a-entity>
-
           <a-entity 
             id="container-vr-menu"
             scale="0.1 0.1 0.1"
@@ -1004,9 +1078,110 @@
               ></a-entity>
             </a-entity>
 
+            <!-- Submenu EDIT -->
+            <a-entity
+              id="container-vr-submenu-edit" 
+              position="0.15 -1.05 0" 
+              visible="true"
+              scale="2.2 2.2 2.2"
+            >  
+              <!-- Background -->
+              <a-entity geometry="primitive: plane" material="color: #808080" scale="4 3.5 1" position="2.17 1.55 0"></a-entity>
+
+              <!-- Name -->
+              <a-entity position="1.7 3 0" text="value: Name:; color: black"  scale="3 3 3"></a-entity>
+              <a-input position="0.7 3 0" placeholder="Select Entity to edit properties" color="black" width="2.55"></a-input>
+              <a-entity position="5 3 0" text="value: Id: 0; color: black"  scale="3 3 3"></a-entity>
+
+              <!-- Pos -->
+              <a-entity position="1.7 2.7 0" text="value: PosX:; color: black"  scale="3 3 3"></a-entity>
+              <a-input position="0.7 2.7 0" placeholder="0" color="black" width="0.6"></a-input>
+              <a-entity position="3 2.7 0" text="value: PosY:; color: black"  scale="3 3 3"></a-entity>
+              <a-input position="2 2.7 0" placeholder="0" color="black" width="0.6"></a-input>
+              <a-entity position="4.3 2.7 0" text="value: PosZ:; color: black"  scale="3 3 3"></a-entity>
+              <a-input position="3.3 2.7 0" placeholder="0" color="black" width="0.6"></a-input>
+
+              <!-- Colorpicker -->
+              <a-entity position="4 1.8 0" text="value: Color:; color: black"  scale="3 3 3"></a-entity>
+              <a-entity position="3.2 1.1 0">
+                <a-colorwheel scale="1 1 1" showhexvalue="true" showswatches="true"></a-colorwheel>
+              </a-entity>
+
+              <!-- Interactable -->
+              <a-entity position="1.7 1.8 0" text="value: Interactable:; color: black"  scale="3 3 3"></a-entity>
+              <a-radio scale="0.8 0.8 0.8" position="0.4 1.5 0" width="1" name="interactable" label="Static" checked="true"></a-radio>
+              <a-radio scale="0.8 0.8 0.8" position="0.4 1.3 0" width="1" name="interactable" label="Grabbable"></a-radio>
+              
+              <a-radio scale="0.8 0.8 0.8" position="0.4 1.1 0" width="1" name="interactable" label="Rotatable:"></a-radio>
+              <a-radio scale="0.8 0.8 0.8" position="0.6 0.9 0" width="1" name="rotAxisX" label="X"></a-radio>
+              <a-radio scale="0.8 0.8 0.8" position="0.6 0.7 0" width="1" name="rotAxisY" label="Y"></a-radio>
+              <a-radio scale="0.8 0.8 0.8" position="0.6 0.5 0" width="1" name="rotAxisZ" label="Z"></a-radio>
+
+              <a-entity position="2.46 0.5 0" text="value: Offset:; color: black"  scale="3 3 3"></a-entity>
+              <a-input position="1.46 0.5 0" placeholder="0" color="black" width="0.6"></a-input>
+
+              <!-- Save Button -->
+              <a-button position="0.30 0.05 0" scale="1.6 1 1" name="stuff" value="Accept" type="raised"></a-button>
+              <a-button position="2.25 0.05 0" scale="1.6 1 1" name="stuff" value="Cancel" type="raised" color="#8c2f29"></a-button>
+            
+              <!-- Submenu EDIT BOX -->
+              <a-entity id="edit-box-and-plane">
+                <!-- Rotation -->
+                <a-entity position="1.7 2.4 0" text="value: RotX:; color: black"  scale="3 3 3"></a-entity>
+                <a-input position="0.7 2.4 0" placeholder="0" color="black" width="0.6"></a-input>
+                <a-entity position="3 2.4 0" text="value: RotY:; color: black"  scale="3 3 3"></a-entity>
+                <a-input position="2 2.4 0" placeholder="0" color="black" width="0.6"></a-input>
+                <a-entity position="4.3 2.4 0" text="value: RotZ:; color: black"  scale="3 3 3"></a-entity>
+                <a-input position="3.3 2.4 0" placeholder="0" color="black" width="0.6"></a-input>
+
+                <!-- Scale -->
+                <a-entity position="1.7 2.1 0" text="value: ScaleX:; color: black"  scale="3 3 3"></a-entity>
+                <a-input position="0.7 2.1 0" placeholder="1" color="black" width="0.6"></a-input>
+                <a-entity position="3 2.1 0" text="value: ScaleY:; color: black"  scale="3 3 3"></a-entity>
+                <a-input position="2 2.1 0" placeholder="1" color="black" width="0.6"></a-input>
+                <a-entity position="4.3 2.1 0" text="value: ScaleZ:; color: black"  scale="3 3 3"></a-entity>
+                <a-input position="3.3 2.1 0" placeholder="1" color="black" width="0.6"></a-input>
+              </a-entity>
+
+              <!-- Submenu EDIT SPHERE -->
+              <a-entity id="edit-sphere" visible="false">
+                <!-- Rotation -->
+                <a-entity position="1.7 2.4 0" text="value: RotX:; color: black"  scale="3 3 3"></a-entity>
+                <a-input position="0.7 2.4 0" placeholder="0" color="black" width="0.6"></a-input>
+                <a-entity position="3 2.4 0" text="value: RotY:; color: black"  scale="3 3 3"></a-entity>
+                <a-input position="2 2.4 0" placeholder="0" color="black" width="0.6"></a-input>
+                <a-entity position="4.3 2.4 0" text="value: RotZ:; color: black"  scale="3 3 3"></a-entity>
+                <a-input position="3.3 2.4 0" placeholder="0" color="black" width="0.6"></a-input>
+
+                <!-- Radius -->
+                <a-entity position="1.7 2.1 0" text="value: Radius:; color: black"  scale="3 3 3"></a-entity>
+                <a-input position="0.7 2.1 0" placeholder="1" color="black" width="0.6"></a-input>
+              </a-entity>
+
+              <!-- Submenu EDIT CYLINDER -->
+              <a-entity id="edit-cylinder" visible="false">
+                <!-- Rotation -->
+                <a-entity position="1.7 2.4 0" text="value: RotX:; color: black"  scale="3 3 3"></a-entity>
+                <a-input position="0.7 2.4 0" placeholder="0" color="black" width="0.6"></a-input>
+                <a-entity position="3 2.4 0" text="value: RotY:; color: black"  scale="3 3 3"></a-entity>
+                <a-input position="2 2.4 0" placeholder="0" color="black" width="0.6"></a-input>
+                <a-entity position="4.3 2.4 0" text="value: RotZ:; color: black"  scale="3 3 3"></a-entity>
+                <a-input position="3.3 2.4 0" placeholder="0" color="black" width="0.6"></a-input>
+
+                <!-- Height -->
+                <a-entity position="1.7 2.1 0" text="value: Height:; color: black"  scale="3 3 3"></a-entity>
+                <a-input position="0.7 2.1 0" placeholder="1" color="black" width="0.6"></a-input>
+
+                <!-- Radius -->
+                <a-entity position="1.7 1.8 0" text="value: Radius:; color: black"  scale="3 3 3"></a-entity>
+                <a-input position="0.7 1.8 0" placeholder="1" color="black" width="0.6"></a-input>
+              </a-entity>
+
+            </a-entity>
+
             <!-- Menu PLAY -->
             <a-entity
-              position = "0 1 0"
+              position = "0 2 0"
               rotation="0 0 0" 
               scale="0.9 0.9 0.1"
             >
@@ -1031,6 +1206,30 @@
                 geometry="primitive: plane"
                 material="src: #stop; transparent: true"
                 visible="false"
+                priority="level: hud"
+              ></a-entity>
+            </a-entity>
+
+            <!-- Menu TASK -->
+            <a-entity
+              position = "0 1 0"
+              rotation="0 0 0" 
+              scale="0.9 0.9 0.1"
+            >
+              <a-entity
+                class="vr-menu-task" 
+                geometry="primitive: box"
+                material="color: #0377fc"
+                visible="true"
+                priority="level: hud"
+                raycaster-listen
+                vr-menu-task
+              ></a-entity>
+              <a-entity
+                class="vr-menu-task-img" 
+                geometry="primitive: plane"
+                material="src: #task-img; transparent: true"
+                visible="true"
                 priority="level: hud"
               ></a-entity>
             </a-entity>
@@ -1064,6 +1263,7 @@
               id="container-vr-submenu-add" 
               position="2.05 0 0" 
               scale="3 3 1"
+              visible="false"
             >  
               <a-entity
                 class="vr-submenu-add"
@@ -1077,7 +1277,7 @@
               <!-- Submenu ADD BOX -->
               <a-entity
                 id="container-vr-submenu-add-box" 
-                position="-0.3 0.3 0"
+                position="-0.33 0.33 0"
                 rotation="0 0 0" 
                 scale="0.3 0.3 0.1"
                 priority="level: hud"
@@ -1094,7 +1294,111 @@
                 <a-entity
                   class="vr-submenu-add-box-img" 
                   geometry="primitive: plane"
-                  material="src: #plus; transparent: true"
+                  material="src: #box; transparent: true"
+                  visible="true"
+                  priority="level: hud"
+                ></a-entity>
+              </a-entity>
+
+              <!-- Submenu ADD CYLINDER -->
+              <a-entity
+                id="container-vr-submenu-add-cylinder" 
+                position="0 0.33 0"
+                rotation="0 0 0" 
+                scale="0.3 0.3 0.1"
+                priority="level: hud"
+              >
+                <a-entity
+                  class="vr-submenu-add-cylinder" 
+                  geometry="primitive: box"
+                  material="color: #0377fc"
+                  visible="true"
+                  priority="level: hud"
+                  raycaster-listen
+                  vr-submenu-add="shape: cylinder"
+                ></a-entity>
+                <a-entity
+                  class="vr-submenu-add-cylinder-img" 
+                  geometry="primitive: plane"
+                  material="src: #cylinder; transparent: true"
+                  visible="true"
+                  priority="level: hud"
+                ></a-entity>
+              </a-entity>
+
+              <!-- Submenu ADD PLANE -->
+              <a-entity
+                id="container-vr-submenu-add-plane" 
+                position="0.33 0.33 0"
+                rotation="0 0 0" 
+                scale="0.3 0.3 0.1"
+                priority="level: hud"
+              >
+                <a-entity
+                  class="vr-submenu-add-plane" 
+                  geometry="primitive: box"
+                  material="color: #0377fc"
+                  visible="true"
+                  priority="level: hud"
+                  raycaster-listen
+                  vr-submenu-add="shape: plane"
+                ></a-entity>
+                <a-entity
+                  class="vr-submenu-add-plane-img" 
+                  geometry="primitive: plane"
+                  material="src: #plane; transparent: true"
+                  visible="true"
+                  priority="level: hud"
+                ></a-entity>
+              </a-entity>
+
+              <!-- Submenu ADD SPHERE -->
+              <a-entity
+                id="container-vr-submenu-add-sphere" 
+                position="-0.33 0 0"
+                rotation="0 0 0" 
+                scale="0.3 0.3 0.1"
+                priority="level: hud"
+              >
+                <a-entity
+                  class="vr-submenu-add-sphere" 
+                  geometry="primitive: box"
+                  material="color: #0377fc"
+                  visible="true"
+                  priority="level: hud"
+                  raycaster-listen
+                  vr-submenu-add="shape: sphere"
+                ></a-entity>
+                <a-entity
+                  class="vr-submenu-add-sphere-img" 
+                  geometry="primitive: plane"
+                  material="src: #sphere; transparent: true"
+                  visible="true"
+                  priority="level: hud"
+                ></a-entity>
+              </a-entity>
+
+              <!-- Submenu ADD WAFFELMAKER -->
+              <a-entity
+                id="container-vr-submenu-add-wafflemaker" 
+                position="0 0 0"
+                rotation="0 0 0" 
+                scale="0.3 0.3 0.1"
+                priority="level: hud"
+              >
+                <a-entity
+                  class="vr-submenu-add-wafflemaker" 
+                  geometry="primitive: box"
+                  material="color: #0377fc"
+                  visible="true"
+                  priority="level: hud"
+                  raycaster-listen
+                  vr-submenu-add="shape: wafflemaker"
+                ></a-entity>
+                <a-entity
+                  class="vr-submenu-add-wafflemaker-img" 
+                  geometry="primitive: plane"
+                  material="src: #wafflemaker; transparent: true"
                   visible="true"
                   priority="level: hud"
                 ></a-entity>

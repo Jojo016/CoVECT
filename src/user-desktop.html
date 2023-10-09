@@ -44,6 +44,12 @@
         iframe.contentWindow.sendToServer("addInteraction", data);
       }
 
+      function editTask() {
+        var iframe = document.getElementById("iframe");
+        var data = new Object();        
+        iframe.contentWindow.sendToServer("selectTask", data);
+      }
+
       // Status Bar functions
       function addUserToStatusBar(clientId, clientName, isYourself) {
         // Create Div
@@ -139,11 +145,19 @@
                   </td>
                 </tr>
               </tbody>
+              <tbody class="labels">
+                <tr class="tr1">
+                  <td class="td1" colspan="2">
+                    <label for="task">Task</label>
+                    <input type="checkbox" name="task" id="task" data-toggle="toggle">
+                  </td>
+                </tr>
+              </tbody>
               <tbody class="hide">
                 <tr class="tr1">
                   <td class="td1">
                     <div style="width: 100%;">
-                      <button class="seamless-button" onClick="addInteraction('rotation')">Rotation</button>
+                      <button class="seamless-button" onClick="editTask()">Edit Tasks</button>
                     </div>
                   </td>
                 </tr>

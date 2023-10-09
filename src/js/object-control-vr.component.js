@@ -8,6 +8,21 @@ AFRAME.registerComponent('object-control-vr', {
   init: function() {
   },
 
+  getEl: function(cid) {
+    var pEl = null;
+    var els = document.querySelectorAll('[cid]');
+
+    for (var i = 0; i < els.length; i++) {
+
+      if(els[i].getAttribute('cid') == cid) {
+        pEl = els[i];
+        break;
+      }
+    }
+
+    return pEl;
+  },
+
   spawnEntity: function(data) {
       var cid = data.cid;
       var shape = data.shape;
