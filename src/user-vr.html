@@ -140,14 +140,443 @@
       }
     </script>
     <script>
+      function uploadGuiChanges(evt) {
+        console.log('uploadGuiChanges');
+        console.log('evt:');
+        console.log(evt);
+
+        var value = evt.value;
+        var target = evt.target;
+        var name = target.name;
+
+        // TODO: Add upload to server!
+
+        // Fill data object
+        var newObj = new Object();
+        var interaction = false;
+
+        if(interaction) {
+          newObj.cid = pEl.getAttribute('cid');
+          newObj.updatetype = 'interaction';
+          newObj.attribute = property;
+          newObj.value = value;
+        }else{
+          
+          obj.updatetype = name;
+          obj.updatedata = pos3;
+        }
+        
+        // Send changes to server
+        var updateData = JSON.stringify(newObj);
+        easyrtc.sendDataWS(clientRtcId, "updateComponent", updateData);
+      }
+
       function updateSelectionMenu(pEl, bool) {
+        var el = pEl.children[0];
+        var type = el.getAttribute('class');
+
         if(bool) {
-          // Make correct submenu-entries visible
-          console.log("pEl");
-          console.log(pEl);
+          var cid = pEl.getAttribute('cid');
+          var name = el.getAttribute('entityName');
+          var pos3 = pEl.getAttribute('position');
+          var interactable = el.interactable;
+          var rotation = el.getAttribute('rotation');
+          var scale = el.getAttribute('scale');
+          var radius = el.getAttribute('radius');
+          var geometry = el.getAttribute('geometry');
+          var cHeight = geometry.height;
+          var cRadius = geometry.radius;
+
+          console.log('interactable:');
+          console.log(interactable);
+
+          // Delete all entries 
+          var containerEdit = document.getElementById('container-vr-submenu-edit');
+          while(containerEdit.children.length > 0) {
+            var child = containerEdit.children[0];
+            try{
+              if(child.getAttribute('name') == 'a-form') {
+                while(child.children.length > 0) {
+                  var subchild = child.children[0];
+                  child.removeChild(subchild);
+                  subchild.destroy();
+                }
+              }
+              containerEdit.removeChild(child);
+              child.destroy();
+            }catch(e){
+              console.log('ERROR: ' + e);
+              console.log(child);
+              return;
+            }
+          }
+
+          containerEdit.removeEventListener('change', this.uploadGuiChanges);
+
+          // Add fitting submenu-entries 
+          switch(type) {
+            case 'selected-collidable': // equals 'entity'
+
+              // Background
+              var backgroundUi = document.createElement('a-entity');
+              backgroundUi.setAttribute('geometry', 'primitive: plane');
+              backgroundUi.setAttribute('material', 'color: #808080');
+              backgroundUi.setAttribute('position', '2.17 1.55 0');
+              backgroundUi.setAttribute('scale', '4 3.5 1');
+
+              containerEdit.appendChild(backgroundUi);
+
+              // Name
+              var nameUi1 = document.createElement('a-entity');
+              nameUi1.setAttribute('position', '1.7 3 0');
+              nameUi1.setAttribute('scale', '3 3 3');
+              nameUi1.setAttribute('text', 'value: Name; color: black');
+              var nameUi2 = document.createElement('a-input');
+              nameUi2.setAttribute('position', '0.7 3 0');
+              nameUi2.setAttribute('color', 'black');
+              nameUi2.setAttribute('width', '2.55');
+              nameUi2.setAttribute('value', name);
+              var nameUi3 = document.createElement('a-entity');
+              nameUi3.setAttribute('position', '5 3 0');
+              nameUi3.setAttribute('scale', '3 3 3');
+              nameUi3.setAttribute('text', 'value: ' + cid + '; color: black');
+
+              containerEdit.appendChild(nameUi1);
+              containerEdit.appendChild(nameUi2);
+              containerEdit.appendChild(nameUi3);
+
+              // Pos
+              var posUi1 = document.createElement('a-entity');
+              posUi1.setAttribute('position', '1.7 2.7 0');
+              posUi1.setAttribute('scale', '3 3 3');
+              posUi1.setAttribute('text', 'value: PosX; color: black');
+              var posUi2 = document.createElement('a-input');
+              posUi2.setAttribute('position', '0.7 2.7 0');
+              posUi2.setAttribute('color', 'black');
+              posUi2.setAttribute('width', '0.6');
+              posUi2.setAttribute('value', parseFloat(pos3.x).toFixed(6));
+              var posUi3 = document.createElement('a-entity');
+              posUi3.setAttribute('position', '3 2.7 0');
+              posUi3.setAttribute('scale', '3 3 3');
+              posUi3.setAttribute('text', 'value: PosY; color: black');
+              var posUi4 = document.createElement('a-input');
+              posUi4.setAttribute('position', '2 2.7 0');
+              posUi4.setAttribute('color', 'black');
+              posUi4.setAttribute('width', '0.6');
+              posUi4.setAttribute('value', parseFloat(pos3.y).toFixed(6));
+              var posUi5 = document.createElement('a-entity');
+              posUi5.setAttribute('position', '4.3 2.7 0');
+              posUi5.setAttribute('scale', '3 3 3');
+              posUi5.setAttribute('text', 'value: PosZ; color: black');
+              var posUi6 = document.createElement('a-input');
+              posUi6.setAttribute('position', '3.3 2.7 0');
+              posUi6.setAttribute('color', 'black');
+              posUi6.setAttribute('width', '0.6');
+              posUi6.setAttribute('value', parseFloat(pos3.z).toFixed(6));
+              
+              containerEdit.appendChild(posUi1);
+              containerEdit.appendChild(posUi2);
+              containerEdit.appendChild(posUi3);
+              containerEdit.appendChild(posUi4);
+              containerEdit.appendChild(posUi5);
+              containerEdit.appendChild(posUi6);
+
+              // Colorpicker
+              var colorpickerUi1 = document.createElement('a-entity');
+              colorpickerUi1.setAttribute('position', '4.3 1.8 0');
+              colorpickerUi1.setAttribute('scale', '3 3 3');
+              colorpickerUi1.setAttribute('text', 'value: Color; color: black');
+              var colorpickerUi2 = document.createElement('a-entity');
+              colorpickerUi2.setAttribute('position', '3.4 1.1 0');
+              var colorpickerUi3 = document.createElement('a-colorwheel');
+              colorpickerUi3.setAttribute('scale', '1 1 1');
+              colorpickerUi3.setAttribute('showhexvalue', true);
+              colorpickerUi3.setAttribute('showswatches', true);
+              
+              colorpickerUi2.appendChild(colorpickerUi3);
+              containerEdit.appendChild(colorpickerUi1);
+              containerEdit.appendChild(colorpickerUi2);
+
+              // Interactable
+              var aform1 = document.createElement('a-form');
+
+              var interactableUi1 = document.createElement('a-entity');
+              interactableUi1.setAttribute('position', '1.7 1.8 0');
+              interactableUi1.setAttribute('scale', '3 3 3');
+              interactableUi1.setAttribute('text', 'value: Interactable; color: black');
+
+              var interactableUi2 = document.createElement('a-radio');
+              interactableUi2.setAttribute('name', 'interactable1');
+              interactableUi2.setAttribute('label', 'Static');
+              interactableUi2.setAttribute('scale', '0.8 0.8 0.8');
+              interactableUi2.setAttribute('position', '0.4 1.5 0');
+              interactableUi2.setAttribute('width', '1');
+              interactableUi2.setAttribute('color', '#000000');
+              if(interactable.type == 'none') {
+                interactableUi2.setAttribute('checked', true);
+              }
+              aform1.appendChild(interactableUi2);
+
+              var interactableUi3 = document.createElement('a-radio');
+              interactableUi3.setAttribute('scale', '0.8 0.8 0.8');
+              interactableUi3.setAttribute('position', '0.4 1.3 0');
+              interactableUi3.setAttribute('width', '1');
+              interactableUi3.setAttribute('name', 'interactable2');
+              interactableUi3.setAttribute('label', 'Grabbable');
+              interactableUi3.setAttribute('color', '#000000');
+              if(interactable.type == 'grabbable') {
+                interactableUi3.setAttribute('checked', true);
+              }
+              aform1.appendChild(interactableUi3);
+              
+              var interactableUi4 = document.createElement('a-radio');
+              interactableUi4.setAttribute('scale', '0.8 0.8 0.8');
+              interactableUi4.setAttribute('position', '0.4 1.1 0');
+              interactableUi4.setAttribute('width', '1');
+              interactableUi4.setAttribute('name', 'interactable3');
+              interactableUi4.setAttribute('label', 'Rotatable');
+              interactableUi4.setAttribute('color', '#000000');
+              if(interactable.type == 'rotatable') {
+                interactableUi4.setAttribute('checked', true);
+              }
+              aform1.appendChild(interactableUi4);
+              
+              var aform2 = document.createElement('a-form');
+              var interactableUi5 = document.createElement('a-radio');
+              interactableUi5.setAttribute('scale', '0.8 0.8 0.8');
+              interactableUi5.setAttribute('position', '0.6 0.9 0');
+              interactableUi5.setAttribute('width', '1');
+              interactableUi5.setAttribute('name', 'rotAxisX');
+              interactableUi5.setAttribute('label', 'X');
+              interactableUi5.setAttribute('color', '#000000');
+              if(interactable.axis == 'X') {
+                interactableUi5.setAttribute('checked', true);
+              }
+              aform2.appendChild(interactableUi5);
+
+              var interactableUi6 = document.createElement('a-radio');
+              interactableUi6.setAttribute('scale', '0.8 0.8 0.8');
+              interactableUi6.setAttribute('position', '0.6 0.7 0');
+              interactableUi6.setAttribute('width', '1');
+              interactableUi6.setAttribute('name', 'rotAxisY');
+              interactableUi6.setAttribute('label', 'Y');
+              interactableUi6.setAttribute('color', '#000000');
+              if(interactable.axis == 'Y') {
+                interactableUi6.setAttribute('checked', true);
+              }
+              aform2.appendChild(interactableUi6);
+
+              var interactableUi7 = document.createElement('a-radio');
+              interactableUi7.setAttribute('scale', '0.8 0.8 0.8');
+              interactableUi7.setAttribute('position', '0.6 0.5 0');
+              interactableUi7.setAttribute('width', '1');
+              interactableUi7.setAttribute('name', 'rotAxisZ');
+              interactableUi7.setAttribute('label', 'Z');
+              interactableUi7.setAttribute('color', '#000000');
+              if(interactable.axis == 'Z') {
+                interactableUi7.setAttribute('checked', true);
+              }
+              aform2.appendChild(interactableUi7);
+
+              var interactableUi8 = document.createElement('a-entity');
+              interactableUi8.setAttribute('position', '2.46 0.5 0');
+              interactableUi8.setAttribute('scale', '3 3 3');
+              interactableUi8.setAttribute('text', 'value: Offset:; color: black');
+              var interactableUi9 = document.createElement('a-input');
+              interactableUi9.setAttribute('position', '1.46 0.5 0');
+              interactableUi9.setAttribute('width', '0.6');
+              interactableUi9.setAttribute('color', 'black');
+              interactableUi9.setAttribute('value', parseFloat(interactable.offset).toFixed(6));
+
+              containerEdit.appendChild(aform1);
+              containerEdit.appendChild(aform2);
+              containerEdit.appendChild(interactableUi1);
+              containerEdit.appendChild(interactableUi8);
+              containerEdit.appendChild(interactableUi9);
+
+              // Make correct menu visible & targetable
+              var geo = el.getAttribute('geometry');
+              var shape;
+              if(geo != null) {
+                shape = geo.primitive;
+              }else{
+                shape = 'model';
+              }
+
+              switch(shape) {
+                case 'box':
+                case 'plane':
+                case 'model':
+                  // Rotation
+                  var rotUi1 = document.createElement('a-entity');
+                  rotUi1.setAttribute('position', '1.7 2.4 0');
+                  rotUi1.setAttribute('scale', '3 3 3');
+                  rotUi1.setAttribute('text', 'value: RotX; color: black;');
+                  var rotUi2 = document.createElement('a-input');
+                  rotUi2.setAttribute('position', '0.7 2.4 0');
+                  rotUi2.setAttribute('color', 'black');
+                  rotUi2.setAttribute('width', '0.6');
+                  rotUi2.setAttribute('value', parseFloat(rotation.x).toFixed(6));
+                  var rotUi3 = document.createElement('a-entity');
+                  rotUi3.setAttribute('position', '3 2.4 0');
+                  rotUi3.setAttribute('scale', '3 3 3');
+                  rotUi3.setAttribute('text', 'value: RotY; color: black;');
+                  var rotUi4 = document.createElement('a-input');
+                  rotUi4.setAttribute('position', '2 2.4 0');
+                  rotUi4.setAttribute('color', 'black');
+                  rotUi4.setAttribute('width', '0.6');
+                  rotUi4.setAttribute('value', parseFloat(rotation.y).toFixed(6));
+                  var rotUi5 = document.createElement('a-entity');
+                  rotUi5.setAttribute('position', '4.3 2.4 0');
+                  rotUi5.setAttribute('scale', '3 3 3');
+                  rotUi5.setAttribute('text', 'value: RotZ; color: black');
+                  var rotUi6 = document.createElement('a-input');
+                  rotUi6.setAttribute('position', '3.3 2.4 0');
+                  rotUi6.setAttribute('color', 'black');
+                  rotUi6.setAttribute('width', '0.6');
+                  rotUi6.setAttribute('value', parseFloat(rotation.z).toFixed(6));
+                  
+                  containerEdit.appendChild(rotUi1);
+                  containerEdit.appendChild(rotUi2);
+                  containerEdit.appendChild(rotUi3);
+                  containerEdit.appendChild(rotUi4);
+                  containerEdit.appendChild(rotUi5);
+                  containerEdit.appendChild(rotUi6);
+
+                  // Scale
+                  var scaleUi1 = document.createElement('a-entity');
+                  scaleUi1.setAttribute('position', '1.7 2.1 0');
+                  scaleUi1.setAttribute('scale', '3 3 3');
+                  scaleUi1.setAttribute('text', 'value: ScaleX; color: black');
+                  var scaleUi2 = document.createElement('a-input');
+                  scaleUi2.setAttribute('position', '0.7 2.1 0');
+                  scaleUi2.setAttribute('color', 'black');
+                  scaleUi2.setAttribute('width', '0.6');
+                  scaleUi2.setAttribute('value', parseFloat(scale.z).toFixed(6));
+                  var scaleUi3 = document.createElement('a-entity');
+                  scaleUi3.setAttribute('position', '3 2.1 0');
+                  scaleUi3.setAttribute('scale', '3 3 3');
+                  scaleUi3.setAttribute('text', 'value: ScaleY; color: black');
+                  var scaleUi4 = document.createElement('a-input');
+                  scaleUi4.setAttribute('position', '2 2.1 0');
+                  scaleUi4.setAttribute('color', 'black');
+                  scaleUi4.setAttribute('width', '0.6');
+                  scaleUi4.setAttribute('value', parseFloat(scale.z).toFixed(6));
+                  var scaleUi5 = document.createElement('a-entity');
+                  scaleUi5.setAttribute('position', '4.3 2.1 0');
+                  scaleUi5.setAttribute('scale', '3 3 3');
+                  scaleUi5.setAttribute('text', 'value: ScaleZ; color: black');
+                  var scaleUi6 = document.createElement('a-input');
+                  scaleUi6.setAttribute('position', '3.3 2.1 0');
+                  scaleUi6.setAttribute('color', 'black');
+                  scaleUi6.setAttribute('width', '0.6');
+                  scaleUi6.setAttribute('value', parseFloat(scale.z).toFixed(6));
+                  
+                  containerEdit.appendChild(scaleUi1);
+                  containerEdit.appendChild(scaleUi2);
+                  containerEdit.appendChild(scaleUi3);
+                  containerEdit.appendChild(scaleUi4);
+                  containerEdit.appendChild(scaleUi5);
+                  containerEdit.appendChild(scaleUi6);
+                  break;
+
+                case 'cylinder':
+                  // Rotation
+                  var rotUi1 = document.createElement('a-entity');
+                  rotUi1.setAttribute('position', '1.7 2.4 0');
+                  rotUi1.setAttribute('scale', '3 3 3');
+                  rotUi1.setAttribute('text', 'value: RotX; color: black');
+                  var rotUi2 = document.createElement('a-input');
+                  rotUi2.setAttribute('position', '0.7 2.4 0');
+                  rotUi2.setAttribute('color', 'black');
+                  rotUi2.setAttribute('width', '0.6');
+                  rotUi2.setAttribute('value', parseFloat(rotation.x).toFixed(6));
+                  var rotUi3 = document.createElement('a-entity');
+                  rotUi3.setAttribute('position', '3 2.4 0');
+                  rotUi3.setAttribute('scale', '3 3 3');
+                  rotUi3.setAttribute('text', 'value: RotY; color: black');
+                  var rotUi4 = document.createElement('a-input');
+                  rotUi4.setAttribute('position', '2 2.4 0');
+                  rotUi4.setAttribute('color', 'black');
+                  rotUi4.setAttribute('width', '0.6');
+                  rotUi4.setAttribute('value', parseFloat(rotation.y).toFixed(6));
+                  var rotUi5 = document.createElement('a-entity');
+                  rotUi5.setAttribute('position', '4.3 2.4 0');
+                  rotUi5.setAttribute('scale', '3 3 3');
+                  rotUi5.setAttribute('text', 'value: RotZ; color: black');
+                  var rotUi6 = document.createElement('a-input');
+                  rotUi6.setAttribute('position', '3.3 2.4 0');
+                  rotUi6.setAttribute('color', 'black');
+                  rotUi6.setAttribute('width', '0.6');
+                  rotUi6.setAttribute('value', parseFloat(rotation.z).toFixed(6));
+                  
+                  containerEdit.appendChild(rotUi1);
+                  containerEdit.appendChild(rotUi2);
+                  containerEdit.appendChild(rotUi3);
+                  containerEdit.appendChild(rotUi4);
+                  containerEdit.appendChild(rotUi5);
+                  containerEdit.appendChild(rotUi6);
+                  
+                  // Radius
+                  var radiusUi1 = document.createElement('a-entity');
+                  radiusUi1.setAttribute('position', '1.7 2.1 0');
+                  radiusUi1.setAttribute('scale', '3 3 3');
+                  radiusUi1.setAttribute('text', 'value: Radius; color: black');
+                  var radiusUi2 = document.createElement('a-input');
+                  radiusUi2.setAttribute('position', '0.7 2.1 0');
+                  radiusUi2.setAttribute('color', 'black');
+                  radiusUi2.setAttribute('width', '0.6');
+                  radiusUi2.setAttribute('value', parseFloat(cRadius).toFixed(6));
+
+                  containerEdit.appendChild(radiusUi1);
+                  containerEdit.appendChild(radiusUi2);
+
+                  // Height
+                  var heightUi1 = document.createElement('a-entity');
+                  heightUi1.setAttribute('position', '3 2.1 0');
+                  heightUi1.setAttribute('scale', '3 3 3');
+                  heightUi1.setAttribute('text', 'value: Height; color: black');
+                  var heightUi2 = document.createElement('a-input');
+                  heightUi2.setAttribute('position', '2 2.1 0');
+                  heightUi2.setAttribute('color', 'black');
+                  heightUi2.setAttribute('width', '0.6');
+                  heightUi2.setAttribute('value', parseFloat(cHeight).toFixed(6));
+
+                  containerEdit.appendChild(heightUi1);
+                  containerEdit.appendChild(heightUi2);
+                  break;
+                
+                case 'sphere':
+                  // Radius
+                  var radiusUi1 = document.createElement('a-entity');
+                  radiusUi1.setAttribute('position', '1.7 2.4 0');
+                  radiusUi1.setAttribute('scale', '3 3 3');
+                  radiusUi1.setAttribute('text', 'value: Radius; color: black');
+                  var radiusUi2 = document.createElement('a-input');
+                  radiusUi2.setAttribute('position', '0.7 2.4 0');
+                  radiusUi2.setAttribute('color', 'black');
+                  radiusUi2.setAttribute('width', '0.6');
+                  radiusUi2.setAttribute('value', parseFloat(radius).toFixed(6));
+
+                  containerEdit.appendChild(radiusUi1);
+                  containerEdit.appendChild(radiusUi2);
+                  break;
+              }
+
+              break;
+
+            case 'interaction':
+              break;
+
+            default:
+              break;
+          }
+
+          containerEdit.addEventListener('change', this.uploadGuiChanges);
 
         }else{
-          // Remove selection screen 
+          // Set 'select something' screen 
+
         }
       }
 
@@ -172,6 +601,7 @@
             var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
             controller.selectEntity(cid, sourceRtcId, bool);
 
+            // TODO: change != to ==
             if(sourceRtcId != clientRtcId) {
               // TODO: ADD THIS FUNCTION
               var pEl = controller.getEl(cid);
@@ -183,6 +613,7 @@
             var cid = data.cid;
             var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
             controller.removeComponent(cid);
+            
           }else if(msgType === 'updatedComponent') {
             var data = JSON.parse(msgData);
             var cid = data.cid;
@@ -191,7 +622,17 @@
             var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
             controller.updateComponent(cid, type, newData);
 
-          } else if(msgType === 'userJoined') {
+          }else if(msgType === 'updatedInteractable') {
+            var data = JSON.parse(msgData);
+            var cid = data.cid;
+            var sourceRtcId = data.sourcertcid;
+            var newData = data.updatedata;
+            var property = newData.property;
+            var value = newData.value;
+            var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
+            controller.updateInteractable(cid, sourceRtcId, property, value);
+
+          }else if(msgType === 'userJoined') {
             var data = JSON.parse(msgData);
             //window.parent.addUserToStatusBar(data.easyrtcid, data.name, false);
 
@@ -822,7 +1263,6 @@
                 // Handle other attributes
                 newElement.setAttribute('material', 'color: #00ff00');
                 newElement.setAttribute('scale', '0.2 0.2 0.2');
-
                 break;
             }
 
@@ -1084,99 +1524,7 @@
               position="0.15 -1.05 0" 
               visible="true"
               scale="2.2 2.2 2.2"
-            >  
-              <!-- Background -->
-              <a-entity geometry="primitive: plane" material="color: #808080" scale="4 3.5 1" position="2.17 1.55 0"></a-entity>
-
-              <!-- Name -->
-              <a-entity position="1.7 3 0" text="value: Name:; color: black"  scale="3 3 3"></a-entity>
-              <a-input position="0.7 3 0" placeholder="Select Entity to edit properties" color="black" width="2.55"></a-input>
-              <a-entity position="5 3 0" text="value: Id: 0; color: black"  scale="3 3 3"></a-entity>
-
-              <!-- Pos -->
-              <a-entity position="1.7 2.7 0" text="value: PosX:; color: black"  scale="3 3 3"></a-entity>
-              <a-input position="0.7 2.7 0" placeholder="0" color="black" width="0.6"></a-input>
-              <a-entity position="3 2.7 0" text="value: PosY:; color: black"  scale="3 3 3"></a-entity>
-              <a-input position="2 2.7 0" placeholder="0" color="black" width="0.6"></a-input>
-              <a-entity position="4.3 2.7 0" text="value: PosZ:; color: black"  scale="3 3 3"></a-entity>
-              <a-input position="3.3 2.7 0" placeholder="0" color="black" width="0.6"></a-input>
-
-              <!-- Colorpicker -->
-              <a-entity position="4 1.8 0" text="value: Color:; color: black"  scale="3 3 3"></a-entity>
-              <a-entity position="3.2 1.1 0">
-                <a-colorwheel scale="1 1 1" showhexvalue="true" showswatches="true"></a-colorwheel>
-              </a-entity>
-
-              <!-- Interactable -->
-              <a-entity position="1.7 1.8 0" text="value: Interactable:; color: black"  scale="3 3 3"></a-entity>
-              <a-radio scale="0.8 0.8 0.8" position="0.4 1.5 0" width="1" name="interactable" label="Static" checked="true"></a-radio>
-              <a-radio scale="0.8 0.8 0.8" position="0.4 1.3 0" width="1" name="interactable" label="Grabbable"></a-radio>
-              
-              <a-radio scale="0.8 0.8 0.8" position="0.4 1.1 0" width="1" name="interactable" label="Rotatable:"></a-radio>
-              <a-radio scale="0.8 0.8 0.8" position="0.6 0.9 0" width="1" name="rotAxisX" label="X"></a-radio>
-              <a-radio scale="0.8 0.8 0.8" position="0.6 0.7 0" width="1" name="rotAxisY" label="Y"></a-radio>
-              <a-radio scale="0.8 0.8 0.8" position="0.6 0.5 0" width="1" name="rotAxisZ" label="Z"></a-radio>
-
-              <a-entity position="2.46 0.5 0" text="value: Offset:; color: black"  scale="3 3 3"></a-entity>
-              <a-input position="1.46 0.5 0" placeholder="0" color="black" width="0.6"></a-input>
-
-              <!-- Save Button -->
-              <a-button position="0.30 0.05 0" scale="1.6 1 1" name="stuff" value="Accept" type="raised"></a-button>
-              <a-button position="2.25 0.05 0" scale="1.6 1 1" name="stuff" value="Cancel" type="raised" color="#8c2f29"></a-button>
-            
-              <!-- Submenu EDIT BOX -->
-              <a-entity id="edit-box-and-plane">
-                <!-- Rotation -->
-                <a-entity position="1.7 2.4 0" text="value: RotX:; color: black"  scale="3 3 3"></a-entity>
-                <a-input position="0.7 2.4 0" placeholder="0" color="black" width="0.6"></a-input>
-                <a-entity position="3 2.4 0" text="value: RotY:; color: black"  scale="3 3 3"></a-entity>
-                <a-input position="2 2.4 0" placeholder="0" color="black" width="0.6"></a-input>
-                <a-entity position="4.3 2.4 0" text="value: RotZ:; color: black"  scale="3 3 3"></a-entity>
-                <a-input position="3.3 2.4 0" placeholder="0" color="black" width="0.6"></a-input>
-
-                <!-- Scale -->
-                <a-entity position="1.7 2.1 0" text="value: ScaleX:; color: black"  scale="3 3 3"></a-entity>
-                <a-input position="0.7 2.1 0" placeholder="1" color="black" width="0.6"></a-input>
-                <a-entity position="3 2.1 0" text="value: ScaleY:; color: black"  scale="3 3 3"></a-entity>
-                <a-input position="2 2.1 0" placeholder="1" color="black" width="0.6"></a-input>
-                <a-entity position="4.3 2.1 0" text="value: ScaleZ:; color: black"  scale="3 3 3"></a-entity>
-                <a-input position="3.3 2.1 0" placeholder="1" color="black" width="0.6"></a-input>
-              </a-entity>
-
-              <!-- Submenu EDIT SPHERE -->
-              <a-entity id="edit-sphere" visible="false">
-                <!-- Rotation -->
-                <a-entity position="1.7 2.4 0" text="value: RotX:; color: black"  scale="3 3 3"></a-entity>
-                <a-input position="0.7 2.4 0" placeholder="0" color="black" width="0.6"></a-input>
-                <a-entity position="3 2.4 0" text="value: RotY:; color: black"  scale="3 3 3"></a-entity>
-                <a-input position="2 2.4 0" placeholder="0" color="black" width="0.6"></a-input>
-                <a-entity position="4.3 2.4 0" text="value: RotZ:; color: black"  scale="3 3 3"></a-entity>
-                <a-input position="3.3 2.4 0" placeholder="0" color="black" width="0.6"></a-input>
-
-                <!-- Radius -->
-                <a-entity position="1.7 2.1 0" text="value: Radius:; color: black"  scale="3 3 3"></a-entity>
-                <a-input position="0.7 2.1 0" placeholder="1" color="black" width="0.6"></a-input>
-              </a-entity>
-
-              <!-- Submenu EDIT CYLINDER -->
-              <a-entity id="edit-cylinder" visible="false">
-                <!-- Rotation -->
-                <a-entity position="1.7 2.4 0" text="value: RotX:; color: black"  scale="3 3 3"></a-entity>
-                <a-input position="0.7 2.4 0" placeholder="0" color="black" width="0.6"></a-input>
-                <a-entity position="3 2.4 0" text="value: RotY:; color: black"  scale="3 3 3"></a-entity>
-                <a-input position="2 2.4 0" placeholder="0" color="black" width="0.6"></a-input>
-                <a-entity position="4.3 2.4 0" text="value: RotZ:; color: black"  scale="3 3 3"></a-entity>
-                <a-input position="3.3 2.4 0" placeholder="0" color="black" width="0.6"></a-input>
-
-                <!-- Height -->
-                <a-entity position="1.7 2.1 0" text="value: Height:; color: black"  scale="3 3 3"></a-entity>
-                <a-input position="0.7 2.1 0" placeholder="1" color="black" width="0.6"></a-input>
-
-                <!-- Radius -->
-                <a-entity position="1.7 1.8 0" text="value: Radius:; color: black"  scale="3 3 3"></a-entity>
-                <a-input position="0.7 1.8 0" placeholder="1" color="black" width="0.6"></a-input>
-              </a-entity>
-
+            > 
             </a-entity>
 
             <!-- Menu PLAY -->

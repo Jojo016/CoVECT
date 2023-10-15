@@ -24,64 +24,84 @@ AFRAME.registerComponent('object-control-vr', {
   },
 
   spawnEntity: function(data) {
-      var cid = data.cid;
-      var shape = data.shape;
-      var scale = data.scale;
-      var pos3 = new THREE.Vector3(data.posX, data.posY, data.posZ);
+    var cid = data.cid;
+    var shape = data.shape;
+    var scale = data.scaleX + " " + data.scaleY + " " + data.scaleZ;
+    var rotation = data.rotX + " " + data.rotY + " " + data.rotZ;
+    var height = data.height;
+    var radius = data.radius;
+    var pos3 = new THREE.Vector3(data.posX, data.posY, data.posZ);
+    var interactable = data.interactable;
 
-      // Create container element
-      var pEl = document.createElement('a-entity');
-      pEl.setAttribute('cid', cid);
-      pEl.setAttribute('position', pos3);
-      pEl.setAttribute('scale', scale);
+    console.log('SPAWN ENTITY!');
+    console.log(data);
 
-      // Create actual element
-      var el = document.createElement('a-entity');
+    // Create container element
+    var pEl = document.createElement('a-entity');
+    pEl.setAttribute('cid', cid);
+    pEl.setAttribute('position', pos3);
+    pEl.setAttribute('scale', scale);
 
-      // Handle geometry/shape attribute
-      if(shape == 'sphere') {
-        el.setAttribute('geometry', 'primitive: sphere; segmentsWidth: 16; segmentsHeight: 16');
-      }else if(shape == 'plane') {
-        el.setAttribute('geometry', 'primitive: plane;');
-        el.setAttribute('rotation', {x: -90, y: 0, z: 0});
-      }else{
-        el.setAttribute('geometry', 'primitive: ' + shape + ';');
-      }
+    // Create actual element
+    var el = document.createElement('a-entity');
 
-      // Handle other attributes
-      el.setAttribute('material', 'color: #0000FF');
+    // Handle geometry/shape attribute
+    if(shape == 'sphere') {
+      el.setAttribute('geometry', 'primitive: sphere; segmentsWidth: 16; segmentsHeight: 16;');
+      el.setAttribute('radius', radius);
 
-      el.setAttribute('entityName', 'New ' + shape);
+    }else if(shape == 'plane') {
+      el.setAttribute('geometry', 'primitive: plane;');
+      el.setAttribute('rotation', rotation);
 
-      // Handle raycaster attribute 
-      el.setAttribute('raycaster-listen', '');
+    }else if(shape == 'cylinder'){
+      el.setAttribute('geometry', 'primitive: ' + shape + '; radius: ' + radius + '; height: ' + height + '; rotation: ' + rotation + ';');
 
-      // Check for selection
-      var selectedById = data.selectedBy;
-      if(selectedById != -1) {
-        // Make selected object transparent and untargetable
-        var mat = el.getDOMAttribute('material');
-        mat.opacity = 0.4;
-        el.setAttribute('material', mat);
+    }else if(shape == 'box') {
+      el.setAttribute('geometry', 'primitive: ' + shape + ';');
+      el.setAttribute('rotation', rotation);
 
-        // Set as untargetable for raycaster
-        el.setAttribute('class', 'selected-collidable');
+    }else{
+      // TODO: Add method for specific models
+      el.setAttribute('rotation', rotation);
+    }
 
-        // Set easyRtcId of source
-        el.setAttribute('selectedby', selectedById);
-      }else{
-        // Set as targetable for raycaster & add select handler
-        el.setAttribute('class', 'collidable');
-        el.setAttribute('select-listener', '');
-        el.setAttribute('trigger-button-listener');
-        el.setAttribute('grab-listener', '');
-      }
+    // Handle other attributes
+    el.setAttribute('material', 'color: #00FFFF');
 
-      var scene = this.el.sceneEl;
-      pEl.appendChild(el);
-      scene.appendChild(pEl);
+    el.setAttribute('entityName', 'New ' + shape);
+    
+    el.interactable = interactable;
 
-      // TODO: Add object to list 'Scene Objects' for "Object Overview Menu"
+    // Handle raycaster attribute 
+    el.setAttribute('raycaster-listen', '');
+
+    // Check for selection
+    var selectedById = data.selectedBy;
+    if(selectedById != -1) {
+      // Make selected object transparent and untargetable
+      var mat = el.getDOMAttribute('material');
+      mat.opacity = 0.4;
+      el.setAttribute('material', mat);
+
+      // Set as untargetable for raycaster
+      el.setAttribute('class', 'selected-collidable');
+
+      // Set easyRtcId of source
+      el.setAttribute('selectedby', selectedById);
+    }else{
+      // Set as targetable for raycaster & add select handler
+      el.setAttribute('class', 'collidable');
+      el.setAttribute('select-listener', '');
+      el.setAttribute('trigger-button-listener');
+      el.setAttribute('grab-listener', '');
+    }
+
+    var scene = this.el.sceneEl;
+    pEl.appendChild(el);
+    scene.appendChild(pEl);
+
+    // TODO: Add object to list 'Scene Objects' for "Object Overview Menu"
   },
 
   createAxes: function(pEl) {
@@ -123,6 +143,30 @@ AFRAME.registerComponent('object-control-vr', {
     pEl.appendChild(xSlider);
     pEl.appendChild(ySlider);
     pEl.appendChild(zSlider);
+  },
+  
+  updateInteractable: function(componentId, sourceRtcId, property, value) {
+    console.log("updateInteractable");
+    var el = null;
+    var pEl = null;
+    var els = this.el.sceneEl.querySelectorAll('[cid]');
+
+    for (var i = 0; i < els.length; i++) {
+
+      if(els[i].getAttribute('cid') == componentId) {
+        pEl = els[i];
+        el = pEl.children[0];
+        break;
+      }
+    }
+
+    el.interactable[property] = value;
+
+    // TODO: Should not be neccessary
+    // Update property rows if element is currently selected by client
+    /*if(sourceRtcId == clientRtcId) {
+      this.selectEntity(componentId, clientRtcId, true);
+    }*/
   },
 
   removeAxes: function(pEl) {

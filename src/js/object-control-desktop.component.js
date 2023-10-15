@@ -11,7 +11,10 @@ AFRAME.registerComponent('object-control-desktop', {
   spawnEntity: function(data) {
     var cid = data.cid;
     var shape = data.shape;
-    var scale = data.scale;
+    var scale = data.scaleX + " " + data.scaleY + " " + data.scaleZ;
+    var rotation = data.rotX + " " + data.rotY + " " + data.rotZ;
+    var height = data.height;
+    var radius = data.radius;
     var pos3 = new THREE.Vector3(data.posX, data.posY, data.posZ);
     var interactable = data.interactable;
 
@@ -27,12 +30,23 @@ AFRAME.registerComponent('object-control-desktop', {
 
     // Handle geometry/shape attribute
     if(shape == 'sphere') {
-      el.setAttribute('geometry', 'primitive: sphere; segmentsWidth: 16; segmentsHeight: 16');
+      el.setAttribute('geometry', 'primitive: sphere; segmentsWidth: 16; segmentsHeight: 16;');
+      el.setAttribute('radius', radius);
+
     }else if(shape == 'plane') {
       el.setAttribute('geometry', 'primitive: plane;');
-      el.setAttribute('rotation', {x: -90, y: 0, z: 0});
-    }else{
+      el.setAttribute('rotation', rotation);
+
+    }else if(shape == 'cylinder'){
+      el.setAttribute('geometry', 'primitive: ' + shape + '; radius: ' + radius + '; height: ' + height + '; rotation: ' + rotation + ';');
+
+    }else if(shape == 'box') {
       el.setAttribute('geometry', 'primitive: ' + shape + ';');
+      el.setAttribute('rotation', rotation);
+      
+    }else{
+      // TODO: Add method for specific models
+      el.setAttribute('rotation', rotation);
     }
 
     // Handle other attributes
@@ -220,114 +234,6 @@ AFRAME.registerComponent('object-control-desktop', {
     var eventTarget = event.target;
     var name = eventTarget.name;
     var value = eventTarget.value;
-
-    /* OLD APPROACH
-    if(name == 'action') {
-      
-      console.log("Value: " + value);
-      if(value == 'Modify') {
-
-        var eventParent = eventTarget.parentElement.parentElement;
-        var propertyDiv = eventParent.children[3];
-        var selectInput = propertyDiv.children[1];
-        selectInput.value = value;
-        /*
-        propertyDiv.innerHTML = `
-          <span class="properties-parameter-name">
-            <b>Attribute</b>
-          </span>
-          <select name="attribute" >
-            <option value="none">Keep current</option>
-            <option value="geometry">Geometry</option>
-            <option value="material">Material</option>
-            <option value="position">Position</option>
-            <option value="scale">Scale</option>
-          </select>
-        `;
-        * /
-      }else if(value == 'Remove') {
-
-      }else{
-        console.log("Unimplemented action!");
-        return;
-      }
-
-
-    }else if(name == 'target') {
-
-    }else if(name == 'property') {
-      var doc = window.parent.document;
-      var propertyOptions = doc.getElementById('properties').children;
-
-      var propertyList = [];
-      for(let i = 0; i<propertyOptions.length; i++) {
-        propertyList.push(propertyOptions[i].value);
-      }
-
-      if(!propertyList.includes(value)) {
-        eventTarget.value = '';
-        return;
-      }
-
-      // Add properties row for the given value
-      var pPanel = doc.getElementById('properties-panel');
-      var oldDiv = pPanel.children[3];
-      var newDiv = document.createElement('div');
-
-      switch(value) {
-        case 'material':
-          break;
-
-        case 'position':
-          break;
-
-        case 'scale':
-          break;
-
-        case 'geometry':
-          // Geometry
-          newDiv.className = 'property-row-append';
-          newDiv.innerHTML = `
-            <span class="property-row-element">
-            </span>
-            <div class="property-row-element">
-              <span class="properties-parameter-name">
-                <b>To Shape</b>
-              </span>
-              <select name="shape" >
-                <option value="none">Keep current</option>
-                <option value="box">Box</option>
-                <option value="cylinder">Cylinder</option>
-                <option value="plane">Plane</option>
-                <option value="sphere">Sphere</option>
-              </select>
-            </div>
-            <div class="property-row-element">
-              <span class="properties-parameter-name">
-                <b>To Height</b>
-              </span>
-              <input type="number" name="height" value="1"/>
-            </div>
-            <div class="property-row-element">
-              <span class="properties-parameter-name">
-                <b>To Radius</b>
-              </span>
-              <input type="number" name="radius" value="1"/>
-            </div>
-          `;
-
-          var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
-          newDiv.addEventListener("change", controller.interactionPropertyChanged, false);
-          newDiv.el = pEl;
-          break;
-
-        default:
-          break;
-      }
-
-      pPanel.replaceChild(newDiv, oldDiv);
-    }
-    //*/
     
     // Add updated data to data object
     var newObj = new Object();
@@ -340,7 +246,6 @@ AFRAME.registerComponent('object-control-desktop', {
     // Send changes to server
     var updateData = JSON.stringify(newObj);
     easyrtc.sendDataWS(clientRtcId, "updateComponent", updateData);
-    
   },
 
   interactableChanged: function(event) {
