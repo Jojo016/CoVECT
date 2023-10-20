@@ -327,6 +327,65 @@ AFRAME.registerComponent('object-control-desktop', {
       div.addEventListener("change", this.positionChanged, false);
       pPanel.appendChild(div);
 
+      // TODO: add switch/case for 'shape'
+
+      switch(shape) {
+
+        case 'sphere':
+          break;
+
+        default:
+          break;
+      }
+
+      // Rotation
+      var rotation = pEl.getAttribute('rotation');
+      div = document.createElement('div');
+      div.className = 'property-row';
+      div.innerHTML = `
+          <span class="property-row-element">
+            <b>Rotation</b>
+          </span>
+        `;
+      for(const coord of ['X', 'Y', 'Z']) {
+        div.innerHTML += `
+          <div class="property-row-element">
+            <span class="properties-parameter-name">
+              <b>${coord}</b>
+            </span>
+            <input type="number" name="${coord.toLowerCase()}Rotation" value="${rotation[coord.toLowerCase()]}"/>
+          </div>
+        `;
+      };
+
+      div.el = pEl;
+      div.addEventListener("change", this.positionChanged, false);
+      pPanel.appendChild(div);
+
+      // Scale
+      var scale = pEl.getAttribute('scale');
+      div = document.createElement('div');
+      div.className = 'property-row';
+      div.innerHTML = `
+          <span class="property-row-element">
+            <b>Scale</b>
+          </span>
+        `;
+      for(const coord of ['X', 'Y', 'Z']) {
+        div.innerHTML += `
+          <div class="property-row-element">
+            <span class="properties-parameter-name">
+              <b>${coord}</b>
+            </span>
+            <input type="number" name="${coord.toLowerCase()}Scale" value="${scale[coord.toLowerCase()]}"/>
+          </div>
+        `;
+      };
+
+      div.el = pEl;
+      div.addEventListener("change", this.positionChanged, false);
+      pPanel.appendChild(div);
+
       // Material
       var material = el.getAttribute('material');
       var color = material.color;

@@ -15,10 +15,10 @@ const https = require("https");
 const fs = require("fs");
 
 // Next two lines are a SSL certificate for local testing
-const privateKey = fs.readFileSync(__dirname + "\\certs\\localhost.key", "utf8");
-const certificate = fs.readFileSync(__dirname + "\\certs\\localhost.crt", "utf8");
-//const privateKey = fs.readFileSync("/certbot/privkey.pem", "utf8");
-//const certificate = fs.readFileSync("/certbot/fullchain.pem", "utf8");
+//const privateKey = fs.readFileSync(__dirname + "\\certs\\localhost.key", "utf8");
+//const certificate = fs.readFileSync(__dirname + "\\certs\\localhost.crt", "utf8");
+const privateKey = fs.readFileSync("/certbot/privkey.pem", "utf8");
+const certificate = fs.readFileSync("/certbot/fullchain.pem", "utf8");
 const credentials = { key: privateKey, cert: certificate };
 
 // Set process name

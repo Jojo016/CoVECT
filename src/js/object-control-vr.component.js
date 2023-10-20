@@ -33,9 +33,6 @@ AFRAME.registerComponent('object-control-vr', {
     var pos3 = new THREE.Vector3(data.posX, data.posY, data.posZ);
     var interactable = data.interactable;
 
-    console.log('SPAWN ENTITY!');
-    console.log(data);
-
     // Create container element
     var pEl = document.createElement('a-entity');
     pEl.setAttribute('cid', cid);
@@ -196,6 +193,9 @@ AFRAME.registerComponent('object-control-vr', {
       }
     }
 
+    var debug = document.getElementById('debugtext');
+    //debug.setAttribute('value', 'pEl: ' + pEl + ' el: ' + el + ' pEl.cid: ' + componentId);
+
     // Decide whether to select or deselect the object
     if(sourceRtcId == clientRtcId) {
       // Client's own EasyRTCid
@@ -249,18 +249,18 @@ AFRAME.registerComponent('object-control-vr', {
         var mat = el.getAttribute('material');
         mat.opacity = 0.4;
         el.setAttribute('material', mat);
-
-        // VR - Make selected object untargetable
-        el.setAttribute('class', 'selected-collidable');
         
       }else {
         // Make deselected object fully visible
+
+        if(el == null) {
+          console.log('el == null');
+          console.log('pEl = ' + pEl);
+          return;
+        }
         var mat = el.getAttribute('material');
         mat.opacity = 1.0;
         el.setAttribute('material', mat);
-      
-        // VR - Make selected object targetable again
-        el.setAttribute('class', 'collidable');
       }
     }
 
@@ -271,12 +271,18 @@ AFRAME.registerComponent('object-control-vr', {
 
       // Remove 'select-button-listener' and the listener it adds
       el.removeAttribute('raycaster-listen');
+
+      // VR - Make selected object untargetable
+      el.setAttribute('class', 'selected-collidable');
     }else {
       // Remove easyRtcId of source
       el.removeAttribute('selectedby');
 
       // Add 'select-button-listener' again
       el.setAttribute('raycaster-listen', '');
+
+      // VR - Make selected object targetable again
+      el.setAttribute('class', 'collidable');
     }
   },
 

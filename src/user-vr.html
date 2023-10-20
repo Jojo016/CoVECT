@@ -9,8 +9,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/16.3.5/Tween.min.js"></script>
     <script src="/js/aframe-colorwheel-component.min.js"></script>
     <script src="/easyrtc/easyrtc.js"></script>
-    <script src="/dist/networked-aframe.js"></script>
-    <script src="/dist/aframe-material.js"></script>
+    <script src="/dist/networked-aframe.min.js"></script>
+    <script src="/dist/aframe-material.min.js"></script>
     <script type="text/javascript">
       AFRAME.ASSETS_PATH = "./assets";
     </script>
@@ -51,6 +51,7 @@
             components: [
               'position',
               'rotation',
+              'scale',
               {
                 selector: '.head',
                 component: 'material',
@@ -93,6 +94,7 @@
             components: [
               'position',
               'rotation',
+              'gltf-model',
               {
                 selector: '.righthand',
                 component: 'material',
@@ -108,6 +110,7 @@
             components: [
               'position',
               'rotation',
+              'gltf-model',
               {
                 selector: '.lefthand',
                 component: 'material',
@@ -149,21 +152,88 @@
         var target = evt.target;
         var name = target.name;
 
+        var debug = document.getElementById('debugtext');
+        debug.setAttribute('value', "Value: " + value + "\nTarget: " + target + "\nName: " + name);
+
         // TODO: Add upload to server!
 
         // Fill data object
         var newObj = new Object();
-        var interaction = false;
+        newObj.cid = pEl.getAttribute('cid');
 
-        if(interaction) {
-          newObj.cid = pEl.getAttribute('cid');
-          newObj.updatetype = 'interaction';
-          newObj.attribute = property;
-          newObj.value = value;
+        var interactable = false;
+        if(interactable) {
+          newObj.updatetype = 'interactable';
+          var data = new Object();
+          data.property = property;
+          data.value = value;
+          newObj.updateData = data;
         }else{
-          
-          obj.updatetype = name;
-          obj.updatedata = pos3;
+
+          switch(name){
+            case 'posX':
+            case 'posY':
+            case 'posZ':
+              var posX = document.getElementById('vr-submenu-edit-posx').getAttribute('value');
+              var posY = document.getElementById('vr-submenu-edit-posy').getAttribute('value');
+              var posZ = document.getElementById('vr-submenu-edit-posz').getAttribute('value');
+
+              newObj.updateType = 'position';
+              newObj.updateData = posX + ' ' + posY + ' ' + posZ;
+              break;
+
+            case 'rotX':
+            case 'rotY':
+            case 'rotZ':
+              var rotX = document.getElementById('vr-submenu-edit-rotx').getAttribute('value');
+              var rotY = document.getElementById('vr-submenu-edit-roty').getAttribute('value');
+              var rotZ = document.getElementById('vr-submenu-edit-rotz').getAttribute('value');
+
+              newObj.updateType = 'rotation';
+              newObj.updateData = rotX + ' ' + rotY + ' ' + rotZ;
+              break;
+
+            case 'scaleX':
+            case 'scaleY':
+            case 'scaleZ':
+              var scaleX = document.getElementById('vr-submenu-edit-scalex').getAttribute('value');
+              var scaleY = document.getElementById('vr-submenu-edit-scaley').getAttribute('value');
+              var scaleZ = document.getElementById('vr-submenu-edit-scalez').getAttribute('value');
+
+              newObj.updateType = 'scale';
+              newObj.updateData = scaleX + ' ' + scaleY + ' ' + scaleZ;
+              break;
+
+            case 'height':
+              var height = document.getElementById('vr-submenu-edit-height').getAttribute('value');
+
+              newObj.updateType = 'height';
+              newObj.updateData = height;
+              break;
+
+            case 'radius':
+              var radius = document.getElementById('vr-submenu-edit-radius').getAttribute('value');
+
+              newObj.updateType = 'radius';
+              newObj.updateData = radius;
+              break;
+
+            case 'offset':
+              var offset = document.getElementById('vr-submenu-edit-offset').getAttribute('value');
+
+              newObj.updateType = 'offset';
+              newObj.updateData = offset;
+              break;
+
+            case 'rotAxis':
+              // TODO: This approach or above one for single-property updates?
+              newObj.updateType = 'rotAxis';
+              newObj.updateData = value;
+              break;
+
+            default:
+              break;
+          }
         }
         
         // Send changes to server
@@ -171,7 +241,128 @@
         easyrtc.sendDataWS(clientRtcId, "updateComponent", updateData);
       }
 
+      function showOnlySelectedSubmenu(submenuName) {
+        var menuAdd = document.getElementById('vr-menu-add');
+        var submenuAdd = document.getElementById('container-vr-submenu-add');
+        var submenuAddButtons = document.getElementsByName('vr-submenu-add');
+
+        var menuEdit = document.getElementById('vr-menu-edit');
+        var submenuEdit = document.getElementById('container-vr-submenu-edit');
+        var submenuEditButtons = document.getElementsByName('vr-submenu-edit');
+
+        var menuTask = document.getElementById('vr-menu-task');
+        var submenuTask = document.getElementById('container-vr-submenu-task');
+        var submenuTaskButtons = document.getElementsByName('vr-submenu-task');
+
+        // Enable the given interface, disable the rest
+        switch(submenuName) {
+          case 'add':
+            for(var i = 0; i < submenuAddButtons.length; i++) {
+              submenuAddButtons[i].classList.add('vr-submenu-add');
+            }
+            for(var i = 0; i < submenuEditButtons.length; i++) {
+              submenuEditButtons[i].classList.remove('vr-submenu-edit');
+            }
+            for(var i = 0; i < submenuTaskButtons.length; i++) {
+              submenuTaskButtons[i].classList.remove('vr-submenu-task');
+            }
+            
+            // Handle visiblity of other submenus
+            submenuAdd.setAttribute('visible', true);
+            submenuEdit.setAttribute('visible', false);
+            submenuTask.setAttribute('visible', false);
+            
+            // Handle color of buttons
+            menuAdd.setAttribute('baseColor', '#186e44');
+            menuEdit.setAttribute('baseColor', '#0377fc');
+            menuTask.setAttribute('baseColor', '#0377fc');
+            break;
+
+          case 'edit':
+            for(var i = 0; i < submenuAddButtons.length; i++) {
+              submenuAddButtons[i].classList.remove('vr-submenu-add');
+            }
+            for(var i = 0; i < submenuEditButtons.length; i++) {
+              submenuEditButtons[i].classList.add('vr-submenu-edit');
+            }
+            for(var i = 0; i < submenuTaskButtons.length; i++) {
+              submenuTaskButtons[i].classList.remove('vr-submenu-task');
+            }
+
+            // Handle visiblity of other submenus
+            submenuAdd.setAttribute('visible', false);
+            submenuEdit.setAttribute('visible', true);
+            submenuTask.setAttribute('visible', false);
+
+            // TODO: temp
+            var rotX = document.getElementById('vr-submenu-edit-rotx');
+            var rotY = document.getElementById('vr-submenu-edit-roty');
+            var rotZ = document.getElementById('vr-submenu-edit-rotz');
+            rotX.classList.add('vr-submenu-edit');
+            rotY.classList.add('vr-submenu-edit');
+            rotZ.classList.add('vr-submenu-edit');
+
+            // Handle color of buttons
+            menuAdd.setAttribute('baseColor', '#0377fc');
+            menuEdit.setAttribute('baseColor', '#186e44');
+            menuTask.setAttribute('baseColor', '#0377fc');
+            break;
+
+          case 'task':
+            for(var i = 0; i < submenuAddButtons.length; i++) {
+              submenuAddButtons[i].classList.remove('vr-submenu-add');
+            }
+            for(var i = 0; i < submenuEditButtons.length; i++) {
+              submenuEditButtons[i].classList.remove('vr-submenu-edit');
+            }
+            for(var i = 0; i < submenuTaskButtons.length; i++) {
+              submenuTaskButtons[i].classList.add('vr-submenu-task');
+            }
+
+            // Handle visiblity of other submenus
+            submenuAdd.setAttribute('visible', false);
+            submenuEdit.setAttribute('visible', false);
+            submenuTask.setAttribute('visible', true);
+
+            // Handle color of buttons
+            menuAdd.setAttribute('baseColor', '#0377fc');
+            menuEdit.setAttribute('baseColor', '#0377fc');
+            menuTask.setAttribute('baseColor', '#186e44');
+            break;
+
+          case 'close':
+            for(var i = 0; i < submenuAddButtons.length; i++) {
+              submenuAddButtons[i].classList.remove('vr-submenu-add');
+            }
+            for(var i = 0; i < submenuEditButtons.length; i++) {
+              submenuEditButtons[i].classList.remove('vr-submenu-edit');
+            }
+            for(var i = 0; i < submenuTaskButtons.length; i++) {
+              submenuTaskButtons[i].classList.remove('vr-submenu-task');
+            }
+
+            // Handle visiblity of other submenus
+            submenuAdd.setAttribute('visible', false);
+            submenuEdit.setAttribute('visible', false);
+            submenuTask.setAttribute('visible', false);
+
+            menuAdd.setAttribute('baseColor', '#0377fc');
+            menuEdit.setAttribute('baseColor', '#0377fc');
+            menuTask.setAttribute('baseColor', '#0377fc');
+            break;
+
+          default:
+            break;
+        }
+        
+        // Update raycaster objects
+        var hand = document.getElementById('hand-right');
+        var raycaster = hand.components.raycaster;
+        raycaster.refreshObjects();
+      }
+
       function updateSelectionMenu(pEl, bool) {
+
         var el = pEl.children[0];
         var type = el.getAttribute('class');
 
@@ -187,11 +378,11 @@
           var cHeight = geometry.height;
           var cRadius = geometry.radius;
 
-          console.log('interactable:');
-          console.log(interactable);
+          // Remove listener
+          var containerEdit = document.getElementById('container-vr-submenu-edit');
+          containerEdit.removeEventListener('change', this.uploadGuiChanges);
 
           // Delete all entries 
-          var containerEdit = document.getElementById('container-vr-submenu-edit');
           while(containerEdit.children.length > 0) {
             var child = containerEdit.children[0];
             try{
@@ -199,11 +390,14 @@
                 while(child.children.length > 0) {
                   var subchild = child.children[0];
                   child.removeChild(subchild);
-                  subchild.destroy();
+                  // TODO: Maybe needed
+                  //subchild.destroy();
                 }
               }
               containerEdit.removeChild(child);
-              child.destroy();
+              
+              // TODO: Maybe needed
+              //child.destroy();
             }catch(e){
               console.log('ERROR: ' + e);
               console.log(child);
@@ -211,14 +405,13 @@
             }
           }
 
-          containerEdit.removeEventListener('change', this.uploadGuiChanges);
-
           // Add fitting submenu-entries 
           switch(type) {
             case 'selected-collidable': // equals 'entity'
 
               // Background
               var backgroundUi = document.createElement('a-entity');
+              //backgroundUi.setAttribute('name', 'vr-submenu-edit');
               backgroundUi.setAttribute('geometry', 'primitive: plane');
               backgroundUi.setAttribute('material', 'color: #808080');
               backgroundUi.setAttribute('position', '2.17 1.55 0');
@@ -232,15 +425,18 @@
               nameUi1.setAttribute('scale', '3 3 3');
               nameUi1.setAttribute('text', 'value: Name; color: black');
               var nameUi2 = document.createElement('a-input');
+              nameUi2.setAttribute('id', 'vr-submenu-edit-name');
+              nameUi2.setAttribute('name', 'vr-submenu-edit');
               nameUi2.setAttribute('position', '0.7 3 0');
               nameUi2.setAttribute('color', 'black');
               nameUi2.setAttribute('width', '2.55');
               nameUi2.setAttribute('value', name);
+              nameUi2.setAttribute('add-to-raycaster', '');
               var nameUi3 = document.createElement('a-entity');
               nameUi3.setAttribute('position', '5 3 0');
               nameUi3.setAttribute('scale', '3 3 3');
               nameUi3.setAttribute('text', 'value: ' + cid + '; color: black');
-
+              
               containerEdit.appendChild(nameUi1);
               containerEdit.appendChild(nameUi2);
               containerEdit.appendChild(nameUi3);
@@ -251,28 +447,37 @@
               posUi1.setAttribute('scale', '3 3 3');
               posUi1.setAttribute('text', 'value: PosX; color: black');
               var posUi2 = document.createElement('a-input');
+              posUi2.setAttribute('id', 'vr-submenu-edit-posx');
+              posUi2.setAttribute('name', 'vr-submenu-edit');
               posUi2.setAttribute('position', '0.7 2.7 0');
               posUi2.setAttribute('color', 'black');
               posUi2.setAttribute('width', '0.6');
               posUi2.setAttribute('value', parseFloat(pos3.x).toFixed(6));
+              posUi2.setAttribute('add-to-raycaster', '');
               var posUi3 = document.createElement('a-entity');
               posUi3.setAttribute('position', '3 2.7 0');
               posUi3.setAttribute('scale', '3 3 3');
               posUi3.setAttribute('text', 'value: PosY; color: black');
               var posUi4 = document.createElement('a-input');
+              posUi4.setAttribute('id', 'vr-submenu-edit-posy');
+              posUi4.setAttribute('name', 'vr-submenu-edit');
               posUi4.setAttribute('position', '2 2.7 0');
               posUi4.setAttribute('color', 'black');
               posUi4.setAttribute('width', '0.6');
               posUi4.setAttribute('value', parseFloat(pos3.y).toFixed(6));
+              posUi4.setAttribute('add-to-raycaster', '');
               var posUi5 = document.createElement('a-entity');
               posUi5.setAttribute('position', '4.3 2.7 0');
               posUi5.setAttribute('scale', '3 3 3');
               posUi5.setAttribute('text', 'value: PosZ; color: black');
               var posUi6 = document.createElement('a-input');
+              posUi6.setAttribute('id', 'vr-submenu-edit-posz');
+              posUi6.setAttribute('name', 'vr-submenu-edit');
               posUi6.setAttribute('position', '3.3 2.7 0');
               posUi6.setAttribute('color', 'black');
               posUi6.setAttribute('width', '0.6');
               posUi6.setAttribute('value', parseFloat(pos3.z).toFixed(6));
+              posUi6.setAttribute('add-to-raycaster', '');
               
               containerEdit.appendChild(posUi1);
               containerEdit.appendChild(posUi2);
@@ -289,6 +494,7 @@
               var colorpickerUi2 = document.createElement('a-entity');
               colorpickerUi2.setAttribute('position', '3.4 1.1 0');
               var colorpickerUi3 = document.createElement('a-colorwheel');
+              colorpickerUi3.setAttribute('name', 'vr-submenu-edit');
               colorpickerUi3.setAttribute('scale', '1 1 1');
               colorpickerUi3.setAttribute('showhexvalue', true);
               colorpickerUi3.setAttribute('showswatches', true);
@@ -306,36 +512,44 @@
               interactableUi1.setAttribute('text', 'value: Interactable; color: black');
 
               var interactableUi2 = document.createElement('a-radio');
-              interactableUi2.setAttribute('name', 'interactable1');
+              interactableUi2.setAttribute('id', 'vr-submenu-edit-static');
+              interactableUi2.setAttribute('name', 'vr-submenu-edit');
               interactableUi2.setAttribute('label', 'Static');
               interactableUi2.setAttribute('scale', '0.8 0.8 0.8');
               interactableUi2.setAttribute('position', '0.4 1.5 0');
               interactableUi2.setAttribute('width', '1');
               interactableUi2.setAttribute('color', '#000000');
+              interactableUi2.setAttribute('add-to-raycaster', '');
               if(interactable.type == 'none') {
                 interactableUi2.setAttribute('checked', true);
               }
               aform1.appendChild(interactableUi2);
 
               var interactableUi3 = document.createElement('a-radio');
+              interactableUi3.setAttribute('id', 'vr-submenu-edit-grabbable');
+              interactableUi3.setAttribute('name', 'vr-submenu-edit');
               interactableUi3.setAttribute('scale', '0.8 0.8 0.8');
               interactableUi3.setAttribute('position', '0.4 1.3 0');
               interactableUi3.setAttribute('width', '1');
               interactableUi3.setAttribute('name', 'interactable2');
               interactableUi3.setAttribute('label', 'Grabbable');
               interactableUi3.setAttribute('color', '#000000');
+              interactableUi3.setAttribute('add-to-raycaster', '');
               if(interactable.type == 'grabbable') {
                 interactableUi3.setAttribute('checked', true);
               }
               aform1.appendChild(interactableUi3);
               
               var interactableUi4 = document.createElement('a-radio');
+              interactableUi4.setAttribute('id', 'vr-submenu-edit-rotatable');
+              interactableUi4.setAttribute('name', 'vr-submenu-edit');
               interactableUi4.setAttribute('scale', '0.8 0.8 0.8');
               interactableUi4.setAttribute('position', '0.4 1.1 0');
               interactableUi4.setAttribute('width', '1');
               interactableUi4.setAttribute('name', 'interactable3');
               interactableUi4.setAttribute('label', 'Rotatable');
               interactableUi4.setAttribute('color', '#000000');
+              interactableUi4.setAttribute('add-to-raycaster', '');
               if(interactable.type == 'rotatable') {
                 interactableUi4.setAttribute('checked', true);
               }
@@ -343,36 +557,45 @@
               
               var aform2 = document.createElement('a-form');
               var interactableUi5 = document.createElement('a-radio');
+              interactableUi5.setAttribute('id', 'vr-submenu-edit-axisx');
+              //interactableUi5.setAttribute('name', 'vr-submenu-edit');
               interactableUi5.setAttribute('scale', '0.8 0.8 0.8');
               interactableUi5.setAttribute('position', '0.6 0.9 0');
               interactableUi5.setAttribute('width', '1');
               interactableUi5.setAttribute('name', 'rotAxisX');
               interactableUi5.setAttribute('label', 'X');
               interactableUi5.setAttribute('color', '#000000');
+              interactableUi5.setAttribute('add-to-raycaster', '');
               if(interactable.axis == 'X') {
                 interactableUi5.setAttribute('checked', true);
               }
               aform2.appendChild(interactableUi5);
 
               var interactableUi6 = document.createElement('a-radio');
+              interactableUi6.setAttribute('id', 'vr-submenu-edit-axisy');
+              //interactableUi6.setAttribute('name', 'vr-submenu-edit');
               interactableUi6.setAttribute('scale', '0.8 0.8 0.8');
               interactableUi6.setAttribute('position', '0.6 0.7 0');
               interactableUi6.setAttribute('width', '1');
               interactableUi6.setAttribute('name', 'rotAxisY');
               interactableUi6.setAttribute('label', 'Y');
               interactableUi6.setAttribute('color', '#000000');
+              interactableUi6.setAttribute('add-to-raycaster', '');
               if(interactable.axis == 'Y') {
                 interactableUi6.setAttribute('checked', true);
               }
               aform2.appendChild(interactableUi6);
 
               var interactableUi7 = document.createElement('a-radio');
+              interactableUi7.setAttribute('id', 'vr-submenu-edit-axisz');
+              //interactableUi7.setAttribute('name', 'vr-submenu-edit');
               interactableUi7.setAttribute('scale', '0.8 0.8 0.8');
               interactableUi7.setAttribute('position', '0.6 0.5 0');
               interactableUi7.setAttribute('width', '1');
               interactableUi7.setAttribute('name', 'rotAxisZ');
               interactableUi7.setAttribute('label', 'Z');
               interactableUi7.setAttribute('color', '#000000');
+              interactableUi7.setAttribute('add-to-raycaster', '');
               if(interactable.axis == 'Z') {
                 interactableUi7.setAttribute('checked', true);
               }
@@ -383,10 +606,13 @@
               interactableUi8.setAttribute('scale', '3 3 3');
               interactableUi8.setAttribute('text', 'value: Offset:; color: black');
               var interactableUi9 = document.createElement('a-input');
+              interactableUi9.setAttribute('id', 'vr-submenu-edit-offset');
+              interactableUi9.setAttribute('name', 'vr-submenu-edit');
               interactableUi9.setAttribute('position', '1.46 0.5 0');
               interactableUi9.setAttribute('width', '0.6');
               interactableUi9.setAttribute('color', 'black');
               interactableUi9.setAttribute('value', parseFloat(interactable.offset).toFixed(6));
+              interactableUi9.setAttribute('add-to-raycaster', '');
 
               containerEdit.appendChild(aform1);
               containerEdit.appendChild(aform2);
@@ -413,28 +639,37 @@
                   rotUi1.setAttribute('scale', '3 3 3');
                   rotUi1.setAttribute('text', 'value: RotX; color: black;');
                   var rotUi2 = document.createElement('a-input');
+                  rotUi2.setAttribute('id', 'vr-submenu-edit-rotx');
+                  rotUi2.setAttribute('name', 'vr-submenu-edit');
                   rotUi2.setAttribute('position', '0.7 2.4 0');
                   rotUi2.setAttribute('color', 'black');
                   rotUi2.setAttribute('width', '0.6');
                   rotUi2.setAttribute('value', parseFloat(rotation.x).toFixed(6));
+                  rotUi2.setAttribute('add-to-raycaster', '');
                   var rotUi3 = document.createElement('a-entity');
                   rotUi3.setAttribute('position', '3 2.4 0');
                   rotUi3.setAttribute('scale', '3 3 3');
                   rotUi3.setAttribute('text', 'value: RotY; color: black;');
                   var rotUi4 = document.createElement('a-input');
+                  rotUi4.setAttribute('id', 'vr-submenu-edit-roty');
+                  rotUi4.setAttribute('name', 'vr-submenu-edit');
                   rotUi4.setAttribute('position', '2 2.4 0');
                   rotUi4.setAttribute('color', 'black');
                   rotUi4.setAttribute('width', '0.6');
                   rotUi4.setAttribute('value', parseFloat(rotation.y).toFixed(6));
+                  rotUi4.setAttribute('add-to-raycaster', '');
                   var rotUi5 = document.createElement('a-entity');
                   rotUi5.setAttribute('position', '4.3 2.4 0');
                   rotUi5.setAttribute('scale', '3 3 3');
                   rotUi5.setAttribute('text', 'value: RotZ; color: black');
                   var rotUi6 = document.createElement('a-input');
+                  rotUi6.setAttribute('id', 'vr-submenu-edit-rotz');
+                  rotUi6.setAttribute('name', 'vr-submenu-edit');
                   rotUi6.setAttribute('position', '3.3 2.4 0');
                   rotUi6.setAttribute('color', 'black');
                   rotUi6.setAttribute('width', '0.6');
                   rotUi6.setAttribute('value', parseFloat(rotation.z).toFixed(6));
+                  rotUi6.setAttribute('add-to-raycaster', '');
                   
                   containerEdit.appendChild(rotUi1);
                   containerEdit.appendChild(rotUi2);
@@ -449,28 +684,37 @@
                   scaleUi1.setAttribute('scale', '3 3 3');
                   scaleUi1.setAttribute('text', 'value: ScaleX; color: black');
                   var scaleUi2 = document.createElement('a-input');
+                  scaleUi2.setAttribute('id', 'vr-submenu-edit-scalex');
+                  scaleUi2.setAttribute('name', 'vr-submenu-edit');
                   scaleUi2.setAttribute('position', '0.7 2.1 0');
                   scaleUi2.setAttribute('color', 'black');
                   scaleUi2.setAttribute('width', '0.6');
                   scaleUi2.setAttribute('value', parseFloat(scale.z).toFixed(6));
+                  scaleUi2.setAttribute('add-to-raycaster', '');
                   var scaleUi3 = document.createElement('a-entity');
                   scaleUi3.setAttribute('position', '3 2.1 0');
                   scaleUi3.setAttribute('scale', '3 3 3');
                   scaleUi3.setAttribute('text', 'value: ScaleY; color: black');
                   var scaleUi4 = document.createElement('a-input');
+                  scaleUi4.setAttribute('id', 'vr-submenu-edit-scaley');
+                  scaleUi4.setAttribute('name', 'vr-submenu-edit');
                   scaleUi4.setAttribute('position', '2 2.1 0');
                   scaleUi4.setAttribute('color', 'black');
                   scaleUi4.setAttribute('width', '0.6');
                   scaleUi4.setAttribute('value', parseFloat(scale.z).toFixed(6));
+                  scaleUi4.setAttribute('add-to-raycaster', '');
                   var scaleUi5 = document.createElement('a-entity');
                   scaleUi5.setAttribute('position', '4.3 2.1 0');
                   scaleUi5.setAttribute('scale', '3 3 3');
                   scaleUi5.setAttribute('text', 'value: ScaleZ; color: black');
                   var scaleUi6 = document.createElement('a-input');
+                  scaleUi6.setAttribute('id', 'vr-submenu-edit-scalez');
+                  scaleUi6.setAttribute('name', 'vr-submenu-edit');
                   scaleUi6.setAttribute('position', '3.3 2.1 0');
                   scaleUi6.setAttribute('color', 'black');
                   scaleUi6.setAttribute('width', '0.6');
                   scaleUi6.setAttribute('value', parseFloat(scale.z).toFixed(6));
+                  scaleUi6.setAttribute('add-to-raycaster', '');
                   
                   containerEdit.appendChild(scaleUi1);
                   containerEdit.appendChild(scaleUi2);
@@ -487,28 +731,37 @@
                   rotUi1.setAttribute('scale', '3 3 3');
                   rotUi1.setAttribute('text', 'value: RotX; color: black');
                   var rotUi2 = document.createElement('a-input');
+                  rotUi2.setAttribute('id', 'vr-submenu-edit-rotx');
+                  rotUi2.setAttribute('name', 'vr-submenu-edit');
                   rotUi2.setAttribute('position', '0.7 2.4 0');
                   rotUi2.setAttribute('color', 'black');
                   rotUi2.setAttribute('width', '0.6');
                   rotUi2.setAttribute('value', parseFloat(rotation.x).toFixed(6));
+                  rotUi2.setAttribute('add-to-raycaster', '');
                   var rotUi3 = document.createElement('a-entity');
                   rotUi3.setAttribute('position', '3 2.4 0');
                   rotUi3.setAttribute('scale', '3 3 3');
                   rotUi3.setAttribute('text', 'value: RotY; color: black');
                   var rotUi4 = document.createElement('a-input');
+                  rotUi4.setAttribute('id', 'vr-submenu-edit-roty');
+                  rotUi4.setAttribute('name', 'vr-submenu-edit');
                   rotUi4.setAttribute('position', '2 2.4 0');
                   rotUi4.setAttribute('color', 'black');
                   rotUi4.setAttribute('width', '0.6');
                   rotUi4.setAttribute('value', parseFloat(rotation.y).toFixed(6));
+                  rotUi4.setAttribute('add-to-raycaster', '');
                   var rotUi5 = document.createElement('a-entity');
                   rotUi5.setAttribute('position', '4.3 2.4 0');
                   rotUi5.setAttribute('scale', '3 3 3');
                   rotUi5.setAttribute('text', 'value: RotZ; color: black');
                   var rotUi6 = document.createElement('a-input');
+                  rotUi6.setAttribute('id', 'vr-submenu-edit-rotz');
+                  rotUi6.setAttribute('name', 'vr-submenu-edit');
                   rotUi6.setAttribute('position', '3.3 2.4 0');
                   rotUi6.setAttribute('color', 'black');
                   rotUi6.setAttribute('width', '0.6');
                   rotUi6.setAttribute('value', parseFloat(rotation.z).toFixed(6));
+                  rotUi6.setAttribute('add-to-raycaster', '');
                   
                   containerEdit.appendChild(rotUi1);
                   containerEdit.appendChild(rotUi2);
@@ -523,10 +776,13 @@
                   radiusUi1.setAttribute('scale', '3 3 3');
                   radiusUi1.setAttribute('text', 'value: Radius; color: black');
                   var radiusUi2 = document.createElement('a-input');
+                  radiusUi2.setAttribute('id', 'vr-submenu-edit-radius');
+                  radiusUi2.setAttribute('name', 'vr-submenu-edit');
                   radiusUi2.setAttribute('position', '0.7 2.1 0');
                   radiusUi2.setAttribute('color', 'black');
                   radiusUi2.setAttribute('width', '0.6');
                   radiusUi2.setAttribute('value', parseFloat(cRadius).toFixed(6));
+                  radiusUi2.setAttribute('add-to-raycaster', '');
 
                   containerEdit.appendChild(radiusUi1);
                   containerEdit.appendChild(radiusUi2);
@@ -537,6 +793,8 @@
                   heightUi1.setAttribute('scale', '3 3 3');
                   heightUi1.setAttribute('text', 'value: Height; color: black');
                   var heightUi2 = document.createElement('a-input');
+                  heightUi2.setAttribute('id', 'vr-submenu-edit-height');
+                  heightUi2.setAttribute('name', 'vr-submenu-edit');
                   heightUi2.setAttribute('position', '2 2.1 0');
                   heightUi2.setAttribute('color', 'black');
                   heightUi2.setAttribute('width', '0.6');
@@ -553,6 +811,8 @@
                   radiusUi1.setAttribute('scale', '3 3 3');
                   radiusUi1.setAttribute('text', 'value: Radius; color: black');
                   var radiusUi2 = document.createElement('a-input');
+                  radiusUi2.setAttribute('id', 'vr-submenu-edit-radius');
+                  radiusUi2.setAttribute('name', 'vr-submenu-edit');
                   radiusUi2.setAttribute('position', '0.7 2.4 0');
                   radiusUi2.setAttribute('color', 'black');
                   radiusUi2.setAttribute('width', '0.6');
@@ -573,6 +833,11 @@
           }
 
           containerEdit.addEventListener('change', this.uploadGuiChanges);
+          
+          // Refresh raycaster target objects
+          var hand = document.getElementById('hand-right');
+          var raycaster = hand.components.raycaster;
+          raycaster.refreshObjects();
 
         }else{
           // Set 'select something' screen 
@@ -601,9 +866,8 @@
             var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
             controller.selectEntity(cid, sourceRtcId, bool);
 
-            // TODO: change != to ==
-            if(sourceRtcId != clientRtcId) {
-              // TODO: ADD THIS FUNCTION
+            if(sourceRtcId == clientRtcId || true) {
+              // Update properties menu
               var pEl = controller.getEl(cid);
               this.updateSelectionMenu(pEl, bool);
             }
@@ -1117,21 +1381,21 @@
       AFRAME.registerComponent("vr-menu-edit", {
         init: function () {
           var el = this.el;
-          var submenu = document.getElementById('container-vr-submenu-edit');
-
-          // TODO: Add refs to other submenus and make them invisible
-          var otherSubMenu1;
-          var otherSubMenu2;
+          var submenu = document.getElementById('container-vr-submenu-edit');          
 
           el.addEventListener('select-object', function handleSendSelect(event) {
-            // Open or close the 'Add'-Menu
+
+            // Open or close the 'Edit'-Menu
             if(submenu.getAttribute('visible') == false) {
-              // TODO: make other submenus invisible
-              el.setAttribute('baseColor', '#186e44');
+              // Make visible and close other open submenus
               submenu.setAttribute('visible', true);
+              el.setAttribute('baseColor', '#186e44');
+              showOnlySelectedSubmenu('edit');
             }else{
+              // Make invisible
               submenu.setAttribute('visible', false);
               el.setAttribute('baseColor', '#0377fc');
+              showOnlySelectedSubmenu('close');
             }
           });
         }
@@ -1142,17 +1406,18 @@
           var el = this.el;
           var submenu = document.getElementById('container-vr-submenu-task');
 
-          // TODO: Add refs to other submenus and make them invisible
-          var otherSubMenu1;
-          var otherSubMenu2;
-
           el.addEventListener('select-object', function handleSendSelect(event) {
-            // Open or close the 'Add'-Menu
+            // Open or close the 'Task'-Menu
             if(submenu.getAttribute('visible') == false) {
-              // TODO: make other submenus invisible
+              // Make visible and close other open submenus
               submenu.setAttribute('visible', true);
+              el.setAttribute('baseColor', '#186e44');
+              showOnlySelectedSubmenu('task');
             }else{
+              // Make invisible
               submenu.setAttribute('visible', false);
+              el.setAttribute('baseColor', '#0377fc');
+              showOnlySelectedSubmenu('close');
             }
           });
         }
@@ -1194,19 +1459,14 @@
           var el = this.el;
           var submenu = document.getElementById('container-vr-submenu-add');
 
-          // TODO: Add refs to other submenus and make them invisible
-          var otherSubMenu1;
-          var otherSubMenu2;
-
           el.addEventListener('select-object', function handleSendSelect(event) {
             // Open or close the 'Add'-Menu
             if(submenu.getAttribute('visible') == false) {
-              // TODO: make other submenus invisible
-              el.setAttribute('baseColor', '#186e44');
-              submenu.setAttribute('visible', true);
+              // Make visible and close other open submenus
+              showOnlySelectedSubmenu('add');
             }else{
-              submenu.setAttribute('visible', false);
-              el.setAttribute('baseColor', '#0377fc');
+              // Make invisible
+              showOnlySelectedSubmenu('close');
             }
           });
         }
@@ -1221,25 +1481,14 @@
           var shape = this.data.shape;
           var scene = el.sceneEl;
 
-          /*
-          var hand = document.getElementById('hand-right');
-          var raycaster = hand.components.raycaster;
-
-          var quaternion = raycaster.el.object3D.quaternion;
-          var debug = document.getElementById('debugtext');
-          */
-
           el.addEventListener('select-object', function handleSendSelect(event) {
             
             var hand = document.getElementById('hand-right');
             var raycaster = hand.components.raycaster;
-
             var quaternion = raycaster.el.object3D.quaternion;
-            var debug = document.getElementById('debugtext');
             
-
-            // TODO: Close the GUI
-            // submenu.setAttribute('visible', false);
+            // Close the submenu GUI
+            showOnlySelectedSubmenu('close');
 
             // TODO: Delete other 'currently-placing' objects WITH IF-NOT-EMPTY-CLAUSE
             // var toDelete = document.getElementById('currently-placing');
@@ -1247,8 +1496,7 @@
 
             var newElement = document.createElement('a-entity');
 
-            switch(shape) {
-              
+            switch(shape) {             
               case 'wafflemaker':
                 // TODO: Get model from assets and set it as GLTF-attribute
                 newElement.setAttribute('gltf-model', '#' + shape);
@@ -1263,6 +1511,10 @@
                 // Handle other attributes
                 newElement.setAttribute('material', 'color: #00ff00');
                 newElement.setAttribute('scale', '0.2 0.2 0.2');
+
+                if(shape == 'plane') {
+                  newElement.setAttribute('rotation', '-90 0 0');
+                }
                 break;
             }
 
@@ -1331,13 +1583,55 @@
       AFRAME.registerComponent('test-comp', {
         init: function () {
           var el = this.el;
-          /* REMOVE FAULTY PLANE FROM COLORWHEEL
-          var faultyPlane = el.children[1];
-          faultyPlane.remove();
-          console.log(el);
-          //*/
+        }
+      }),
 
+      AFRAME.registerComponent('add-to-raycaster', {
+        init: function () {
+          var el = this.el;
+          el.counter = 0;
+          
+          if(el.tagName == 'KEYBOARD') {
+            el.max = 51;
+          }else if(el.tagName == 'A-INPUT'){
+            el.max = 0;
+          }else if(el.tagName == 'A-RADIO'){
+            el.max = 1;
+          }else{
+            el.max = -1;
+          }
+        },
 
+        addToChildren: function(pChild) {
+          var children = pChild.children;
+
+          if(children.length > 0) {
+            for(var i = 0; i<children.length; i++) {
+              var child = children[i];
+
+              if(!child.classList.contains('vr-menu') && (child.tagName == 'A-ROUNDED' || child.tagName == 'A-RING' || child.tagName == 'A-CIRCLE')){
+                child.classList.add('vr-menu');
+                console.log('Added to classlist!');
+                this.el.counter++;
+              }
+
+              this.addToChildren(child);
+            }
+          }
+        },
+
+        tick: function() {
+          var el = this.el;
+
+          if(el.counter > el.max) {
+            el.removeAttribute('add-to-raycaster');
+          }
+
+          try{
+            this.addToChildren(el);
+          }catch(e){
+            console.log('error: ' + e);
+          }  
         }
       });
     </script>
@@ -1346,6 +1640,7 @@
   <body>
     <!-- Credits -->
     <a href="https://www.flaticon.com/free-icons/waffle-iron" title="waffle iron icons">Waffle iron icons created by Nikita Golubev - Flaticon</a>
+    <a href="https://www.freepik.com/free-vector/window-shadow-white-marble-background_13312219.htm#query=kitchen%20wall%20texture&position=14&from_view=search&track=ais">Image by rawpixel.com</a>
 
     <!-- AFRAME -->
     <a-scene
@@ -1361,7 +1656,7 @@
 
         <!-- Avatar -->
         <template id="avatar-template">
-          <a-entity class="avatar" networked-audio-source>
+          <a-entity class="avatar" scale="0.1 0.1 0.1"networked-audio-source>
             <a-sphere class="head" scale="0.45 0.5 0.4"></a-sphere>
             <a-entity class="face" position="0 0.05 0">
               <a-sphere class="eye" color="#efefef" position="0.16 0.1 -0.35" scale="0.12 0.12 0.12">
@@ -1376,13 +1671,13 @@
 
         <template id="hand-right-template">
           <a-entity class="rightarm">
-            <a-box class="righthand" scale="0.2 0.2 0.2"></a-box>
+            <a-entity class="righthand" gltf-model="#righthand-model" scale="1 1 1"></a-entity>
           </a-entity>
         </template>
 
         <template id="hand-left-template">
           <a-entity class="leftarm">
-            <a-box class="lefthand" scale="0.2 0.2 0.2"></a-box>
+            <a-entity class="righthand" gltf-model="#righthand-model" scale="1 1 1"></a-entity>
           </a-entity>
         </template>
 
@@ -1409,9 +1704,37 @@
         <img id="plane" src="/img/plane.png">
         <img id="sphere" src="/img/sphere.png">
         <img id="wafflemaker" src="/img/waffle-iron.png">
+
+        <!-- TEXTURES -->
+        <img id="kitchenwalls" src="img/wall_stone_2k.png" />
+
+        <!-- MODELS -->
+        <!--a-asset-item id="kitchen-obj" src="/assets/Kitchen.obj"></a-asset-item>
+        <a-asset-item id="kitchen-mtl" src="/assets/Kitchen.mtl"></a-asset-item-->
+        <a-asset-item id="kitchen-obj" src="/assets/kitchen_module.obj"></a-asset-item>
+        <a-asset-item id="kitchen-mtl" src="/assets/kitchen_module.mtl"></a-asset-item>
+
+        <a-asset-item id="bowl" src="/assets/schuessel.obj"></a-asset-item>
+        
+        <a-asset-item id="righthand-model" src="/assets/rightHandHigh.glb"></a-asset-item>
+        <a-asset-item id="lefthand-model" src="/assets/leftHandHigh.glb"></a-asset-item>
       </a-assets>
 
+      <!-- ENVIRONMENT -->
+      <a-entity name="floor" geometry="primitive: plane" scale="6 6 1" rotation="-90 0 0" position="0 0 0" material="color: #51524c"></a-entity>
+      <a-plane name="wallw" geometry="primitive: plane" scale="6 2 1" rotation="0 90 0" position="-3 1 0" src="#kitchenwalls" repeat="12 4"></a-plane>
+      <a-plane name="walls" geometry="primitive: plane" scale="6 2 1" rotation="0 180 0" position="0 1 3" src="#kitchenwalls" repeat="12 4"></a-plane>
+      <a-keyboard id="keyboard" test-comp></a-keyboard>
+      <!--a-entity position="0 -0.1 0" scale="0.4 0.4 0.4" obj-model="obj: #kitchen-obj; mtl: #kitchen-mtl"></a-entity-->
+      <a-entity position="0.5 0 -3" scale="0.012 0.012 0.012" obj-model="obj: #kitchen-obj; mtl: #kitchen-mtl"></a-entity>
 
+
+      <a-entity position="0.5 1 -2" scale="0.3 0.3 0.3" obj-model="obj: #bowl"></a-entity>
+
+
+      <a-input id="testinput" position="-0.7 1.5 -2.5" placeholder="Entity-Name" color="black" width="1" test-comp></a-input>
+
+      <!-- AVATAR -->
       <a-entity id="rig">
         <a-entity
           id="player"
@@ -1425,8 +1748,6 @@
         >
           <a-sphere id="playerhead" class="head" visible="false" random-color></a-sphere>
         </a-entity>
-
-        <a-input position="-0.7 1 -2.5" placeholder="Entity Name" color="black" width="1"></a-input>
         
         <a-entity 
           id="hand-right"
@@ -1435,7 +1756,7 @@
           networked="template:#hand-right-template;attachTemplateToLocal:false;"
           rotation="0 0 0"
           range-multiplier="1";
-          oculus-touch-controls="hand: right"
+          laser-controls="hand: right"
           a-button-listener
           b-button-listener
           grip-button-listener
@@ -1449,12 +1770,9 @@
                               .vr-menu-play, 
                               .vr-menu-stop, 
                               .vr-menu-task, 
-                              .vr-submenu-add, 
-                              .vr-submenu-add-box,
-                              .vr-submenu-add-cylinder,
-                              .vr-submenu-add-plane,
-                              .vr-submenu-add-sphere,
-                              .vr-submenu-add-wafflemaker; 
+                              .vr-submenu-add,
+                              .vr-submenu-edit,
+                              .vr-submenu-task;
                               showLine: true"
         >
           <!-- NAF Hand -->
@@ -1466,15 +1784,12 @@
           name="hand-left"
           class="hand-left"
           networked="template:#hand-left-template;attachTemplateToLocal:false;"
-          oculus-touch-controls="hand: left"
+          laser-controls="hand: left"
           x-button-listener
           y-button-listener
         >
           <!-- NAF Hand -->
           <a-entity class="lefthand" visible="false" mimic-head-color></a-entity>
-
-          
-          
 
           <!-- VR MENU -->
           <a-entity 
@@ -1501,6 +1816,7 @@
               scale="0.9 0.9 0.1"
             >
               <a-entity
+                id="vr-menu-edit" 
                 class="vr-menu-edit" 
                 geometry="primitive: box"
                 material="color: #0377fc"
@@ -1522,7 +1838,7 @@
             <a-entity
               id="container-vr-submenu-edit" 
               position="0.15 -1.05 0" 
-              visible="true"
+              visible="false"
               scale="2.2 2.2 2.2"
             > 
             </a-entity>
@@ -1565,6 +1881,7 @@
               scale="0.9 0.9 0.1"
             >
               <a-entity
+                id="vr-menu-task" 
                 class="vr-menu-task" 
                 geometry="primitive: box"
                 material="color: #0377fc"
@@ -1582,6 +1899,15 @@
               ></a-entity>
             </a-entity>
 
+            <!-- Submenu TASK -->
+            <a-entity
+              id="container-vr-submenu-task" 
+              position="2.05 0 0" 
+              scale="3 3 1"
+              visible="false"
+            > 
+            </a-entity>
+
             <!-- Menu ADD -->
             <a-entity
               position="0 -1 0"
@@ -1589,6 +1915,7 @@
               scale="0.9 0.9 0.1"
             >
               <a-entity
+                id="vr-menu-add" 
                 class="vr-menu-add" 
                 geometry="primitive: box"
                 material="color: #0377fc"
@@ -1614,7 +1941,7 @@
               visible="false"
             >  
               <a-entity
-                class="vr-submenu-add"
+                name="vr-submenu-add"
                 geometry="primitive: plane"
                 material="color: #31b5cc"
                 rotation="0 0 0" 
@@ -1631,7 +1958,8 @@
                 priority="level: hud"
               >
                 <a-entity
-                  class="vr-submenu-add-box" 
+                  id="vr-submenu-add-box" 
+                  name="vr-submenu-add"
                   geometry="primitive: box"
                   material="color: #0377fc"
                   visible="true"
@@ -1640,7 +1968,7 @@
                   vr-submenu-add="shape: box"
                 ></a-entity>
                 <a-entity
-                  class="vr-submenu-add-box-img" 
+                  class="vr-submenu-add-box-img"
                   geometry="primitive: plane"
                   material="src: #box; transparent: true"
                   visible="true"
@@ -1657,7 +1985,8 @@
                 priority="level: hud"
               >
                 <a-entity
-                  class="vr-submenu-add-cylinder" 
+                  id="vr-submenu-add-cylinder" 
+                  name="vr-submenu-add"
                   geometry="primitive: box"
                   material="color: #0377fc"
                   visible="true"
@@ -1683,7 +2012,8 @@
                 priority="level: hud"
               >
                 <a-entity
-                  class="vr-submenu-add-plane" 
+                  id="vr-submenu-add-plane" 
+                  name="vr-submenu-add"
                   geometry="primitive: box"
                   material="color: #0377fc"
                   visible="true"
@@ -1709,7 +2039,8 @@
                 priority="level: hud"
               >
                 <a-entity
-                  class="vr-submenu-add-sphere" 
+                  id="vr-submenu-add-sphere" 
+                  name="vr-submenu-add"
                   geometry="primitive: box"
                   material="color: #0377fc"
                   visible="true"
@@ -1735,7 +2066,8 @@
                 priority="level: hud"
               >
                 <a-entity
-                  class="vr-submenu-add-wafflemaker" 
+                  id="vr-submenu-add-wafflemaker" 
+                  name="vr-submenu-add"
                   geometry="primitive: box"
                   material="color: #0377fc"
                   visible="true"
@@ -1760,7 +2092,6 @@
       <a-entity name="o1" class="collidable" geometry="primitive: box" material="color: #0000ff" raycaster-listen position="5 0 0"></a-entity>
       <a-entity name="o2" class="collidable" geometry="primitive: box" material="color: #00ff00" raycaster-listen position="5.5 0.5 0.5" wireframed="true"></a-entity>
       <a-entity name="o2-wireframe" geometry="primitive: box" material="color: #ff0000; wireframe: true" wireframe priority="level: wireframe" position="5.5 0.5 0.5"></a-entity>
-      <a-entity name="floor" geometry="primitive: plane" material="color: #51524c" rotation="-90 0 0" scale="6 6 0.1" position="0 -1 0"></a-entity>
       <a-text id='debugtext' value="DEBUG TEXT" geometry="primitive: plane;" material="color: #20d67e" position="0 1 -6"></a-text>
 
       <!--a-entity networked="template:#hand-right-template;attachTemplateToLocal:true;" test-comp></a-entity-->
@@ -1774,7 +2105,7 @@
         material="src: #grid; repeat: 10000 10000; transparent: true; metalness:0.6; roughness: 0.4; sphericalEnvMap: #sky;"
       ></a-entity-->
       <a-entity light="color: #ccccff; intensity: 1; type: ambient;" visible=""></a-entity>
-      <a-entity light="color: #ffaaff; intensity: 1.5" position="5 5 5"></a-entity>
+      <!--a-entity light="color: #ffaaff; intensity: 1.5" position="5 5 5"></a-entity-->
       <a-sky src="#sky" rotation="0 -90 0"></a-sky>
     </a-scene>
 

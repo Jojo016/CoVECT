@@ -263,9 +263,6 @@
 	    this.el.dismiss = function () {
 	      Behaviors.dismissKeyboard(that.el);
 	    };
-	    this.el.destroy = function () {
-	      Behaviors.destroyKeyboard(that.el);
-	    };
 	
 	    this.el.setAttribute("scale", "2 2 2");
 	    this.el.setAttribute("rotation", "-20 0 0");
