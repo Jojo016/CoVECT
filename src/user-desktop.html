@@ -30,7 +30,7 @@
         var data = new Object();
         data.type = type;
 
-        if(type == 'actionarea') {
+        if(type == 'eventarea') {
           // TODO: Get position
           data.posX = 1; //iframe.contentWindow.scene;
           data.posY = 1;
@@ -44,10 +44,21 @@
         iframe.contentWindow.sendToServer("addInteraction", data);
       }
 
-      function editTask() {
+      function editTasks() {
         var iframe = document.getElementById("iframe");
         var data = new Object();        
-        iframe.contentWindow.sendToServer("selectTask", data);
+        iframe.contentWindow.sendToServer("selectTasks", data);
+      }
+
+      function addTaskButton() {
+        var iframe = document.getElementById("iframe");
+        iframe.contentWindow.sendToServer("addTask", null);
+      }
+
+      function editTask() {
+        var iframe = document.getElementById("iframe");
+        var data = null;
+        iframe.contentWindow.editTask(data);
       }
 
       // Status Bar functions
@@ -140,7 +151,7 @@
                 <tr class="tr1">
                   <td class="td1">
                     <div style="width: 100%;">
-                      <button class="seamless-button" onClick="addInteraction('actionarea')">Action Area</button>
+                      <button class="seamless-button" onClick="addInteraction('eventarea')">Event Area</button>
                     </div>
                   </td>
                 </tr>
@@ -157,7 +168,7 @@
                 <tr class="tr1">
                   <td class="td1">
                     <div style="width: 100%;">
-                      <button class="seamless-button" onClick="editTask()">Edit Tasks</button>
+                      <button class="seamless-button" onClick="editTasks()">Edit Tasks</button>
                     </div>
                   </td>
                 </tr>

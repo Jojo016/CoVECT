@@ -1,4 +1,8 @@
-﻿/* global AFRAME, NAF */
+﻿// Init tasks
+var tasks = [];
+var tasksSelectedBy = null;
+
+/* global AFRAME, NAF */
 AFRAME.registerComponent('object-control-desktop', {
   schema: {
     template: { default: '' },
@@ -6,10 +10,12 @@ AFRAME.registerComponent('object-control-desktop', {
   },
 
   init: function() {
+
   },
 
   spawnEntity: function(data) {
     var cid = data.cid;
+    var name = data.name;
     var shape = data.shape;
     var scale = data.scaleX + " " + data.scaleY + " " + data.scaleZ;
     var rotation = data.rotX + " " + data.rotY + " " + data.rotZ;
@@ -23,6 +29,7 @@ AFRAME.registerComponent('object-control-desktop', {
     pEl.setAttribute('cid', cid);
     pEl.setAttribute('position', pos3);
     pEl.setAttribute('class', 'entity');
+    pEl.setAttribute('entityName', name);
 
     // Create actual element
     var el = document.createElement('a-entity');
@@ -51,8 +58,6 @@ AFRAME.registerComponent('object-control-desktop', {
 
     // Handle other attributes
     el.setAttribute('material', 'color: #00FFFF');
-
-    el.setAttribute('entityName', 'New ' + shape);
 
     el.interactable = interactable;
 
@@ -188,6 +193,23 @@ AFRAME.registerComponent('object-control-desktop', {
     }
   },
 
+  nameChanged: function(event) {
+    var pEl = event.currentTarget.el;
+    var name = event.target.value;
+
+    // Update local data 
+    pEl.setAttribute('entityName', name);
+
+    // Send changes to server
+    var obj = new Object();
+    var cid = pEl.getAttribute('cid');
+    obj.cid = cid; 
+    obj.updatetype = 'name';
+    obj.updatedata = name;
+    var newData = JSON.stringify(obj);
+    easyrtc.sendDataWS(clientRtcId, "updateComponent", newData);
+  },
+
   positionChanged: function(event) {
     var pEl = event.currentTarget.el;
     var pos = pEl.getAttribute('position');
@@ -230,14 +252,18 @@ AFRAME.registerComponent('object-control-desktop', {
   },
 
   interactionChanged: function(event) {
-    var pEl = event.currentTarget.el.parentEl;
     var eventTarget = event.target;
+    console.log("event:");
+    console.log(eventTarget);
+    var pEl = eventTarget.parentElement.parentElement.el;
     var name = eventTarget.name;
     var value = eventTarget.value;
+
     
     // Add updated data to data object
     var newObj = new Object();
     var cid = pEl.getAttribute('cid');
+    console.log(cid);
     newObj.cid = cid; 
     newObj.updatetype = 'interaction';
     newObj.attribute = name;
@@ -286,7 +312,7 @@ AFRAME.registerComponent('object-control-desktop', {
       var div = document.createElement('div');
 
       // Object Name
-      var name = el.getAttribute('entityName');
+      var name = pEl.getAttribute('entityName');
       div.className = 'property-row';
       div.innerHTML = `
         <span class="property-row-element">
@@ -298,8 +324,7 @@ AFRAME.registerComponent('object-control-desktop', {
       `;
 
       div.el = pEl;
-      // TODO: Add Name Change Event Listener + Function
-      //div.addEventListener("change", this.nameChanged, false);
+      div.addEventListener("change", this.nameChanged, false);
 
       pPanel.appendChild(div);
 
@@ -328,14 +353,20 @@ AFRAME.registerComponent('object-control-desktop', {
       pPanel.appendChild(div);
 
       // TODO: add switch/case for 'shape'
+      var material = pEl.children[0].getAttribute('material');
+      if(material != null) {
+        var shape = material.shape;
+        
+        if(shape != null) {
+          switch(shape) {
 
-      switch(shape) {
-
-        case 'sphere':
-          break;
-
-        default:
-          break;
+            case 'sphere':
+              break;
+  
+            default:
+              break;
+          }
+        }
       }
 
       // Rotation
@@ -506,7 +537,7 @@ AFRAME.registerComponent('object-control-desktop', {
       var div = document.createElement('div');
 
       // Object Name
-      var name = el.getAttribute('entityName');
+      var name = pEl.getAttribute('entityName');
       div.className = 'property-row';
       div.innerHTML = `
         <span class="property-row-element">
@@ -518,8 +549,7 @@ AFRAME.registerComponent('object-control-desktop', {
       `;
 
       div.el = pEl;
-      // TODO: Add Name Change Event Listener + Function
-      //div.addEventListener("change", this.nameChanged, false);
+      div.addEventListener("change", this.nameChanged, false);
 
       pPanel.appendChild(div);
 
@@ -543,6 +573,8 @@ AFRAME.registerComponent('object-control-desktop', {
         `;
       };
 
+      console.log("div.el:");
+      console.log(pEl);
       div.el = pEl;
       div.addEventListener("change", this.positionChanged, false);
       pPanel.appendChild(div);
@@ -588,7 +620,7 @@ AFRAME.registerComponent('object-control-desktop', {
           <span class="properties-parameter-name">
             <b>Target</b>
           </span>
-          <input type="text" name="target" list="cids"/>
+          <input type="text" name="target" list="cids" value="${target}"/>
         </div>
         <div class="property-row-element">
           <span class="properties-parameter-name">
@@ -599,6 +631,8 @@ AFRAME.registerComponent('object-control-desktop', {
           </select>
         </div>
         `;
+
+        div.el = pEl;
 
         // Different actions require different property rows
         if(action == 'modify') {
@@ -712,8 +746,273 @@ AFRAME.registerComponent('object-control-desktop', {
   
         pPanel.appendChild(div);
         pPanel.appendChild(appendDiv);
+
+    }else if(classType == 'task') {     
+
+      if(tasks.length > 0) {
+        for(var i = 0; i < tasks.length; i++) {
+          var task = tasks[i];
+
+          // Add task to properties view
+          div = document.createElement('div');
+          div.className = 'property-row';
+          div.id = "task" + i;
+          div.innerHTML = `
+            <span class="property-row-element">
+              <b>Task ${i+1}:</b>
+            </span>
+          `;
+      
+          var eventOptions = [['none', 'None']];
+
+          // Get all existing interactions and add them to the eventOptions
+          var interactions = document.getElementsByClassName('interaction');
+          for(var j = 0; j < interactions.length; j++) {
+            var pEl = interactions[j];
+            var el = pEl.children[0];
+            var cid = pEl.getAttribute('cid');
+            var type = pEl.getAttribute('type');
+            var name = pEl.getAttribute('entityName');
+            var eventOption = [cid, name, type];
+            eventOptions.push(eventOption);
+          }
+
+          var eventOptionsText = ``;
+          var selected = 'none';
+
+          for(var k=0; k < eventOptions.length; k++) {
+            var evtOption = eventOptions[k];
+
+            if(evtOption[0] == task.triggerEvent) {
+              selected = evtOption;
+              eventOptionsText += `
+                <option selected="selected" value="${evtOption[0]}">${evtOption[1]}</option>
+              `;
+            }else{
+              eventOptionsText += `
+                <option value="${evtOption[0]}">${evtOption[1]}</option>
+              `;
+            }
+          }
+
+          div.innerHTML += `
+            <div class="property-row-element">
+              <span class="properties-parameter-name">
+                <b>Trigger Event</b>
+              </span>
+              <select class="triggerEvent">
+                ${eventOptionsText}
+              </select>
+            </div>
+          `;
+
+          // Switch through interaction type
+          switch(selected[2]) {
+            case 'rotatable':
+              div.innerHTML += `
+                <div class="property-row-element">
+                  <span class="properties-parameter-name">
+                    <b>Target Angle</b>
+                  </span>
+                  <input class="eventAngle"/>
+                </div>
+              `;
+              break;
+
+            case 'eventArea':
+            case 'none':
+            default:
+                break;
+          }
+
+          // TODO add correct event listener
+          div.addEventListener("change", this.taskChanged, false);
+          pPanel.appendChild(div);
+        }
+      }
+
+      // Show button 'send addTask() to server'
+      div = document.createElement('div');
+      div.className = 'property-row';
+      div.innerHTML += `
+        <div class="property-row-element">
+          <button type="button" onclick="addTaskButton()">Add Task</button>
+        </div>
+      `;
+      pPanel.appendChild(div);
+    }
+  },
+
+  taskChanged: function(evt) {
+    var target = evt.target;
+    var updateType = target.className;
+    var taskId = target.parentElement.parentElement.id.substring(4);
+    var value = target.value;
+
+    var newObj = new Object();
+    newObj.taskId = taskId;
+    var task = tasks[taskId];
+
+    switch(updateType) {
+      case 'triggerEvent':
+        task.triggerEvent = value;
+        break;
+
+      case 'eventAngle':
+        newObj.eventAngle = value; 
+        break;
+
+      default:
+        break;
+    }
+    newObj.task = task;
+    
+    // Send changes to server
+    var newData = JSON.stringify(newObj);
+    easyrtc.sendDataWS(clientRtcId, "updateTask", newData);
+  },
+
+  updateTaskboard: function() {
+    var taskboard = document.getElementById('taskboard');
+
+    // Remove prior children
+    var counter = 1;
+    var child = document.getElementById('task' + counter);
+    while(child != null) {
+      // Remove child
+      taskboard.removeChild(child);
+
+      // Increment
+      counter++;
+      child = document.getElementById('task' + counter);
     }
 
+    // Add each task
+    for(var k = 0; k < tasks.length; k++) {
+      var task = tasks[k];
+      var childrenCount = taskboard.children.length;
+      var pos3 = '0 ' + (childrenCount * (-0.3)) + ' 0';
+      var atext = document.createElement('a-text');
+
+      atext.setAttribute('id', 'task' + childrenCount);
+      atext.setAttribute('position', pos3);
+      
+      console.log("task:");
+      console.log(task);
+
+      var taskAngle = task.eventAngle;
+      var taskTrigger = task.triggerEvent;
+      var taskType;
+
+      // Determine tasktype
+      if(taskTrigger == 'none') {
+        taskType = 'none';
+      }else {
+        // Get correct interaction/interactable
+        var el;
+        var pEl = null;
+        var els = this.el.sceneEl.querySelectorAll('[cid]');
+
+        for (var i = 0; i < els.length; i++) {
+          if(els[i].getAttribute('cid') == taskTrigger) {
+            pEl = els[i];
+            el = pEl.children[0];
+            break;
+          }
+        }
+
+        var compType = pEl.getAttribute('class');
+        if(compType == 'interaction') {
+          taskType = 'eventArea';
+        }else{
+          taskType = el.interactable.type;
+        }
+      }
+
+      switch(taskType) {
+        case 'eventArea':
+          var interaction = pEl.data;
+          var target = interaction.target;
+          var eventName = pEl.getAttribute('entityName');
+          var targetName;
+          console.log("eventName:");
+          console.log(eventName);
+          console.log(pEl);
+
+          for (var i = 0; i < els.length; i++) {
+            if(els[i].getAttribute('cid') == target) {
+              targetName = els[i].getAttribute('entityName');
+              break;
+            }
+          }
+
+          atext.setAttribute('value', childrenCount + '. Move "' + targetName + '" into area "' + eventName + '".');
+          break;
+
+        case 'rotatable':
+          atext.setAttribute('value', childrenCount + '. Rotate "' + taskName + '" to a ' + taskAngle + '° angle.');
+          break;
+
+        case 'none':
+          atext.setAttribute('value', childrenCount + '. No event selected!');
+          break;
+
+        default:
+          break;
+      }
+      taskboard.appendChild(atext);
+    }
+  },
+
+  addTask: function(newTask) {
+    tasks.push(newTask);
+
+    // Update taskboard
+    this.updateTaskboard();
+
+    console.log("tasksSelectedBy = clientRtcId");
+    console.log(tasksSelectedBy + " = " + clientRtcId);
+
+    // Update properties panel if selected
+    if(tasksSelectedBy == clientRtcId) {
+      this.selectTasks('update');
+    }
+  },
+
+  updateTask: function(data) {
+    // Update data
+    var taskId = data.taskId;
+    var task = data.task; 
+    tasks[taskId] = task;
+
+    // Update taskboard
+    this.updateTaskboard();
+
+    // Update properties panel if selected
+    if(tasksSelectedBy == clientRtcId) {
+      this.selectTasks('update');
+    }
+  },
+
+  selectTasks: function(data) {
+    if(data != 'update') {
+      if(!(data.tasksSelectedBy == clientRtcId || data.tasksSelectedBy == null)) {
+        return;
+      }
+    }
+
+    tasksSelectedBy = clientRtcId;
+
+    var pPanel = window.parent.document.getElementById('properties-panel');
+
+    // Update properties view
+    while (pPanel.firstChild) {
+      // Remove all children
+      pPanel.removeChild(pPanel.firstChild);
+    }
+
+    // Add property rows
+    this.addPropertiesRow(pPanel, 'task', null);
   },
 
   selectEntity: function(componentId, sourceRtcId, selectBool) {
@@ -848,6 +1147,11 @@ AFRAME.registerComponent('object-control-desktop', {
     if(type == 'position') {
       // Position has to be changed for parentEl
       pEl.setAttribute(type, data);
+
+    }else if(type == 'name'){
+      // All other types should be changed for el itself
+      pEl.setAttribute('entityName', data);
+
     }else{
       // All other types should be changed for el itself
       el.setAttribute(type, data);
@@ -856,6 +1160,13 @@ AFRAME.registerComponent('object-control-desktop', {
     // Update property rows if element is currently selected by client
     if(data.sourceRtcId == clientRtcId) {
       this.selectEntity(componentId, clientRtcId, true);
+    }
+
+    // Update taskboard & properties-view
+    this.updateTaskboard();
+
+    if(tasksSelectedBy == clientRtcId) {
+      this.selectTasks('update');
     }
   },
 
@@ -903,6 +1214,10 @@ AFRAME.registerComponent('object-control-desktop', {
 
     pEl.data[attribute] = value;
 
+    console.log("updateInteraction:");
+    console.log(attribute);
+    console.log(value);
+
     // Update property rows if element is currently selected by client
     if(data.sourceRtcId == clientRtcId) {
       this.selectEntity(componentId, clientRtcId, true);
@@ -930,19 +1245,20 @@ AFRAME.registerComponent('object-control-desktop', {
   spawnInteraction: function(interaction) {
     var type = interaction.type;
 
-    if(type == 'actionarea') {
-      
+    if(type == 'eventarea') {
       var cid = interaction.cid;
       var data = interaction.data;
+      var name = interaction.name;
       var scale = interaction.scale;
       var pos3 = new THREE.Vector3(interaction.posX, interaction.posY, interaction.posZ);
 
       // Create container element
       var pEl = document.createElement('a-entity');
       pEl.setAttribute('class', 'interaction');
-      pEl.setAttribute('type', 'type');
+      pEl.setAttribute('type', type);
       pEl.setAttribute('cid', cid);
       pEl.setAttribute('position', pos3);
+      pEl.setAttribute('entityName', name);
 
       pEl.data = data;
 
@@ -950,7 +1266,6 @@ AFRAME.registerComponent('object-control-desktop', {
       var el = document.createElement('a-entity');
       el.setAttribute('geometry', interaction.geometry);
       el.setAttribute('material', interaction.material);
-      el.setAttribute('entityName', 'New ' + type);
       el.setAttribute('scale', scale);
 
       // Check for selection
@@ -983,7 +1298,7 @@ AFRAME.registerComponent('object-control-desktop', {
       var cidCell = tr.insertCell();
       cidCell.appendChild(document.createTextNode(cid));
       var elementNameCell = tr.insertCell();
-      elementNameCell.appendChild(document.createTextNode('Action Area'));
+      elementNameCell.appendChild(document.createTextNode('Event Area'));
       var buttonCell = tr.insertCell();
       var button = document.createElement('button');
       button.innerText = "X";
