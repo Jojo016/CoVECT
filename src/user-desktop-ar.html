@@ -270,6 +270,11 @@
             var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
             controller.updateTask(newData);
 
+          }else if(msgType === 'deselectTasks') {
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            console.log("deselectTasks");
+            controller.deselectTasks();
+
           }else{
             console.log("Received unknown message type '" + msgType + "'.");
           }
@@ -292,10 +297,9 @@
         easyrtc.sendDataWS(clientRtcId, "addTask", null);
       }
 
-      function editTask(data){
-        var taskboard = document.getElementById('taskboard');
-        var task = document.getElementById('task' + data.id);
-        task.setAttribute('value', data.value);
+      function areTasksOccupied() {
+        var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+        return controller.areTasksOccupied();
       }
     </script>
     <script>

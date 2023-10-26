@@ -217,35 +217,7 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
 
     // TODO: update this method so each client has its own selected component
     var cid = dataObj.cid; 
-    if(tasksSelectedBy == easyrtcid) {
-      // Update data
-      tasksSelectedBy = null;
-
-      // Create the message to send
-      var message = {};
-      message.msgType = 'deselectTasks';
-      message.msgData = null;
-
-      var roomObj; 
-      connectionObj.generateRoomClientList("update", null, function(err, callback){
-        roomObj = callback;
-      });
-
-      var clientList = roomObj['dev'].clientList;
-
-      for (var currentEasyrtcid in clientList) {
-        (function(innerCurrentEasyrtcid, innerMsg){
-          connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
-            easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
-              if(err) {
-                console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
-              }
-            });
-          });
-        })(currentEasyrtcid, msg);
-      }
-    
-    }else if(dictOfSelectedComponents.hasOwnProperty(cid)) {
+    if(dictOfSelectedComponents.hasOwnProperty(cid)) {
       
       // Edit the data object so send
       dataObj.bool = false;
@@ -329,6 +301,29 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
 
         // Delete the KeyValuePair 'ComponentId/EasyRtcId' from dict
         delete dictOfSelectedComponents[cidToDeselect];
+      }
+
+      // Send 'deselectTasks'
+      if(tasksSelectedBy == easyrtcid) {
+        tasksSelectedBy = null;
+
+        // Set message data
+        var message = {};
+        message.msgType = 'deselectTasks';
+        message.msgData = null;
+
+        // Send each message to every client in the room
+        for (var currentEasyrtcid in clientList) {
+          (function(innerCurrentEasyrtcid, innerMsg){
+            connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
+              easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
+                if(err) {
+                  console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+                }
+              });
+            });
+          })(currentEasyrtcid, msg);
+        }
       }
 
       // Edit list of component data
@@ -679,13 +674,16 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
         cidToDeselect = key;
       }
     }
-
+    
     if(cidToDeselect != -1) {
       // Edit list of component data
       var specificObject = listOfComponentData.find(obj => {
         return obj.cid == cidToDeselect;
       })
+      console.log("specificObject:");
+      console.log(specificObject);
       specificObject.selectedBy = -1;
+      console.log(specificObject);
 
       // Send 'Deselect' of 'old cid'
       var dataObj = new Object(); 
@@ -714,18 +712,19 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       // Delete the KeyValuePair 'ComponentId/EasyRtcId' from dict
       delete dictOfSelectedComponents[cidToDeselect];
     }
-
-    // ACTUAL METHOD: Send select tasks
-    var newObj = new Object();
-    newObj.tasksSelectedBy = easyrtcid;
     
     // Update data
     tasksSelectedBy = easyrtcid;
 
     // Set message data
+    var newObj = new Object();
+    newObj.tasksSelectedBy = easyrtcid;
+
     var message = {};
     message.msgType = 'selectedTasks';
     data = JSON.stringify(newObj);
+
+    // Send select tasks
     message.msgData = data;
 
     // Set targetRoom name

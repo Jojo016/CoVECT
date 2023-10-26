@@ -46,19 +46,16 @@
 
       function editTasks() {
         var iframe = document.getElementById("iframe");
-        var data = new Object();        
-        iframe.contentWindow.sendToServer("selectTasks", data);
+        var data = new Object();  
+        var occupied = iframe.contentWindow.areTasksOccupied();
+        if(!occupied) {
+          iframe.contentWindow.sendToServer("selectTasks", data);
+        }           
       }
 
       function addTaskButton() {
         var iframe = document.getElementById("iframe");
         iframe.contentWindow.sendToServer("addTask", null);
-      }
-
-      function editTask() {
-        var iframe = document.getElementById("iframe");
-        var data = null;
-        iframe.contentWindow.editTask(data);
       }
 
       // Status Bar functions

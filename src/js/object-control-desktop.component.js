@@ -297,11 +297,12 @@ AFRAME.registerComponent('object-control-desktop', {
   addPropertiesRow: function(pPanel, classType, data) {
 
     if(classType == "no-selection") {
+      pPanel.innerHTML = '';
       var div = document.createElement('div');
 
       div.className = 'properties-no-selection';
       div.innerHTML = `
-        <span>Nothing is selected</span>
+        <span style="color: white">Nothing is selected</span>
       `;
       pPanel.appendChild(div);
 
@@ -747,8 +748,19 @@ AFRAME.registerComponent('object-control-desktop', {
         pPanel.appendChild(div);
         pPanel.appendChild(appendDiv);
 
-    }else if(classType == 'task') {     
+    }else if(classType == 'tasksOccupied') {  
+      pPanel.innerHTML = '';
 
+      var div = document.createElement('div');
+      console.log('tasksOccupied!');
+
+      div.className = 'properties-no-selection';
+      div.innerHTML = `
+        <span style="color: red">Someone else is currently editing the Taskboard!</span>
+      `;
+      pPanel.appendChild(div);
+      
+    }else if(classType == 'task') {   
       if(tasks.length > 0) {
         for(var i = 0; i < tasks.length; i++) {
           var task = tasks[i];
@@ -872,6 +884,23 @@ AFRAME.registerComponent('object-control-desktop', {
     easyrtc.sendDataWS(clientRtcId, "updateTask", newData);
   },
 
+  areTasksOccupied: function() {
+    var occupied = !(tasksSelectedBy == null || tasksSelectedBy == clientRtcId);
+
+    if(occupied) {
+      var pPanel = window.parent.document.getElementById('properties-panel');
+      this.addPropertiesRow(pPanel, 'tasksOccupied', null);
+
+      return true;
+    }
+
+    return false;
+  },
+
+  deselectTasks: function() {
+    tasksSelectedBy = null;
+  },
+
   updateTaskboard: function() {
     var taskboard = document.getElementById('taskboard');
 
@@ -972,6 +1001,7 @@ AFRAME.registerComponent('object-control-desktop', {
 
     console.log("tasksSelectedBy = clientRtcId");
     console.log(tasksSelectedBy + " = " + clientRtcId);
+    console.log(tasksSelectedBy == clientRtcId);
 
     // Update properties panel if selected
     if(tasksSelectedBy == clientRtcId) {
@@ -995,16 +1025,16 @@ AFRAME.registerComponent('object-control-desktop', {
   },
 
   selectTasks: function(data) {
+    var pPanel = window.parent.document.getElementById('properties-panel');
+
     if(data != 'update') {
-      if(!(data.tasksSelectedBy == clientRtcId || data.tasksSelectedBy == null)) {
+      tasksSelectedBy = data.tasksSelectedBy;
+
+      if(tasksSelectedBy != clientRtcId) {
         return;
       }
     }
-
-    tasksSelectedBy = clientRtcId;
-
-    var pPanel = window.parent.document.getElementById('properties-panel');
-
+    
     // Update properties view
     while (pPanel.firstChild) {
       // Remove all children
