@@ -135,7 +135,7 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       newObj.scaleZ = '0.2';
       var interactable = new Object();
       interactable.type = 'none';
-      interactable.axis = 'none';
+      interactable.axis = 'X';
       interactable.offset = 0;
       newObj.interactable = interactable;
 
@@ -665,7 +665,6 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
     }
 
   }else if(msgType === "selectTasks") {
-
     // Deselect all other components that are flagged with the current selector's easyrtcid 
     var cidToDeselect = -1;
 
@@ -674,16 +673,15 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
         cidToDeselect = key;
       }
     }
-    
+
     if(cidToDeselect != -1) {
       // Edit list of component data
       var specificObject = listOfComponentData.find(obj => {
         return obj.cid == cidToDeselect;
       })
-      console.log("specificObject:");
-      console.log(specificObject);
+      
+      // Update data
       specificObject.selectedBy = -1;
-      console.log(specificObject);
 
       // Send 'Deselect' of 'old cid'
       var dataObj = new Object(); 
@@ -696,7 +694,25 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       message.msgType = 'selectedComponent';
       message.msgData = data;
 
-      // Send each message to every client in the room
+      // Set targetRoom name
+      var targetRoom = 'dev';
+      connectionObj.getRoomNames((err, roomNames) => {
+        if(roomNames.length > 0) {
+            targetRoom = roomNames[0];
+        }
+      });
+      message.targetRoom = targetRoom;
+
+      // Emit message to all room members
+      console.log("Server emitting 'selectedComponent' event!");
+      
+      var roomObj; 
+      connectionObj.generateRoomClientList("update", null, function(err, callback){
+        roomObj = callback;
+      });
+
+      var clientList = roomObj['dev'].clientList;
+      
       for (var currentEasyrtcid in clientList) {
         (function(innerCurrentEasyrtcid, innerMsg){
           connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {

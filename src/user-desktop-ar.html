@@ -201,7 +201,10 @@
             controller.spawnEntity(newData);
 
           }else if(msgType === 'selectedComponent') {
+            console.log('received selectedComponent!');
             var data = JSON.parse(msgData);
+            console.log("data:");
+            console.log(data);
             var cid = data.cid;
             var sourceRtcId = data.sourcertcid;
             var bool = data.bool;

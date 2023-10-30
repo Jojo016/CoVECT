@@ -10,7 +10,7 @@
     <script src="/js/aframe-colorwheel-component.min.js"></script>
     <script src="/easyrtc/easyrtc.js"></script>
     <script src="/dist/networked-aframe.min.js"></script>
-    <script src="/dist/aframe-material.min.js"></script>
+    <script src="/dist/aframe-keyboard.min.js"></script>
     <script type="text/javascript">
       AFRAME.ASSETS_PATH = "./assets";
     </script>
@@ -1655,6 +1655,31 @@
         }
       });
     </script>
+    <script>
+      var input = ''
+      function updateInput(e) {
+        var code = parseInt(e.detail.code)
+        console.log('updateInput, code:');
+        console.log(code);
+        switch(code) {
+        case '8':
+          input = input.slice(0, -1)
+          break
+        case '06':
+          alert('submitted')
+          var keyboard = document.querySelector('#keyboard')
+          document.querySelector('#input').setAttribute('value', input)
+          document.querySelector('#input').setAttribute('color', 'blue')
+          keyboard.parentNode.removeChild(keyboard)
+          return
+        default:
+          input = input + e.detail.value
+          break
+        }
+        document.querySelector('#input').setAttribute('value', input + '_')
+      }
+      document.addEventListener('a-keyboard-update', updateInput)
+    </script>
     <link rel="stylesheet" type="text/css" href="/css/style.css" />
   </head>
   <body>
@@ -1755,17 +1780,17 @@
       <a-entity position="0.5 0 -3" scale="0.01 0.01 0.01" obj-model="obj: #kitchen-obj; mtl: #kitchen-mtl"></a-entity>
 
       <a-entity position="1.2 0.85 -2.4" scale="0.2 0.2 0.2" obj-model="obj: #bowl" material="src: /img/ceramic_white.jpg; color: #1b688c"></a-entity>
-      <a-entity position="-0.1 0.85 -2.6" scale="0.2 0.2 0.2" obj-model="obj: #bowl" material="src: /img/ceramic_white.jpg; color: #1b688c"></a-entity>
+      <!--a-entity position="-0.1 0.85 -2.6" scale="0.2 0.2 0.2" obj-model="obj: #bowl" material="src: /img/ceramic_white.jpg; color: #1b688c"></a-entity>
       <a-entity position="-0.105 0.9 -2.605" scale="0.2 0.2 0.2" obj-model="obj: #bowl" material="src: /img/ceramic_white.jpg; color: #1b688c"></a-entity>
-      <a-entity position="-0.11 0.95 -2.61" scale="0.2 0.2 0.2" obj-model="obj: #bowl" material="src: /img/ceramic_white.jpg; color: #1b688c"></a-entity>
+      <a-entity position="-0.11 0.95 -2.61" scale="0.2 0.2 0.2" obj-model="obj: #bowl" material="src: /img/ceramic_white.jpg; color: #1b688c"></a-entity-->
 
       <!-- Light -->
       <a-entity light="color: #ccccff; intensity: 1; type: ambient;" visible="true"></a-entity>
       <a-entity light="type: point; intensity: 0.6; distance: 10; decay: 2" position="0 2.5 0"></a-entity>
 
       <!-- Input -->
-      <a-input id="testinput" position="-0.7 1.5 -2.5" placeholder="Entity-Name" color="black" width="1" test-comp></a-input>
-      <a-keyboard id="keyboard" test-comp></a-keyboard>
+      <a-text id="input" font="dejavu" color="#000" value="Input value..." scale="0.5 0.5 0.5" position="-1 1.5 -2"></a-text>
+      <a-entity id="keyboard" position="1 1.5 -1" a-keyboard></a-entity>
 
       <!-- Taskboard -->
       <a-rounded radius="0.1" width="2" height="1" rotation="0 90 0" position="-2.99 1 0" color="#6C7A89">

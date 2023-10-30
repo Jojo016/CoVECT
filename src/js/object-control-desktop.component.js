@@ -789,6 +789,33 @@ AFRAME.registerComponent('object-control-desktop', {
             eventOptions.push(eventOption);
           }
 
+          // Get all existing interactables and add them to the eventOptions
+          var interactables = document.getElementsByClassName('entity');
+          for(var n = 0; n < interactables.length; n++) {
+            var pEl = interactables[n];
+            var el = pEl.children[0];
+            var interactable = el.interactable;
+
+            // Sort out event areas
+            if(interactable != null) {
+              var type = interactable.type;
+              var cid = pEl.getAttribute('cid');
+              var name = pEl.getAttribute('entityName');
+              
+              switch(type) {
+                case 'rotatable':
+                  var angle = task.eventAngle;
+                  var eventOption = [cid, name, type, angle];
+                  eventOptions.push(eventOption);
+                  break;
+
+                case 'none':
+                case 'grabbable':
+                  break;
+              }
+            }
+          }
+
           var eventOptionsText = ``;
           var selected = 'none';
 
@@ -826,7 +853,7 @@ AFRAME.registerComponent('object-control-desktop', {
                   <span class="properties-parameter-name">
                     <b>Target Angle</b>
                   </span>
-                  <input class="eventAngle"/>
+                  <input type="number" class="eventAngle" name="eventAngle" value="${selected[3]}"/>
                 </div>
               `;
               break;
@@ -871,7 +898,7 @@ AFRAME.registerComponent('object-control-desktop', {
         break;
 
       case 'eventAngle':
-        newObj.eventAngle = value; 
+        task.eventAngle = value; 
         break;
 
       default:
@@ -925,9 +952,6 @@ AFRAME.registerComponent('object-control-desktop', {
 
       atext.setAttribute('id', 'task' + childrenCount);
       atext.setAttribute('position', pos3);
-      
-      console.log("task:");
-      console.log(task);
 
       var taskAngle = task.eventAngle;
       var taskTrigger = task.triggerEvent;
@@ -964,9 +988,6 @@ AFRAME.registerComponent('object-control-desktop', {
           var target = interaction.target;
           var eventName = pEl.getAttribute('entityName');
           var targetName;
-          console.log("eventName:");
-          console.log(eventName);
-          console.log(pEl);
 
           for (var i = 0; i < els.length; i++) {
             if(els[i].getAttribute('cid') == target) {
@@ -979,7 +1000,8 @@ AFRAME.registerComponent('object-control-desktop', {
           break;
 
         case 'rotatable':
-          atext.setAttribute('value', childrenCount + '. Rotate "' + taskName + '" to a ' + taskAngle + '° angle.');
+          var targetName = pEl.getAttribute('entityName');
+          atext.setAttribute('value', childrenCount + '. Rotate "' + targetName + '" to a ' + taskAngle + ' degree angle.');
           break;
 
         case 'none':
@@ -999,10 +1021,6 @@ AFRAME.registerComponent('object-control-desktop', {
     // Update taskboard
     this.updateTaskboard();
 
-    console.log("tasksSelectedBy = clientRtcId");
-    console.log(tasksSelectedBy + " = " + clientRtcId);
-    console.log(tasksSelectedBy == clientRtcId);
-
     // Update properties panel if selected
     if(tasksSelectedBy == clientRtcId) {
       this.selectTasks('update');
@@ -1010,10 +1028,15 @@ AFRAME.registerComponent('object-control-desktop', {
   },
 
   updateTask: function(data) {
+    console.log("updateTask");
     // Update data
     var taskId = data.taskId;
     var task = data.task; 
+    console.log("taskData");
+    console.log(task);
     tasks[taskId] = task;
+    console.log("newTask");
+    console.log(tasks[taskId]);
 
     // Update taskboard
     this.updateTaskboard();
@@ -1046,7 +1069,6 @@ AFRAME.registerComponent('object-control-desktop', {
   },
 
   selectEntity: function(componentId, sourceRtcId, selectBool) {
-
       var el = null;
       var pEl = null;
       var els = this.el.sceneEl.querySelectorAll('[cid]');
@@ -1060,10 +1082,10 @@ AFRAME.registerComponent('object-control-desktop', {
         }
       }
       
-      // Decide whether to select or deselect the object
       var pPanel = window.parent.document.getElementById('properties-panel');
       var objectType = pEl.getAttribute('class');
 
+      // Decide whether to select or deselect the object
       if(sourceRtcId == clientRtcId) {
         // Client's own EasyRTCid
         if(selectBool) {
