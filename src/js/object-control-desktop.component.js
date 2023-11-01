@@ -91,7 +91,7 @@ AFRAME.registerComponent('object-control-desktop', {
     var cidCell = tr.insertCell();
     cidCell.appendChild(document.createTextNode(cid));
     var elementNameCell = tr.insertCell();
-    elementNameCell.appendChild(document.createTextNode(shape));
+    elementNameCell.appendChild(document.createTextNode(name));
     var buttonCell = tr.insertCell();
     var button = document.createElement('button');
     button.innerText = "X";
@@ -952,6 +952,8 @@ AFRAME.registerComponent('object-control-desktop', {
 
       atext.setAttribute('id', 'task' + childrenCount);
       atext.setAttribute('position', pos3);
+      atext.setAttribute('wrap-count', '80');
+      atext.setAttribute('scale', '2 2 2');
 
       var taskAngle = task.eventAngle;
       var taskTrigger = task.triggerEvent;
@@ -1204,6 +1206,11 @@ AFRAME.registerComponent('object-control-desktop', {
       // All other types should be changed for el itself
       pEl.setAttribute('entityName', data);
 
+      // Update scene objects view
+      var tr = parent.document.getElementById("cid" + componentId);
+      var elementNameCell = tr.cells[1];
+      elementNameCell.innerHTML = data;
+
     }else{
       // All other types should be changed for el itself
       el.setAttribute(type, data);
@@ -1350,7 +1357,7 @@ AFRAME.registerComponent('object-control-desktop', {
       var cidCell = tr.insertCell();
       cidCell.appendChild(document.createTextNode(cid));
       var elementNameCell = tr.insertCell();
-      elementNameCell.appendChild(document.createTextNode('Event Area'));
+      elementNameCell.appendChild(document.createTextNode(name));
       var buttonCell = tr.insertCell();
       var button = document.createElement('button');
       button.innerText = "X";

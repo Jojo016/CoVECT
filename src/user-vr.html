@@ -816,6 +816,28 @@
           }else if(msgType === 'userLeft') {
             var data = JSON.parse(msgData);
             //window.parent.removeUserFromStatusBar(data.easyrtcid);
+
+          }else if(msgType === 'selectedTasks') {
+            var newData = JSON.parse(msgData);
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.selectTasks(newData);
+
+          }else if(msgType === 'addedTask') {
+            var newData = JSON.parse(msgData);
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.addTask(newData);
+
+          }else if(msgType === 'updatedTask') {
+            var newData = JSON.parse(msgData);
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.updateTask(newData);
+
+          }else if(msgType === 'deselectTasks') {
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.deselectTasks();
+
+          }else{
+            console.log("Received unknown message type '" + msgType + "'.");
           }
         });
 
@@ -1746,12 +1768,12 @@
       <a-entity id="keyboard" position="0 1.5 -1" a-keyboard></a-entity>
 
       <!-- Taskboard -->
-      <a-rounded radius="0.1" width="2" height="1" rotation="0 90 0" position="-2.99 1 0" color="#6C7A89">
-        <a-entity id="taskboard" position="0.05 0.9 0" scale="0.3 0.3 0.3">
+      <a-plane width="2" height="1" rotation="0 90 0" position="-2.99 1.5 -1.5" color="#6C7A89">
+        <a-entity id="taskboard" position="-0.9 0.4 0" scale="0.3 0.3 0.3">
           <a-text position="0 0 0" value="Tasks:"></a-text>
           <!--a-text position="0 -0.3 0" value="1. blabla"></a-text-->
         </a-entity>
-      </a-rounded>
+      </a-plane>
 
       <!-- AVATAR -->
       <a-entity id="rig">

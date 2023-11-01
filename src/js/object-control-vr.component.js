@@ -1,4 +1,8 @@
-﻿/* global AFRAME, NAF */
+﻿// Init tasks
+var tasks = [];
+var tasksSelectedBy = null;
+
+/* global AFRAME, NAF */
 AFRAME.registerComponent('object-control-vr', {
   schema: {
     template: { default: '' },
@@ -323,6 +327,194 @@ AFRAME.registerComponent('object-control-vr', {
       // All other types should be changed for el itself
       el.setAttribute(type, data);
     }
-  }
+  },
+
+  taskChanged: function(evt) {
+    var target = evt.target;
+    var updateType = target.className;
+    var taskId = target.parentElement.parentElement.id.substring(4);
+    var value = target.value;
+
+    var newObj = new Object();
+    newObj.taskId = taskId;
+    var task = tasks[taskId];
+
+    switch(updateType) {
+      case 'triggerEvent':
+        task.triggerEvent = value;
+        break;
+
+      case 'eventAngle':
+        task.eventAngle = value; 
+        break;
+
+      default:
+        break;
+    }
+    newObj.task = task;
+    
+    // Send changes to server
+    var newData = JSON.stringify(newObj);
+    easyrtc.sendDataWS(clientRtcId, "updateTask", newData);
+  },
+
+  areTasksOccupied: function() {
+    var occupied = !(tasksSelectedBy == null || tasksSelectedBy == clientRtcId);
+
+    if(occupied) {
+      var pPanel = window.parent.document.getElementById('properties-panel');
+      this.addPropertiesRow(pPanel, 'tasksOccupied', null);
+
+      return true;
+    }
+
+    return false;
+  },
+
+  deselectTasks: function() {
+    tasksSelectedBy = null;
+  },
+
+  updateTaskboard: function() {
+    var taskboard = document.getElementById('taskboard');
+
+    // Remove prior children
+    var counter = 1;
+    var child = document.getElementById('task' + counter);
+    while(child != null) {
+      // Remove child
+      taskboard.removeChild(child);
+
+      // Increment
+      counter++;
+      child = document.getElementById('task' + counter);
+    }
+
+    // Add each task
+    for(var k = 0; k < tasks.length; k++) {
+      var task = tasks[k];
+      var childrenCount = taskboard.children.length;
+      var pos3 = '0 ' + (childrenCount * (-0.3)) + ' 0';
+      var atext = document.createElement('a-text');
+
+      atext.setAttribute('id', 'task' + childrenCount);
+      atext.setAttribute('position', pos3);
+      atext.setAttribute('wrap-count', '80');
+      atext.setAttribute('scale', '2 2 2');
+
+      var taskAngle = task.eventAngle;
+      var taskTrigger = task.triggerEvent;
+      var taskType;
+
+      // Determine tasktype
+      if(taskTrigger == 'none') {
+        taskType = 'none';
+      }else {
+        // Get correct interaction/interactable
+        var el;
+        var pEl = null;
+        var els = this.el.sceneEl.querySelectorAll('[cid]');
+
+        for (var i = 0; i < els.length; i++) {
+          if(els[i].getAttribute('cid') == taskTrigger) {
+            pEl = els[i];
+            el = pEl.children[0];
+            break;
+          }
+        }
+
+        var compType = pEl.getAttribute('class');
+        if(compType == 'interaction') {
+          taskType = 'eventArea';
+        }else{
+          taskType = el.interactable.type;
+        }
+      }
+
+      switch(taskType) {
+        case 'eventArea':
+          var interaction = pEl.data;
+          var target = interaction.target;
+          var eventName = pEl.getAttribute('entityName');
+          var targetName;
+
+          for (var i = 0; i < els.length; i++) {
+            if(els[i].getAttribute('cid') == target) {
+              targetName = els[i].getAttribute('entityName');
+              break;
+            }
+          }
+
+          atext.setAttribute('value', childrenCount + '. Move "' + targetName + '" into area "' + eventName + '".');
+          break;
+
+        case 'rotatable':
+          var targetName = pEl.getAttribute('entityName');
+          atext.setAttribute('value', childrenCount + '. Rotate "' + targetName + '" to a ' + taskAngle + ' degree angle.');
+          break;
+
+        case 'none':
+          atext.setAttribute('value', childrenCount + '. No event selected!');
+          break;
+
+        default:
+          break;
+      }
+      taskboard.appendChild(atext);
+    }
+  },
+
+  addTask: function(newTask) {
+    tasks.push(newTask);
+
+    // Update taskboard
+    this.updateTaskboard();
+
+    // Update properties panel if selected
+    if(tasksSelectedBy == clientRtcId) {
+      this.selectTasks('update');
+    }
+  },
+
+  updateTask: function(data) {
+    console.log("updateTask");
+    // Update data
+    var taskId = data.taskId;
+    var task = data.task; 
+    console.log("taskData");
+    console.log(task);
+    tasks[taskId] = task;
+    console.log("newTask");
+    console.log(tasks[taskId]);
+
+    // Update taskboard
+    this.updateTaskboard();
+
+    // Update properties panel if selected
+    if(tasksSelectedBy == clientRtcId) {
+      this.selectTasks('update');
+    }
+  },
+
+  selectTasks: function(data) {
+    var pPanel = window.parent.document.getElementById('properties-panel');
+
+    if(data != 'update') {
+      tasksSelectedBy = data.tasksSelectedBy;
+
+      if(tasksSelectedBy != clientRtcId) {
+        return;
+      }
+    }
+    
+    // Update properties view
+    while (pPanel.firstChild) {
+      // Remove all children
+      pPanel.removeChild(pPanel.firstChild);
+    }
+
+    // Add property rows
+    this.addPropertiesRow(pPanel, 'task', null);
+  },
 });
 
