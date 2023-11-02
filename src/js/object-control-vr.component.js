@@ -36,6 +36,7 @@ AFRAME.registerComponent('object-control-vr', {
     var radius = data.radius;
     var pos3 = new THREE.Vector3(data.posX, data.posY, data.posZ);
     var interactable = data.interactable;
+    var wireframe = data.wireframe;
 
     // Create container element
     var pEl = document.createElement('a-entity');
@@ -43,28 +44,43 @@ AFRAME.registerComponent('object-control-vr', {
     pEl.setAttribute('position', pos3);
     pEl.setAttribute('scale', scale);
 
-    // Create actual element
+    // Create actual element & wireframe
     var el = document.createElement('a-entity');
+    var elWireframe = document.createElement('a-entity');
 
     // Handle geometry/shape attribute
     if(shape == 'sphere') {
       el.setAttribute('geometry', 'primitive: sphere; segmentsWidth: 16; segmentsHeight: 16;');
       el.setAttribute('radius', radius);
 
+      elWireframe.setAttribute('geometry', 'primitive: sphere; segmentsWidth: 16; segmentsHeight: 16;');
+      elWireframe.setAttribute('radius', radius);
+
     }else if(shape == 'plane') {
       el.setAttribute('geometry', 'primitive: plane;');
       el.setAttribute('rotation', rotation);
 
+      elWireframe.setAttribute('geometry', 'primitive: plane;');
+      elWireframe.setAttribute('rotation', rotation);
+
     }else if(shape == 'cylinder'){
       el.setAttribute('geometry', 'primitive: ' + shape + '; radius: ' + radius + '; height: ' + height + '; rotation: ' + rotation + ';');
+
+      elWireframe.setAttribute('geometry', 'primitive: ' + shape + '; radius: ' + radius + '; height: ' + height + '; rotation: ' + rotation + ';');
 
     }else if(shape == 'box') {
       el.setAttribute('geometry', 'primitive: ' + shape + ';');
       el.setAttribute('rotation', rotation);
 
+      elWireframe.setAttribute('geometry', 'primitive: ' + shape + ';');
+      elWireframe.setAttribute('rotation', rotation);
+
     }else{
       // TODO: Add method for specific models
       el.setAttribute('rotation', rotation);
+
+      elWireframe.setAttribute('geometry', 'primitive: ' + box + ';');
+      elWireframe.setAttribute('rotation', rotation);
     }
 
     // Handle other attributes
@@ -73,6 +89,13 @@ AFRAME.registerComponent('object-control-vr', {
     el.setAttribute('entityName', 'New ' + shape);
     
     el.interactable = interactable;
+
+    // Handle wireframe attributes
+    el.setAttribute('wireframed', wireframe);
+    elWireframe.setAttribute('entityName', el.getAttribute('entityName') + '-wireframe');
+    elWireframe.setAttribute('wireframe', '');
+    elWireframe.setAttribute('priority', 'level: wireframe');
+    elWireframe.setAttribute('material', 'color: #ff0000; wireframe: true');
 
     // Handle raycaster attribute 
     el.setAttribute('raycaster-listen', '');
@@ -98,11 +121,15 @@ AFRAME.registerComponent('object-control-vr', {
       el.setAttribute('grab-listener', '');
     }
 
-    var scene = this.el.sceneEl;
     pEl.appendChild(el);
-    scene.appendChild(pEl);
 
-    // TODO: Add object to list 'Scene Objects' for "Object Overview Menu"
+    // Handle wireframe
+    if(wireframe) {
+      pEl.appendChild(elWireframe);
+    }
+
+    var scene = this.el.sceneEl;
+    scene.appendChild(pEl);
   },
 
   createAxes: function(pEl) {
@@ -114,9 +141,9 @@ AFRAME.registerComponent('object-control-vr', {
     ySlider.setAttribute('material', 'color: #ff0000');
     zSlider.setAttribute('material', 'color: #0000ff');
 
-    xSlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.05; height: 2; segmentsRadial: 4');
-    ySlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.05; height: 2; segmentsRadial: 4');
-    zSlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.05; height: 2; segmentsRadial: 4');
+    xSlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.1; height: 2; segmentsRadial: 4');
+    ySlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.1; height: 2; segmentsRadial: 4');
+    zSlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.1; height: 2; segmentsRadial: 4');
     
     xSlider.setAttribute('rotation', '0 0 -90');
     zSlider.setAttribute('rotation', '90 0 0');
@@ -125,9 +152,9 @@ AFRAME.registerComponent('object-control-vr', {
     ySlider.setAttribute('position', '0 1 0');
     zSlider.setAttribute('position', '0 0 1');
 
-    xSlider.setAttribute('grab-axisslider-listener', '');
-    ySlider.setAttribute('grab-axisslider-listener', '');
-    zSlider.setAttribute('grab-axisslider-listener', '');
+    xSlider.setAttribute('trigger-grab-axisslider-listener', '');
+    ySlider.setAttribute('trigger-grab-axisslider-listener', '');
+    zSlider.setAttribute('trigger-grab-axisslider-listener', '');
 
     xSlider.setAttribute('axis', "x");
     ySlider.setAttribute('axis', "y");
@@ -274,10 +301,10 @@ AFRAME.registerComponent('object-control-vr', {
       el.setAttribute('selectedby', sourceRtcId);
 
       // Remove 'select-button-listener' and the listener it adds
-      el.removeAttribute('raycaster-listen');
+      //el.removeAttribute('raycaster-listen');
 
       // VR - Make selected object untargetable
-      el.setAttribute('class', 'selected-collidable');
+      //el.setAttribute('class', 'selected-collidable');
     }else {
       // Remove easyRtcId of source
       el.removeAttribute('selectedby');
@@ -326,6 +353,74 @@ AFRAME.registerComponent('object-control-vr', {
     }else{
       // All other types should be changed for el itself
       el.setAttribute(type, data);
+
+      if(type == 'wireframe') {
+        var name = el.getAttribute('entityName');
+
+        if(data) {
+          // Add wireframe
+          var geometry = el.getAttribute('geometry');
+          var shape;
+          if(geometry == null) {
+            shape = 'model';
+          }
+          var shape = geometry.primitive;
+
+          var elWireframe = document.createElement('a-entity');
+
+          // Handle geometry/shape attribute
+          if(shape == 'sphere') {
+            var radius = el.getAttribute('radius');
+            elWireframe.setAttribute('geometry', 'primitive: sphere; segmentsWidth: 16; segmentsHeight: 16;');
+            elWireframe.setAttribute('radius', radius);
+
+          }else if(shape == 'plane') {
+            var rotation = el.getAttribute('rotation');
+            elWireframe.setAttribute('geometry', 'primitive: plane;');
+            elWireframe.setAttribute('rotation', rotation);
+
+          }else if(shape == 'cylinder'){
+            var radius = el.getAttribute('radius');
+            var height = el.getAttribute('height');
+            var rotation = el.getAttribute('rotation');
+            elWireframe.setAttribute('geometry', 'primitive: ' + shape + '; radius: ' + radius + '; height: ' + height + '; rotation: ' + rotation + ';');
+
+          }else if(shape == 'box') {
+            var rotation = el.getAttribute('rotation');
+            elWireframe.setAttribute('geometry', 'primitive: ' + shape + ';');
+            elWireframe.setAttribute('rotation', rotation);
+
+          }else{
+            // TODO: Add method for specific models
+            var rotation = el.getAttribute('rotation');
+            elWireframe.setAttribute('geometry', 'primitive: ' + box + ';');
+            elWireframe.setAttribute('rotation', rotation);
+          }
+
+          // Handle wireframe attributes
+          el.setAttribute('wireframed', data);
+          elWireframe.setAttribute('entityName', name + '-wireframe');
+          elWireframe.setAttribute('wireframe', '');
+          elWireframe.setAttribute('priority', 'level: wireframe');
+          elWireframe.setAttribute('material', 'color: #ff0000; wireframe: true');
+
+          pEl.appendChild(elWireframe);
+        }else {
+          // Remove wireframe
+          var wfObjectName = name + "-wireframe"
+          var wfObjects = document.querySelectorAll("[wireframe]");
+          var wfObject = null;
+
+          wfObjects.forEach(obj => {
+            var objName = obj.getAttribute('entityName');
+            if(objName == wfObjectName) {
+              wfObject = obj;
+            }
+          });
+
+          wfObject.parentEl.removeChild(wfObject);
+        }
+      }
     }
   },
 

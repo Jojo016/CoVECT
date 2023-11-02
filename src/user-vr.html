@@ -40,6 +40,22 @@
           }
         }
       });
+
+      AFRAME.registerComponent('belt-positioning',{
+        init: function () {
+          
+        },
+
+        tick: function (evt) {
+          // Handle Position
+          var player = document.getElementById('player');
+          var el = this.el;
+          var pos3 = player.getAttribute('position');
+
+          var newPos3 = (Number(pos3.x) - 0.2) + ' ' + (Number(pos3.y) -0.8) + ' ' + (Number(pos3.z) - 0.4);
+          el.setAttribute('position', newPos3);
+        }
+      });
     </script>
     <script>
       // see issue https://github.com/networked-aframe/networked-aframe/issues/267
@@ -154,11 +170,6 @@
         var value = evt.value;
         var target = evt.target;
         var name = target.name;
-
-        var debug = document.getElementById('debugtext');
-        debug.setAttribute('value', "Value: " + value + "\nTarget: " + target + "\nName: " + name);
-
-        // TODO: Add upload to server!
 
         // Fill data object
         var newObj = new Object();
@@ -899,13 +910,13 @@
 
             // Check if wireframe exists and make it visible
             if(this.el.getAttribute('wireframed') == "true") {
-              var name = this.el.getAttribute('name');
+              var name = this.el.getAttribute('entityName');
               var wfObjectName = name + "-wireframe";
               var wfObjects = document.querySelectorAll("[wireframe]");
               var wfObject = null;
 
               wfObjects.forEach(obj => {
-                var objName = obj.getAttribute('name');
+                var objName = obj.getAttribute('entityName');
                 if(objName == wfObjectName) {
                   wfObject = obj;
                 }
@@ -936,13 +947,13 @@
 
               // Check if wireframe exists and make it insivible
               if(this.el.getAttribute('wireframed') == "true") {
-                var name = this.el.getAttribute('name');
+                var name = this.el.getAttribute('entityName');
                 var wfObjectName = name + "-wireframe";
                 var wfObjects = document.querySelectorAll("[wireframe]");
                 var wfObject = null;
 
                 wfObjects.forEach(obj => {
-                  var objName = obj.getAttribute('name');
+                  var objName = obj.getAttribute('entityName');
                   if(objName == wfObjectName) {
                     wfObject = obj;
                   }
@@ -980,10 +991,12 @@
       AFRAME.registerComponent('select-listener', {
         init: function () {
           var el = this.el;
+          
+          // Add 'Select Object' listener
           el.addEventListener('select-object', function handleSendSelect(event) {
             // Check if handler is 'disabled'
             var selectedBy = el.getAttribute('selectedby');
-            if(selectedBy != null) {
+            if(!(selectedBy == null || selectedBy == clientRtcId)) {
               return;
             }
 
@@ -1000,10 +1013,49 @@
             var obj = new Object();
             obj.cid = componentId;
 
+            // Check if object needs to be selected or deselected
+            if(selectedBy == clientRtcId) {
+              obj.bool = false;
+            }else{
+              obj.bool = true;
+            }
+
             var entityData = JSON.stringify(obj); 
             
             console.log("Sending: 'Select object with component-id:' " + entityData);
             easyrtc.sendDataWS(clientRtcId, "selectComponent", entityData);
+          });
+
+          // Add 'Mark Object' listener
+          el.addEventListener('mark-object', function handleSendSelect(event) {
+            // Check if the component is the first intersected
+            var pEl = el.parentEl;
+            var componentId = pEl.getAttribute('cid');
+            var intersectCid = el.getAttribute('intersect-cid');
+
+            if(componentId != intersectCid) {
+              return;
+            }
+            
+            // Create data object to stringify
+            var obj = new Object();
+            obj.cid = componentId;
+
+            // Check if wireframe is enabled
+            var wireframed = el.getAttribute('wireframed');
+            obj.updatetype = 'wireframe';
+            
+            if(wireframed == "false") {
+              // Remove wireframe
+              obj.updatedata = true;
+            }else {
+              // Add wireframe
+              obj.updatedata = false;
+            }
+
+            var entityData = JSON.stringify(obj); 
+            console.log("Sending: 'UpdateComponent to switch wireframe on object:' " + entityData);
+            easyrtc.sendDataWS(clientRtcId, "updateComponent", entityData);
           });
         }
       });
@@ -1035,17 +1087,18 @@
         }
       });
 
-      AFRAME.registerComponent('grab-axisslider-listener', {
+      AFRAME.registerComponent('trigger-grab-axisslider-listener', {
         init: function () {
           var el = this.el;
           var pEl = el.parentEl;
           var axis = el.getAttribute('axis');
-          el.addEventListener('grab-object-start', function handleSendSelect(event) {
+
+          el.addEventListener('trigger-grab-object-start', function handleSendSelect(event) {
             // Start moving the object
             el.setAttribute('axis-grabbed', 'axis: ' + axis);
           });
 
-          el.addEventListener('grab-object-end', function handleSendSelect(event) {
+          el.addEventListener('trigger-grab-object-end', function handleSendSelect(event) {
             // Stop moving the object
             el.removeAttribute('axis-grabbed');
 
@@ -1106,9 +1159,12 @@
       AFRAME.registerComponent('trigger-button-listener', {
         init: function () {
           const selectObjectEvent = new Event("select-object");
+          const triggerGrabObjectStartEvent = new Event("trigger-grab-object-start");
+          const triggerGrabObjectEndEvent = new Event("trigger-grab-object-end");
 
           var el = this.el;
-          //el.addEventListener('click', function (evt) { // Testing with Mouse
+          var firstHit = null;
+          
           el.addEventListener('triggerdown', function (evt) { // Actual implementation
             // Get raycaster
             var rc = el.components.raycaster;
@@ -1120,10 +1176,22 @@
             }
             
             // Get first intersection
-            var firstHit = rc.intersectedEls[0];
+            firstHit = rc.intersectedEls[0];
 
-            // Trigger event 'Send select'
+            // Trigger event 'Send select' and 'Start Trigger-Grab'
+            if(firstHit == null) {
+              return;
+            }
             firstHit.dispatchEvent(selectObjectEvent);
+            firstHit.dispatchEvent(triggerGrabObjectStartEvent);
+          });
+
+          el.addEventListener('triggerup', function (evt) {
+            // Trigger event 'End Trigger-Grab'
+            if(firstHit == null) {
+              return;
+            }
+            firstHit.dispatchEvent(triggerGrabObjectEndEvent);
           });
         }
       });
@@ -1199,10 +1267,24 @@
 
       AFRAME.registerComponent('b-button-listener', {
         init: function () {
+          const markObjectEvent = new Event("mark-object");
+
           var el = this.el;
-          el.addEventListener('bbuttondown', function (evt) {
-            // Hide virtual controller
-            el.setAttribute('visible', !el.getAttribute('visible'));
+          el.addEventListener('bbuttondown', function (evt) { 
+            // Get raycaster
+            var rc = el.components.raycaster;
+
+            // Get intersections
+            var intersectedEls = rc.intersectedEls;
+            if(intersectedEls.length < 1) {
+              return;
+            }
+            
+            // Get first intersection
+            var firstHit = rc.intersectedEls[0];
+
+            // Trigger event 'Mark Object'
+            firstHit.dispatchEvent(markObjectEvent);
           });
         }
       });
@@ -1306,7 +1388,6 @@
           var hand = null;
           var raycaster = null;
           var el = this.el;
-          var debug = document.getElementById('debugtext');
                     
           try {
             hand = document.getElementById('hand-right');
@@ -1602,19 +1683,24 @@
         }
 
         switch(code) {
-        case '8':
+        case 13:
+          break;
+
+        case 8:
           text = text.slice(0, -1);
-          break
+          break;
+
         case '06':
           console.log('submitted');
           var keyboard = document.querySelector('#keyboard');
           input.setAttribute('value', text);
           input.setAttribute('color', 'blue');
           keyboard.parentNode.removeChild(keyboard);
-          return
+          return;
+
         default:
           text = text + e.detail.value;
-          break
+          break;
         }
 
         input.setAttribute('value', text + '_');
@@ -1624,21 +1710,21 @@
 
       // Register input component
       function changeInput(newInputBackground) {
+        var debug = document.getElementById('debugtext');
+        
+        debug.setAttribute('value', debug.getAttribute('value') + "\nRemoving old id:");
+
         // Remove old input
-        var input = document.getElementById('#currentInput');
+        var input = document.querySelector('#currentInput');
+        debug.setAttribute('value', debug.getAttribute('value') + "\nid = " + input);
         if(input != null) {;
           input.setAttribute('value', text);
           input.removeAttribute('id');
         }
 
-        
-        var debug = document.getElementById('debugtext');
-
         // Make new input listen to changes
-        var newInput = newInputBackground.parent.children[0];
+        var newInput = newInputBackground.parentEl.children[0];
         text = newInput.getAttribute('value');
-
-        debug.setAttribute('value', "SelectedInputValue:\n" + text);
 
         newInput.setAttribute('value', text + '_');
         newInput.setAttribute('id', 'currentInput');
@@ -1650,6 +1736,7 @@
 
           el.addEventListener('select-object', function handleSendSelect(event) {
             // Open or close the 'Task'-Menu
+            var debug = document.getElementById('debugtext');
             changeInput(el);
           });
         }
@@ -1789,13 +1876,309 @@
         >
           <a-sphere id="playerhead" scale="0.2 0.2 0.2" class="head" visible="false" random-color></a-sphere>
         </a-entity>
+
+        <!-- Belt menu -->
+        <a-entity 
+          id="container-vr-menu"
+          scale="0.1 0.1 0.1"
+          rotation="-45 0 0"
+          visible="true"
+          belt-positioning
+        >
+          <a-entity
+            class="vr-menu" 
+            geometry="primitive: plane"
+            material="color: #323236"
+            position="0 0.5 0"
+            rotation="0 0 0" 
+            scale="1 4 1"
+            visible="true"
+            priority="level: hud"
+          ></a-entity>
+          
+          <!-- Menu EDIT -->
+          <a-entity
+            position = "0 0 0"
+            rotation="0 0 0" 
+            scale="0.9 0.9 0.1"
+          >
+            <a-entity
+              id="vr-menu-edit" 
+              class="vr-menu-edit" 
+              geometry="primitive: box"
+              material="color: #0377fc"
+              visible="true"
+              priority="level: hud"
+              raycaster-listen
+              vr-menu-edit
+            ></a-entity>
+            <a-entity
+              class="vr-menu-edit-img" 
+              geometry="primitive: plane"
+              material="src: #edit; transparent: true"
+              visible="true"
+              priority="level: hud"
+            ></a-entity>
+          </a-entity>
+
+          <!-- Submenu EDIT -->
+          <a-entity
+            id="container-vr-submenu-edit" 
+            position="0.35 -1.5 0" 
+            visible="true"
+            scale="1.2 1.2 1.2"
+          > 
+          </a-entity>
+
+          <!-- Menu PLAY -->
+          <a-entity
+            position = "0 2 0"
+            rotation="0 0 0" 
+            scale="0.9 0.9 0.1"
+          >
+            <a-entity
+              class="vr-menu-play" 
+              geometry="primitive: box"
+              material="color: #0377fc"
+              visible="true"
+              priority="level: hud"
+              raycaster-listen
+              vr-menu-play
+            ></a-entity>
+            <a-entity
+              class="vr-menu-play-img" 
+              geometry="primitive: plane"
+              material="src: #play; transparent: true"
+              visible="true"
+              priority="level: hud"
+            ></a-entity>
+            <a-entity
+              class="vr-menu-stop-img" 
+              geometry="primitive: plane"
+              material="src: #stop; transparent: true"
+              visible="false"
+              priority="level: hud"
+            ></a-entity>
+          </a-entity>
+
+          <!-- Menu TASK -->
+          <a-entity
+            position = "0 1 0"
+            rotation="0 0 0" 
+            scale="0.9 0.9 0.1"
+          >
+            <a-entity
+              id="vr-menu-task" 
+              class="vr-menu-task" 
+              geometry="primitive: box"
+              material="color: #0377fc"
+              visible="true"
+              priority="level: hud"
+              raycaster-listen
+              vr-menu-task
+            ></a-entity>
+            <a-entity
+              class="vr-menu-task-img" 
+              geometry="primitive: plane"
+              material="src: #task-img; transparent: true"
+              visible="true"
+              priority="level: hud"
+            ></a-entity>
+          </a-entity>
+
+          <!-- Submenu TASK -->
+          <a-entity
+            id="container-vr-submenu-task" 
+            position="2.05 0 0" 
+            scale="3 3 1"
+            visible="false"
+          > 
+          </a-entity>
+
+          <!-- Menu ADD -->
+          <a-entity
+            position="0 -1 0"
+            rotation="0 0 0" 
+            scale="0.9 0.9 0.1"
+          >
+            <a-entity
+              id="vr-menu-add" 
+              class="vr-menu-add" 
+              geometry="primitive: box"
+              material="color: #0377fc"
+              visible="true"
+              priority="level: hud"
+              raycaster-listen
+              vr-menu-add
+            ></a-entity>
+            <a-entity
+              class="vr-menu-add-img" 
+              geometry="primitive: plane"
+              material="src: #plus; transparent: true"
+              visible="true"
+              priority="level: hud"
+            ></a-entity>
+          </a-entity>
+
+          <!-- Submenu ADD -->
+          <a-entity
+            id="container-vr-submenu-add" 
+            position="2.05 0 0" 
+            scale="3 3 1"
+            visible="false"
+          >  
+            <a-entity
+              name="vr-submenu-add"
+              geometry="primitive: plane"
+              material="color: #31b5cc"
+              rotation="0 0 0" 
+              visible="true"
+              priority="level: hud"
+            ></a-entity>
+
+            <!-- Submenu ADD BOX -->
+            <a-entity
+              id="container-vr-submenu-add-box" 
+              position="-0.33 0.33 0"
+              rotation="0 0 0" 
+              scale="0.3 0.3 0.1"
+              priority="level: hud"
+            >
+              <a-entity
+                id="vr-submenu-add-box" 
+                name="vr-submenu-add"
+                geometry="primitive: box"
+                material="color: #0377fc"
+                visible="true"
+                priority="level: hud"
+                raycaster-listen
+                vr-submenu-add="shape: box"
+              ></a-entity>
+              <a-entity
+                class="vr-submenu-add-box-img"
+                geometry="primitive: plane"
+                material="src: #box; transparent: true"
+                visible="true"
+                priority="level: hud"
+              ></a-entity>
+            </a-entity>
+
+            <!-- Submenu ADD CYLINDER -->
+            <a-entity
+              id="container-vr-submenu-add-cylinder" 
+              position="0 0.33 0"
+              rotation="0 0 0" 
+              scale="0.3 0.3 0.1"
+              priority="level: hud"
+            >
+              <a-entity
+                id="vr-submenu-add-cylinder" 
+                name="vr-submenu-add"
+                geometry="primitive: box"
+                material="color: #0377fc"
+                visible="true"
+                priority="level: hud"
+                raycaster-listen
+                vr-submenu-add="shape: cylinder"
+              ></a-entity>
+              <a-entity
+                class="vr-submenu-add-cylinder-img" 
+                geometry="primitive: plane"
+                material="src: #cylinder; transparent: true"
+                visible="true"
+                priority="level: hud"
+              ></a-entity>
+            </a-entity>
+
+            <!-- Submenu ADD PLANE -->
+            <a-entity
+              id="container-vr-submenu-add-plane" 
+              position="0.33 0.33 0"
+              rotation="0 0 0" 
+              scale="0.3 0.3 0.1"
+              priority="level: hud"
+            >
+              <a-entity
+                id="vr-submenu-add-plane" 
+                name="vr-submenu-add"
+                geometry="primitive: box"
+                material="color: #0377fc"
+                visible="true"
+                priority="level: hud"
+                raycaster-listen
+                vr-submenu-add="shape: plane"
+              ></a-entity>
+              <a-entity
+                class="vr-submenu-add-plane-img" 
+                geometry="primitive: plane"
+                material="src: #plane; transparent: true"
+                visible="true"
+                priority="level: hud"
+              ></a-entity>
+            </a-entity>
+
+            <!-- Submenu ADD SPHERE -->
+            <a-entity
+              id="container-vr-submenu-add-sphere" 
+              position="-0.33 0 0"
+              rotation="0 0 0" 
+              scale="0.3 0.3 0.1"
+              priority="level: hud"
+            >
+              <a-entity
+                id="vr-submenu-add-sphere" 
+                name="vr-submenu-add"
+                geometry="primitive: box"
+                material="color: #0377fc"
+                visible="true"
+                priority="level: hud"
+                raycaster-listen
+                vr-submenu-add="shape: sphere"
+              ></a-entity>
+              <a-entity
+                class="vr-submenu-add-sphere-img" 
+                geometry="primitive: plane"
+                material="src: #sphere; transparent: true"
+                visible="true"
+                priority="level: hud"
+              ></a-entity>
+            </a-entity>
+
+            <!-- Submenu ADD WAFFELMAKER -->
+            <a-entity
+              id="container-vr-submenu-add-wafflemaker" 
+              position="0 0 0"
+              rotation="0 0 0" 
+              scale="0.3 0.3 0.1"
+              priority="level: hud"
+            >
+              <a-entity
+                id="vr-submenu-add-wafflemaker" 
+                name="vr-submenu-add"
+                geometry="primitive: box"
+                material="color: #0377fc"
+                visible="true"
+                priority="level: hud"
+                raycaster-listen
+                vr-submenu-add="shape: wafflemaker"
+              ></a-entity>
+              <a-entity
+                class="vr-submenu-add-wafflemaker-img" 
+                geometry="primitive: plane"
+                material="src: #wafflemaker; transparent: true"
+                visible="true"
+                priority="level: hud"
+              ></a-entity>
+            </a-entity>
+          </a-entity>
+        </a-entity>
         
+        <!-- Right hand -->
         <a-entity 
           id="hand-right"
           name="hand-right"
           class="hand-right"
           networked="template:#hand-right-template;attachTemplateToLocal:false;"
-          rotation="0 0 0"
           range-multiplier="0.5";
           laser-controls="hand: right"
           a-button-listener
@@ -1820,6 +2203,7 @@
           <a-entity class="righthand" visible="false" mimic-head-color></a-entity>
         </a-entity>
 
+        <!-- Left hand -->
         <a-entity 
           id="hand-left"
           name="hand-left"
@@ -1833,307 +2217,14 @@
           <a-entity class="lefthand" visible="false" mimic-head-color></a-entity>
 
           <!-- VR MENU -->
-          <a-entity 
-            id="container-vr-menu"
-            scale="0.1 0.1 0.1"
-            rotation="-45 0 0"
-            visible="true"
-          >
-            <a-entity
-              class="vr-menu" 
-              geometry="primitive: plane"
-              material="color: #323236"
-              position="0 0.5 0"
-              rotation="0 0 0" 
-              scale="1 4 1"
-              visible="true"
-              priority="level: hud"
-            ></a-entity>
-            
-            <!-- Menu EDIT -->
-            <a-entity
-              position = "0 0 0"
-              rotation="0 0 0" 
-              scale="0.9 0.9 0.1"
-            >
-              <a-entity
-                id="vr-menu-edit" 
-                class="vr-menu-edit" 
-                geometry="primitive: box"
-                material="color: #0377fc"
-                visible="true"
-                priority="level: hud"
-                raycaster-listen
-                vr-menu-edit
-              ></a-entity>
-              <a-entity
-                class="vr-menu-edit-img" 
-                geometry="primitive: plane"
-                material="src: #edit; transparent: true"
-                visible="true"
-                priority="level: hud"
-              ></a-entity>
-            </a-entity>
-
-            <!-- Submenu EDIT -->
-            <a-entity
-              id="container-vr-submenu-edit" 
-              position="0.35 -1.5 0" 
-              visible="true"
-              scale="1.2 1.2 1.2"
-            > 
-            </a-entity>
-
-            <!-- Menu PLAY -->
-            <a-entity
-              position = "0 2 0"
-              rotation="0 0 0" 
-              scale="0.9 0.9 0.1"
-            >
-              <a-entity
-                class="vr-menu-play" 
-                geometry="primitive: box"
-                material="color: #0377fc"
-                visible="true"
-                priority="level: hud"
-                raycaster-listen
-                vr-menu-play
-              ></a-entity>
-              <a-entity
-                class="vr-menu-play-img" 
-                geometry="primitive: plane"
-                material="src: #play; transparent: true"
-                visible="true"
-                priority="level: hud"
-              ></a-entity>
-              <a-entity
-                class="vr-menu-stop-img" 
-                geometry="primitive: plane"
-                material="src: #stop; transparent: true"
-                visible="false"
-                priority="level: hud"
-              ></a-entity>
-            </a-entity>
-
-            <!-- Menu TASK -->
-            <a-entity
-              position = "0 1 0"
-              rotation="0 0 0" 
-              scale="0.9 0.9 0.1"
-            >
-              <a-entity
-                id="vr-menu-task" 
-                class="vr-menu-task" 
-                geometry="primitive: box"
-                material="color: #0377fc"
-                visible="true"
-                priority="level: hud"
-                raycaster-listen
-                vr-menu-task
-              ></a-entity>
-              <a-entity
-                class="vr-menu-task-img" 
-                geometry="primitive: plane"
-                material="src: #task-img; transparent: true"
-                visible="true"
-                priority="level: hud"
-              ></a-entity>
-            </a-entity>
-
-            <!-- Submenu TASK -->
-            <a-entity
-              id="container-vr-submenu-task" 
-              position="2.05 0 0" 
-              scale="3 3 1"
-              visible="false"
-            > 
-            </a-entity>
-
-            <!-- Menu ADD -->
-            <a-entity
-              position="0 -1 0"
-              rotation="0 0 0" 
-              scale="0.9 0.9 0.1"
-            >
-              <a-entity
-                id="vr-menu-add" 
-                class="vr-menu-add" 
-                geometry="primitive: box"
-                material="color: #0377fc"
-                visible="true"
-                priority="level: hud"
-                raycaster-listen
-                vr-menu-add
-              ></a-entity>
-              <a-entity
-                class="vr-menu-add-img" 
-                geometry="primitive: plane"
-                material="src: #plus; transparent: true"
-                visible="true"
-                priority="level: hud"
-              ></a-entity>
-            </a-entity>
-
-            <!-- Submenu ADD -->
-            <a-entity
-              id="container-vr-submenu-add" 
-              position="2.05 0 0" 
-              scale="3 3 1"
-              visible="false"
-            >  
-              <a-entity
-                name="vr-submenu-add"
-                geometry="primitive: plane"
-                material="color: #31b5cc"
-                rotation="0 0 0" 
-                visible="true"
-                priority="level: hud"
-              ></a-entity>
-
-              <!-- Submenu ADD BOX -->
-              <a-entity
-                id="container-vr-submenu-add-box" 
-                position="-0.33 0.33 0"
-                rotation="0 0 0" 
-                scale="0.3 0.3 0.1"
-                priority="level: hud"
-              >
-                <a-entity
-                  id="vr-submenu-add-box" 
-                  name="vr-submenu-add"
-                  geometry="primitive: box"
-                  material="color: #0377fc"
-                  visible="true"
-                  priority="level: hud"
-                  raycaster-listen
-                  vr-submenu-add="shape: box"
-                ></a-entity>
-                <a-entity
-                  class="vr-submenu-add-box-img"
-                  geometry="primitive: plane"
-                  material="src: #box; transparent: true"
-                  visible="true"
-                  priority="level: hud"
-                ></a-entity>
-              </a-entity>
-
-              <!-- Submenu ADD CYLINDER -->
-              <a-entity
-                id="container-vr-submenu-add-cylinder" 
-                position="0 0.33 0"
-                rotation="0 0 0" 
-                scale="0.3 0.3 0.1"
-                priority="level: hud"
-              >
-                <a-entity
-                  id="vr-submenu-add-cylinder" 
-                  name="vr-submenu-add"
-                  geometry="primitive: box"
-                  material="color: #0377fc"
-                  visible="true"
-                  priority="level: hud"
-                  raycaster-listen
-                  vr-submenu-add="shape: cylinder"
-                ></a-entity>
-                <a-entity
-                  class="vr-submenu-add-cylinder-img" 
-                  geometry="primitive: plane"
-                  material="src: #cylinder; transparent: true"
-                  visible="true"
-                  priority="level: hud"
-                ></a-entity>
-              </a-entity>
-
-              <!-- Submenu ADD PLANE -->
-              <a-entity
-                id="container-vr-submenu-add-plane" 
-                position="0.33 0.33 0"
-                rotation="0 0 0" 
-                scale="0.3 0.3 0.1"
-                priority="level: hud"
-              >
-                <a-entity
-                  id="vr-submenu-add-plane" 
-                  name="vr-submenu-add"
-                  geometry="primitive: box"
-                  material="color: #0377fc"
-                  visible="true"
-                  priority="level: hud"
-                  raycaster-listen
-                  vr-submenu-add="shape: plane"
-                ></a-entity>
-                <a-entity
-                  class="vr-submenu-add-plane-img" 
-                  geometry="primitive: plane"
-                  material="src: #plane; transparent: true"
-                  visible="true"
-                  priority="level: hud"
-                ></a-entity>
-              </a-entity>
-
-              <!-- Submenu ADD SPHERE -->
-              <a-entity
-                id="container-vr-submenu-add-sphere" 
-                position="-0.33 0 0"
-                rotation="0 0 0" 
-                scale="0.3 0.3 0.1"
-                priority="level: hud"
-              >
-                <a-entity
-                  id="vr-submenu-add-sphere" 
-                  name="vr-submenu-add"
-                  geometry="primitive: box"
-                  material="color: #0377fc"
-                  visible="true"
-                  priority="level: hud"
-                  raycaster-listen
-                  vr-submenu-add="shape: sphere"
-                ></a-entity>
-                <a-entity
-                  class="vr-submenu-add-sphere-img" 
-                  geometry="primitive: plane"
-                  material="src: #sphere; transparent: true"
-                  visible="true"
-                  priority="level: hud"
-                ></a-entity>
-              </a-entity>
-
-              <!-- Submenu ADD WAFFELMAKER -->
-              <a-entity
-                id="container-vr-submenu-add-wafflemaker" 
-                position="0 0 0"
-                rotation="0 0 0" 
-                scale="0.3 0.3 0.1"
-                priority="level: hud"
-              >
-                <a-entity
-                  id="vr-submenu-add-wafflemaker" 
-                  name="vr-submenu-add"
-                  geometry="primitive: box"
-                  material="color: #0377fc"
-                  visible="true"
-                  priority="level: hud"
-                  raycaster-listen
-                  vr-submenu-add="shape: wafflemaker"
-                ></a-entity>
-                <a-entity
-                  class="vr-submenu-add-wafflemaker-img" 
-                  geometry="primitive: plane"
-                  material="src: #wafflemaker; transparent: true"
-                  visible="true"
-                  priority="level: hud"
-                ></a-entity>
-              </a-entity>
-            </a-entity>
-          </a-entity>
         </a-entity>
       </a-entity>
 
 
-      <a-entity name="o1" class="collidable" geometry="primitive: box" material="color: #0000ff" raycaster-listen position="5 0 0"></a-entity>
-      <a-entity name="o2" class="collidable" geometry="primitive: box" material="color: #00ff00" raycaster-listen position="5.5 0.5 0.5" wireframed="true"></a-entity>
-      <a-entity name="o2-wireframe" geometry="primitive: box" material="color: #ff0000; wireframe: true" wireframe priority="level: wireframe" position="5.5 0.5 0.5"></a-entity>
-      <a-text id='debugtext' value="DEBUG TEXT" geometry="primitive: plane;" material="color: #20d67e" position="0 -1 -2.5"></a-text>
+      <a-entity entityName="o1" class="collidable" geometry="primitive: box" material="color: #0000ff" raycaster-listen position="5 0 0"></a-entity>
+      <a-entity entityName="o2" class="collidable" geometry="primitive: box" material="color: #00ff00" raycaster-listen position="5.5 0.5 0.5" wireframed="true"></a-entity>
+      <a-entity entityName="o2-wireframe" geometry="primitive: box" material="color: #ff0000; wireframe: true" wireframe priority="level: wireframe" position="5.5 0.5 0.5"></a-entity>
+      <a-text id='debugtext' visible="true" value="DEBUG TEXT" geometry="primitive: plane;" material="color: #20d67e" position="1 3 -2.5"></a-text>
 
       <!--a-entity networked="template:#hand-right-template;attachTemplateToLocal:true;" test-comp></a-entity-->
       

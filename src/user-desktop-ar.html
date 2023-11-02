@@ -92,6 +92,7 @@
           var data = this.data;
           var el = this.el; 
           var pEl = el.parentEl;
+          var selectedBy = el.getAttribute('selectedby');
 
           // Get component id
           var componentId = pEl.getAttribute('cid');
@@ -99,6 +100,13 @@
           // Create data object to stringify
           var obj = new Object();
           obj.cid = componentId;
+
+          // Check if object needs to be selected or deselected
+          if(selectedBy == clientRtcId) {
+            obj.bool = false;
+          }else{
+            obj.bool = true;
+          }
 
           var entityData = JSON.stringify(obj); 
 
