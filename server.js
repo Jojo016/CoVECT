@@ -162,6 +162,28 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
           newObj.radius = '1';
           break;
 
+        case 'bowl':
+          newObj.radius = '1';
+          break;
+
+        case 'plate':
+          newObj.scaleX = '0.08';
+          newObj.scaleY = '0.08';
+          newObj.scaleZ = '0.08';
+          break;
+
+        case 'stool':
+          newObj.scaleX = '0.06';
+          newObj.scaleY = '0.06';
+          newObj.scaleZ = '0.06';
+          break;
+
+        case 'table':
+          newObj.scaleX = '0.016';
+          newObj.scaleY = '0.02';
+          newObj.scaleZ = '0.016';
+          break;
+
         default:
           break;
       }

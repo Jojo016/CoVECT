@@ -38,29 +38,43 @@ AFRAME.registerComponent('object-control-desktop', {
     var el = document.createElement('a-entity');
     var elWireframe = document.createElement('a-entity');
 
-    // Handle other attributes
-    el.setAttribute('material', 'color: #00FFFF');    
+    // Handle other attributes 
     el.interactable = interactable;
 
     // Handle geometry/shape attribute
     if(shape == 'sphere') {
+      el.setAttribute('material', 'color: #00FFFF');   
       el.setAttribute('geometry', 'primitive: sphere; segmentsWidth: 16; segmentsHeight: 16;');
       el.setAttribute('radius', radius);
 
     }else if(shape == 'plane') {
+      el.setAttribute('material', 'color: #00FFFF');   
       el.setAttribute('geometry', 'primitive: plane;');
       el.setAttribute('rotation', rotation);
 
     }else if(shape == 'cylinder'){
+      el.setAttribute('material', 'color: #00FFFF');   
       el.setAttribute('geometry', 'primitive: ' + shape + '; radius: ' + radius + '; height: ' + height + '; rotation: ' + rotation + ';');
 
     }else if(shape == 'box') {
+      el.setAttribute('material', 'color: #00FFFF');   
       el.setAttribute('geometry', 'primitive: ' + shape + ';');
       el.setAttribute('rotation', rotation);
       
     }else if(shape == 'bowl') {
       el.setAttribute('obj-model', 'obj: #bowl');
-      el.setAttribute('material', 'src: /img/ceramic_white.jpg; color: #1b688c');
+      el.setAttribute('material', 'src: /img/ceramic_white.jpg; color: #80bbd1');
+      
+    }else if(shape == 'plate') {
+      el.setAttribute('obj-model', 'obj: #plate');
+      el.setAttribute('material', 'src: /img/ceramic_white.jpg; color: #80bbd1');
+      
+    }else if(shape == 'stool') {
+      el.setAttribute('obj-model', 'obj: #woodenstool');
+      el.setAttribute('material', 'src: /img/wood1.jpg');
+      
+    }else if(shape == 'table') {
+      el.setAttribute('obj-model', 'obj: #coffeetable-obj; mtl: coffeetable-mtl');
       
     }else{
       // TODO: Add method for specific models

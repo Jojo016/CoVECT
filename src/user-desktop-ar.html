@@ -47,7 +47,10 @@
                 component: 'material',
                 property: 'color'
               },
-              'scale'
+              {
+                selector: '.headcontainer',
+                component: 'scale'
+              }
             ]
           });
 
@@ -501,15 +504,17 @@
 
           <!-- Avatar -->
           <template id="avatar-template">
-            <a-entity class="avatar" scale="0.3 0.3 0.3" networked-audio-source>
-              <a-sphere class="head" scale="0.45 0.5 0.4"></a-sphere>
-              <a-entity class="face" position="0 0.05 0">
-                <a-sphere class="eye" color="#efefef" position="0.16 0.1 -0.35" scale="0.12 0.12 0.12">
-                  <a-sphere class="pupil" color="#000" position="0 0 -1" scale="0.2 0.2 0.2"></a-sphere>
-                </a-sphere>
-                <a-sphere class="eye" color="#efefef" position="-0.16 0.1 -0.35" scale="0.12 0.12 0.12">
-                  <a-sphere class="pupil" color="#000" position="0 0 -1" scale="0.2 0.2 0.2"></a-sphere>
-                </a-sphere>
+            <a-entity class="avatar" networked-audio-source>
+              <a-entity class="headcontainer" scale="0.4 0.4 0.4">
+                <a-sphere class="head" scale="0.45 0.5 0.4"></a-sphere>
+                <a-entity class="face" position="0 0.05 0">
+                  <a-sphere class="eye" color="#efefef" position="0.16 0.1 -0.35" scale="0.12 0.12 0.12">
+                    <a-sphere class="pupil" color="#000" position="0 0 -1" scale="0.2 0.2 0.2"></a-sphere>
+                  </a-sphere>
+                  <a-sphere class="eye" color="#efefef" position="-0.16 0.1 -0.35" scale="0.12 0.12 0.12">
+                    <a-sphere class="pupil" color="#000" position="0 0 -1" scale="0.2 0.2 0.2"></a-sphere>
+                  </a-sphere>
+                </a-entity>
               </a-entity>
             </a-entity>
           </template>
@@ -527,36 +532,46 @@
 
            <!-- TEXTURES -->
           <img id="kitchenwalls" src="img/wall_stone_4k.png" />
+          <img id="floortexture" src="img/floor.png" />
 
           <!-- MODELS -->
           <a-asset-item id="kitchen-obj" src="/assets/kitchen_module.obj"></a-asset-item>
           <a-asset-item id="kitchen-mtl" src="/assets/kitchen_module.mtl"></a-asset-item>
+          <a-asset-item id="woodendoor-obj" src="/assets/kk.obj"></a-asset-item>
+          <a-asset-item id="woodendoor-mtl" src="/assets/kk.mtl"></a-asset-item>
+          
+          <a-asset-item id="woodenstool" src="/assets/WoodenStoolObj.obj"></a-asset-item>
+          <a-asset-item id="coffeetable-obj" src="/assets/Censi_ConcreteCoffeeTable_free_obj.obj"></a-asset-item>
+          <a-asset-item id="coffeetable-mtl" src="/assets/Censi_ConcreteCoffeeTable_free_obj.mtl"></a-asset-item>
 
           <a-asset-item id="bowl" src="/assets/schuessel.obj"></a-asset-item>
+          <a-asset-item id="plate" src="/assets/plate.obj"></a-asset-item>
           
           <a-asset-item id="righthand-model" src="/assets/rightHandHigh.glb"></a-asset-item>
           <a-asset-item id="lefthand-model" src="/assets/leftHandHigh.glb"></a-asset-item>
 
-          <a-asset-item id="door" src="/assets/Door.obj"></a-asset-item>
           <a-asset-item id="window" src="/assets/win.obj"></a-asset-item>
-
         </a-assets>
 
         <!-- ENVIRONMENT -->
         <a-sky src="#sky" rotation="0 -90 0"></a-sky>
 
-        <a-entity name="floor" geometry="primitive: plane" scale="6 6 1" rotation="-90 0 0" position="0 0 0" material="color: #51524c"></a-entity>
-        <a-plane name="walln" geometry="primitive: plane" scale="6 2.5 1" rotation="0 0 0" position="0 1.25 -3" src="#kitchenwalls" repeat="12 5"></a-plane>
-        <a-plane name="wallw" geometry="primitive: plane" scale="6 2.5 1" rotation="0 90 0" position="-3 1.25 0" src="#kitchenwalls" repeat="12 5"></a-plane>
-        <a-plane name="walle" geometry="primitive: plane" scale="6 2.5 1" rotation="0 -90 0" position="3 1.25 0" src="#kitchenwalls" repeat="12 5"></a-plane>
-        <a-plane name="walls" geometry="primitive: plane" scale="6 2.5 1" rotation="0 180 0" position="0 1.25 3" src="#kitchenwalls" repeat="12 5"></a-plane>
+      <a-plane name="floor" geometry="primitive: plane" scale="6 6 1" rotation="-90 0 0" position="0 0 0" src="#floortexture" repeat="6 6"></a-plane>
+      <a-plane name="walln" geometry="primitive: plane" scale="6 2.5 1" rotation="0 0 0" position="0 1.25 -3" src="#kitchenwalls" repeat="12 5"></a-plane>
+      <a-plane name="wallw" geometry="primitive: plane" scale="6 2.5 1" rotation="0 90 0" position="-3 1.25 0" src="#kitchenwalls" repeat="12 5"></a-plane>
+      <a-plane name="walle" geometry="primitive: plane" scale="6 2.5 1" rotation="0 -90 0" position="3 1.25 0" src="#kitchenwalls" repeat="12 5"></a-plane>
+      <a-plane name="walls" geometry="primitive: plane" scale="6 2.5 1" rotation="0 180 0" position="0 1.25 3" src="#kitchenwalls" repeat="12 5"></a-plane>
 
-        <a-entity position="0.5 0 -3" scale="0.01 0.01 0.01" obj-model="obj: #kitchen-obj; mtl: #kitchen-mtl"></a-entity>
+      <a-entity name="woodendoor" obj-model="obj: #woodendoor-obj; mtl: #woodendoor-mtl" material="color: #ff00ff" scale="1 1 1" rotation="0 180 0" position="-2 0 3.005"></a-entity>
+      
+      <a-entity name="coffeetable" obj-model="obj: #coffeetable-obj; mtl: #coffeetable-mtl" scale="0.016 0.02 0.016" rotation="0 45 0" position="1 0 1"></a-entity>
+      <a-entity name="woodenstool1" obj-model="obj: #woodenstool" material="src: /img/wood1.jpg" scale="0.06 0.06 0.06" rotation="0 90 0" position="1.2 0 2"></a-entity>
+      <a-entity name="woodenstool2" obj-model="obj: #woodenstool" material="src: /img/wood1.jpg" scale="0.06 0.06 0.06" rotation="0 90 0" position="2 0 1.2"></a-entity>
 
-        <a-entity position="1.2 0.85 -2.4" scale="0.2 0.2 0.2" obj-model="obj: #bowl" material="src: /img/ceramic_white.jpg; color: #1b688c"></a-entity>
-        <a-entity position="-0.1 0.85 -2.6" scale="0.2 0.2 0.2" obj-model="obj: #bowl" material="src: /img/ceramic_white.jpg; color: #1b688c"></a-entity>
-        <a-entity position="-0.105 0.9 -2.605" scale="0.2 0.2 0.2" obj-model="obj: #bowl" material="src: /img/ceramic_white.jpg; color: #1b688c"></a-entity>
-        <a-entity position="-0.11 0.95 -2.61" scale="0.2 0.2 0.2" obj-model="obj: #bowl" material="src: /img/ceramic_white.jpg; color: #1b688c"></a-entity>
+      <a-entity position="0.5 0 -3" scale="0.01 0.01 0.01" obj-model="obj: #kitchen-obj; mtl: #kitchen-mtl"></a-entity>
+
+      <a-entity position="1.2 0.85 -2.4" scale="0.2 0.2 0.2" obj-model="obj: #bowl" material="src: /img/ceramic_white.jpg; color: #80bbd1"></a-entity>
+      <a-entity position="-0.2 0.85 -2.5" scale="0.08 0.08 0.08" obj-model="obj: #plate" material="src: /img/ceramic_white.jpg; color: #ededed"></a-entity>
 
         <!-- Light -->
         <a-entity light="color: #ccccff; intensity: 1; type: ambient;" visible="true"></a-entity>
@@ -585,7 +600,7 @@
           <!-- 
             raycaster="objects: .cursor-listener"
           -->
-            <a-sphere id="playerhead" class="head" visible="false" random-color></a-sphere>
+            <a-sphere id="playerhead" scale="0.3 0.3 0.3" class="head" visible="false" random-color></a-sphere>
           </a-entity>
         </a-entity>
 
