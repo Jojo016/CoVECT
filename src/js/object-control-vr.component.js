@@ -2,6 +2,267 @@
 var tasks = [];
 var tasksSelectedBy = null;
 
+var eventOptions = [['none', 'None']];
+
+function updateEventOptions() {
+  eventOptions = [['none', 'None']];
+
+  // Get all existing interactions and add them to the eventOptions
+  var interactions = document.getElementsByClassName('interaction');
+  for(var j = 0; j < interactions.length; j++) {
+    var pEl = interactions[j];
+    var el = pEl.children[0];
+    var cid = pEl.getAttribute('cid');
+    var type = pEl.getAttribute('type');
+    var name = pEl.getAttribute('entityName');
+    var eventOption = [cid, name, type];
+    eventOptions.push(eventOption);
+  }
+
+  // Get all existing interactables and add them to the eventOptions
+  var interactables = document.getElementsByClassName('entity');
+  for(var n = 0; n < interactables.length; n++) {
+    var pEl = interactables[n];
+    var el = pEl.children[0];
+    var interactable = el.interactable;
+
+    // Sort out task areas
+    if(interactable != null) {
+      var type = interactable.type;
+      var cid = pEl.getAttribute('cid');
+      var name = pEl.getAttribute('entityName');
+      
+      switch(type) {
+        case 'rotatable':
+          //var angle = task.eventAngle;
+          var eventOption = [cid, name, type/*, angle*/];
+          eventOptions.push(eventOption);
+          break;
+
+        case 'none':
+        case 'grabbable':
+          break;
+      }
+    }
+  }
+}
+
+function addNumberedTask(task, index) {
+  var yOffset = 3 - 0.3 * index;
+
+  // Container
+  var container = document.createElement('a-entity');
+  container.setAttribute('position', '0.35 ' + yOffset + ' 0');
+  container.setAttribute('id', 'taskedit' + index);
+
+  // Taskname
+  var name = document.createElement('a-entity');
+  name.setAttribute('scale', '0.3 0.3 0.3');
+  name.setAttribute('visible', 'true');
+  name.setAttribute('text', 'value: ' + index + '.; transparent: true');
+  
+  var taskNameDisplay = document.createElement('a-text');
+  taskNameDisplay.setAttribute('position', '-0.15 0 0');
+  taskNameDisplay.setAttribute('scale', '0.7 0.7 0.7');
+  taskNameDisplay.setAttribute('color', 'black');
+  taskNameDisplay.setAttribute('value', 'Task ' + (index+1) + ':');
+  container.appendChild(taskNameDisplay);
+
+  // Interaction selection
+  var triggerEvent = task.triggerEvent;
+
+  var eventOption = null;
+  for(var i = 0; i < eventOptions.length; i++) {
+    var evtOption = eventOptions[i];
+    if(evtOption[0] == triggerEvent) {
+      eventOption = evtOption;
+      break;
+    }
+  }
+
+  if(eventOption == null) {
+    eventOption = eventOptions[0];
+  }
+
+  var selection = createInteractionSelection(index, triggerEvent, eventOption);
+  container.appendChild(selection);
+
+  var submenu = document.getElementById('container-vr-submenu-task');
+  submenu.appendChild(container);
+}
+
+function changeEventOption(input, next) {
+  var debug = document.getElementById('debugtext');
+  debug.setAttribute('value', debug.getAttribute('value') + '\nInside ChangeEventOpt!');
+
+  var newOption = null;
+  var nextOptionIndex;
+  debug.setAttribute('value', debug.getAttribute('value') + '\nInput = ' + input);
+  var currentOptionIndex = input.getAttribute('index');
+
+  debug.setAttribute('value', debug.getAttribute('value') + '\ncurrentOptionIndex: ' + currentOptionIndex);
+
+
+  if(next) {
+    nextOptionIndex = currentOptionIndex + 1;
+    if(nextOptionIndex > eventOptions.length-1) {
+      newOption = eventOptions[0];
+    }else{
+      newOption = eventOptions[nextOptionIndex+1];
+    }
+    
+  }else{
+    nextOptionIndex = currentOptionIndex -1 ;
+    if(nextOptionIndex < 0) {
+      newOption = eventOptions[eventOptions.length-1];
+    }else{
+      newOption = eventOptions[nextOptionIndex-1];
+    }
+  }
+
+  var eventOptionName = newOption[1];
+  input.setAttribute('text', 'value: ' + eventOptionName);
+  input.setAttribute('index', nextOptionIndex);
+}
+
+function createSwitchInteractionButton(taskId, next) {
+  var buttonContainer = document.createElement('a-entity');
+  buttonContainer.setAttribute('priority', 'level: hud');
+  buttonContainer.setAttribute('visible', 'true');
+  buttonContainer.setAttribute('scale', '0.25 0.25 0.01');
+
+  var button = document.createElement('a-entity');
+  button.setAttribute('class', 'vr-menu-task');
+  button.setAttribute('geometry', 'primitive: box');
+  button.setAttribute('material', 'color: #0377fc');
+  button.setAttribute('visible', 'true');
+  button.setAttribute('priority', 'level: hud');
+  button.setAttribute('raycaster-listen', '');
+  buttonContainer.appendChild(button);
+  button.addEventListener('select-object', function handleSelect(event) {
+    var input = document.getElementById('eventdisplay' + taskId);
+    changeEventOption(input, next);
+  });
+
+  var buttonImg = document.createElement('a-entity');
+  buttonImg.setAttribute('geometry', 'primitive: plane');
+  buttonImg.setAttribute('visible', 'true');
+  buttonImg.setAttribute('priority', 'level: hud');
+  if(next) {
+    buttonImg.setAttribute('material', 'src: #next; transparent: true');
+  }else{
+    buttonImg.setAttribute('material', 'src: #previous; transparent: true');
+  }
+  
+  buttonContainer.appendChild(buttonImg);
+
+  return buttonContainer;
+}
+
+function createInteractionSelection(taskId, triggerEvent, eventOption) {
+  var container = document.createElement('a-entity');
+  container.setAttribute('position', '0.05 0 0');
+
+  var eventOptionName = eventOption[1];
+  var eventTriggerDisplay = createDisplayEvent(taskId, eventOptionName, 1.5, 0.7, 0, 0);
+  container.appendChild(eventTriggerDisplay);
+
+  var nextButton = createSwitchInteractionButton(taskId, true);
+  nextButton.setAttribute('position', '2.4 0 0');
+  container.appendChild(nextButton);
+
+  var previousButton = createSwitchInteractionButton(taskId, false);
+  previousButton.setAttribute('position', '0.5 0 0');
+  container.appendChild(previousButton);
+
+  var triggerType = 'none';
+  if(eventOption[0] != 'none') {
+    triggerType = eventOption[2];
+  }
+  console.log("triggerType");
+  console.log(triggerType);
+
+  switch(triggerEvent) {
+    case 'none':
+      break;
+
+    case 'eventarea':
+      // Add target
+      
+      // Add switch for actions 
+      break;
+
+    case 'rotatable':
+      // Add target angle inputtable
+      var targetAngleInput = createInputtableTask(taskId, 'TargetAngle', task.eventAngle, 0.6, 3, 0, 0)
+      container.append(targetAngleInput);
+      break;
+  }
+
+  return container;
+}
+
+function createDisplayEvent(id, value, width, posX, posY, posZ) {
+  var offsetX = -0.7 + width/2;
+
+  var container = document.createElement('a-entity');
+  container.setAttribute('id', 'eventdisplay' + id);
+  container.setAttribute('position', posX + ' ' + posY + ' ' + (posZ + 0.05) );
+  container.setAttribute('color', 'black');
+
+  var name = document.createElement('a-text');
+  name.setAttribute('scale', '0.7 0.7 0.7');
+  name.setAttribute('color', 'black');
+  name.setAttribute('value', value);
+  container.appendChild(name);
+
+  var background = document.createElement('a-plane');
+  background.setAttribute('position', 0.7 + offsetX + ' 0 0');
+  background.setAttribute('material', 'color: white');
+  background.setAttribute('height', 0.2);
+  background.setAttribute('width', width);
+  container.appendChild(background);
+
+  return container;
+}
+
+function createInputtableTask(id, name, value, width, posX, posY, posZ) {
+  var offsetX = -0.7 + width/2;
+
+  var container = document.createElement('a-entity');
+  container.setAttribute('id', name+id);
+  container.setAttribute('position', posX + ' ' + posY + ' ' + (posZ + 0.05) );
+  container.setAttribute('color', 'black');
+  container.setAttribute('priority', 'level: hud');
+
+  var name = document.createElement('a-text');
+  name.setAttribute('scale', '3 3 3');
+  name.setAttribute('color', 'black');
+  name.setAttribute('value', name + ':');
+  name.setAttribute('priority', 'level: hud');
+  container.appendChild(name);
+
+  var text = document.createElement('a-text');
+  text.setAttribute('scale', '3 3 3');
+  text.setAttribute('color', 'black');
+  text.setAttribute('value', value);
+  text.setAttribute('priority', 'level: hud');
+  container.appendChild(text);
+
+  var background = document.createElement('a-plane');
+  background.setAttribute('class', 'vr-submenu-task');
+  background.setAttribute('name', 'vr-submenu-task');
+  background.setAttribute('position', 1.7 + offsetX + ' 0 0');
+  background.setAttribute('material', 'color: white');
+  background.setAttribute('height', 0.2);
+  background.setAttribute('width', width);
+  background.setAttribute('priority', 'level: hud');
+  background.setAttribute('inputtable', '')
+  container.appendChild(background);
+
+  return container;
+}
+
 /* global AFRAME, NAF */
 AFRAME.registerComponent('object-control-vr', {
   schema: {
@@ -29,6 +290,7 @@ AFRAME.registerComponent('object-control-vr', {
 
   spawnEntity: function(data) {
     var cid = data.cid;
+    var name = data.name;
     var shape = data.shape;
     var scale = data.scaleX + " " + data.scaleY + " " + data.scaleZ;
     var rotation = data.rotX + " " + data.rotY + " " + data.rotZ;
@@ -40,13 +302,24 @@ AFRAME.registerComponent('object-control-vr', {
 
     // Create container element
     var pEl = document.createElement('a-entity');
+    pEl.setAttribute('id', 'cid' + cid);
     pEl.setAttribute('cid', cid);
     pEl.setAttribute('position', pos3);
+    pEl.setAttribute('class', 'entity');
     pEl.setAttribute('scale', scale);
+    pEl.setAttribute('entityName', name);
 
     // Create actual element & wireframe
     var el = document.createElement('a-entity');
     var elWireframe = document.createElement('a-entity');
+    pEl.appendChild(el);
+
+    // Handle other attributes
+    el.setAttribute('material', 'color: #00FFFF');
+    el.interactable = interactable;
+
+    // TODO: MAYBE NOT NEEDED
+    //el.setAttribute('entityName', 'New ' + shape);
 
     // Handle geometry/shape attribute
     if(shape == 'sphere') {
@@ -75,6 +348,10 @@ AFRAME.registerComponent('object-control-vr', {
       elWireframe.setAttribute('geometry', 'primitive: ' + shape + ';');
       elWireframe.setAttribute('rotation', rotation);
 
+    }else if(shape == 'bowl') {
+      el.setAttribute('obj-model', 'obj: #bowl');
+      el.setAttribute('material', 'src: /img/ceramic_white.jpg; color: #1b688c');
+      
     }else{
       // TODO: Add method for specific models
       el.setAttribute('rotation', rotation);
@@ -83,16 +360,9 @@ AFRAME.registerComponent('object-control-vr', {
       elWireframe.setAttribute('rotation', rotation);
     }
 
-    // Handle other attributes
-    el.setAttribute('material', 'color: #00FFFF');
-
-    el.setAttribute('entityName', 'New ' + shape);
-    
-    el.interactable = interactable;
-
     // Handle wireframe attributes
     el.setAttribute('wireframed', wireframe);
-    elWireframe.setAttribute('entityName', el.getAttribute('entityName') + '-wireframe');
+    elWireframe.setAttribute('entityName', pEl.getAttribute('entityName') + '-wireframe');
     elWireframe.setAttribute('wireframe', '');
     elWireframe.setAttribute('priority', 'level: wireframe');
     elWireframe.setAttribute('material', 'color: #ff0000; wireframe: true');
@@ -121,15 +391,15 @@ AFRAME.registerComponent('object-control-vr', {
       el.setAttribute('grab-listener', '');
     }
 
-    pEl.appendChild(el);
-
     // Handle wireframe
     if(wireframe) {
       pEl.appendChild(elWireframe);
     }
-
+    
     var scene = this.el.sceneEl;
     scene.appendChild(pEl);
+
+    updateEventOptions();
   },
 
   createAxes: function(pEl) {
@@ -195,6 +465,8 @@ AFRAME.registerComponent('object-control-vr', {
     /*if(sourceRtcId == clientRtcId) {
       this.selectEntity(componentId, clientRtcId, true);
     }*/
+
+    updateEventOptions();
   },
 
   removeAxes: function(pEl) {
@@ -224,9 +496,6 @@ AFRAME.registerComponent('object-control-vr', {
       }
     }
 
-    var debug = document.getElementById('debugtext');
-    //debug.setAttribute('value', 'pEl: ' + pEl + ' el: ' + el + ' pEl.cid: ' + componentId);
-
     // Decide whether to select or deselect the object
     if(sourceRtcId == clientRtcId) {
       // Client's own EasyRTCid
@@ -249,13 +518,13 @@ AFRAME.registerComponent('object-control-vr', {
           // Check if wireframe exists and make it visible
           if(el.getAttribute('wireframed') == "true") {
             // TODO: Change wireframe identifier to 'cid' instead of 'name'
-            var name = el.getAttribute('name');
+            var name = pEl.getAttribute('entityName');
             var wfObjectName = name + "-wireframe";
             var wfObjects = document.querySelectorAll("[wireframe]");
             var wfObject = null;
 
             wfObjects.forEach(obj => {
-              var objName = obj.getAttribute('name');
+              var objName = obj.getAttribute('entityName');
               if(objName == wfObjectName) {
                 wfObject = obj;
               }
@@ -283,10 +552,7 @@ AFRAME.registerComponent('object-control-vr', {
         
       }else {
         // Make deselected object fully visible
-
         if(el == null) {
-          console.log('el == null');
-          console.log('pEl = ' + pEl);
           return;
         }
         var mat = el.getAttribute('material');
@@ -304,7 +570,7 @@ AFRAME.registerComponent('object-control-vr', {
       //el.removeAttribute('raycaster-listen');
 
       // VR - Make selected object untargetable
-      //el.setAttribute('class', 'selected-collidable');
+      // el.setAttribute('class', 'selected-collidable');
     }else {
       // Remove easyRtcId of source
       el.removeAttribute('selectedby');
@@ -350,12 +616,17 @@ AFRAME.registerComponent('object-control-vr', {
     if(type == 'position') {
       // Position has to be changed for parentEl
       pEl.setAttribute(type, data);
+
+    }else if(type == 'name'){
+      // Name has to be changed for parentEl
+      pEl.setAttribute('entityName', data);
+
     }else{
       // All other types should be changed for el itself
       el.setAttribute(type, data);
 
       if(type == 'wireframe') {
-        var name = el.getAttribute('entityName');
+        var name = pEl.getAttribute('entityName');
 
         if(data) {
           // Add wireframe
@@ -422,6 +693,8 @@ AFRAME.registerComponent('object-control-vr', {
         }
       }
     }
+
+    updateEventOptions();
   },
 
   taskChanged: function(evt) {
@@ -453,13 +726,106 @@ AFRAME.registerComponent('object-control-vr', {
     easyrtc.sendDataWS(clientRtcId, "updateTask", newData);
   },
 
+  removeTask: function() {
+    // Delete last task
+    tasks.pop();
+    var index = tasks.length;
+
+    // Update TaskBoard
+    this.updateTaskboard();
+
+    // Update GUI
+    var taskContainer = document.getElementById('taskedit' + index);
+    var pEl = taskContainer.parentEl; 
+    pEl.removeChild(taskContainer);
+  },
+
+  spawnInteraction: function(interaction) {
+    var type = interaction.type;
+
+    if(type == 'eventarea') {
+      var cid = interaction.cid;
+      var data = interaction.data;
+      var name = interaction.name;
+      var scale = interaction.scale;
+      var pos3 = new THREE.Vector3(interaction.posX, interaction.posY, interaction.posZ);
+
+      // Create container element
+      var pEl = document.createElement('a-entity');
+      pEl.setAttribute('class', 'interaction');
+      pEl.setAttribute('type', type);
+      pEl.setAttribute('cid', cid);
+      pEl.setAttribute('position', pos3);
+      pEl.setAttribute('entityName', name);
+
+      pEl.data = data;
+
+      // Create actual element & handle attributes
+      var el = document.createElement('a-entity');
+      el.setAttribute('geometry', interaction.geometry);
+      el.setAttribute('material', interaction.material);
+      el.setAttribute('scale', scale);
+
+      // Check for selection
+      var selectedById = interaction.selectedBy;
+      if(selectedById != -1) {
+        // Make selected object transparent and untargetable
+        var mat = el.getDOMAttribute('material');
+        mat.opacity = 0.1;
+        el.setAttribute('material', mat);
+
+        // Set as untargetable for raycaster
+        el.setAttribute('class', 'selected-collidable');
+
+        // Set easyRtcId of source
+        el.setAttribute('selectedby', selectedById);
+      }else{
+        // Set as targetable for raycaster & add select handler
+        el.setAttribute('class', 'collidable');
+        el.setAttribute('select-listener', '');
+        el.setAttribute('trigger-button-listener');
+        el.setAttribute('grab-listener', '');
+      }
+
+      pEl.appendChild(el);
+      var scene = this.el.sceneEl;
+      scene.appendChild(pEl);
+
+      updateEventOptions();
+    }
+  },
+
+  updateInteraction: function(data) {
+    var componentId = data.cid;
+    var el = null;
+    var pEl = null;
+    var els = this.el.sceneEl.querySelectorAll('[cid]');
+
+    for (var i = 0; i < els.length; i++) {
+
+      if(els[i].getAttribute('cid') == componentId) {
+        pEl = els[i];
+        el = pEl.children[0];
+        break;
+      }
+    }
+
+    // TODO: Update interaction and remove from old target if necessary
+    var attribute = data.attribute;
+    var value = data.value;
+
+    pEl.data[attribute] = value;
+
+    // Update property rows if element is currently selected by client
+    if(data.sourceRtcId == clientRtcId) {
+      this.selectEntity(componentId, clientRtcId, true);
+    }
+  },
+
   areTasksOccupied: function() {
     var occupied = !(tasksSelectedBy == null || tasksSelectedBy == clientRtcId);
 
     if(occupied) {
-      var pPanel = window.parent.document.getElementById('properties-panel');
-      this.addPropertiesRow(pPanel, 'tasksOccupied', null);
-
       return true;
     }
 
@@ -519,6 +885,14 @@ AFRAME.registerComponent('object-control-vr', {
         }
 
         var compType = pEl.getAttribute('class');
+
+        console.log("compType");
+        console.log(compType);
+        console.log("cid");
+        console.log(pEl.getAttribute('cid'));
+        console.log("cid");
+        console.log(pEl.getAttribute('cid'));
+        
         if(compType == 'interaction') {
           taskType = 'eventArea';
         }else{
@@ -530,6 +904,10 @@ AFRAME.registerComponent('object-control-vr', {
         case 'eventArea':
           var interaction = pEl.data;
           var target = interaction.target;
+          console.log("interaction");
+          console.log(interaction);
+          console.log("target");
+          console.log(target);
           var eventName = pEl.getAttribute('entityName');
           var targetName;
 
@@ -560,56 +938,33 @@ AFRAME.registerComponent('object-control-vr', {
   },
 
   addTask: function(newTask) {
+    var index = tasks.length;
     tasks.push(newTask);
 
     // Update taskboard
     this.updateTaskboard();
 
-    // Update properties panel if selected
-    if(tasksSelectedBy == clientRtcId) {
-      this.selectTasks('update');
-    }
+    // Update TaskGui
+    addNumberedTask(newTask, index);
   },
 
   updateTask: function(data) {
     console.log("updateTask");
     // Update data
+    console.log("data");
+    console.log(data);
     var taskId = data.taskId;
     var task = data.task; 
-    console.log("taskData");
-    console.log(task);
     tasks[taskId] = task;
-    console.log("newTask");
-    console.log(tasks[taskId]);
 
     // Update taskboard
     this.updateTaskboard();
 
-    // Update properties panel if selected
-    if(tasksSelectedBy == clientRtcId) {
-      this.selectTasks('update');
-    }
-  },
-
-  selectTasks: function(data) {
-    var pPanel = window.parent.document.getElementById('properties-panel');
-
-    if(data != 'update') {
-      tasksSelectedBy = data.tasksSelectedBy;
-
-      if(tasksSelectedBy != clientRtcId) {
-        return;
-      }
-    }
-    
     // Update properties view
-    while (pPanel.firstChild) {
-      // Remove all children
-      pPanel.removeChild(pPanel.firstChild);
-    }
+    var oldContainer = document.getElementById('taskedit' + taskId);
+    oldContainer.parentEl.removeChild(oldContainer);
 
-    // Add property rows
-    this.addPropertiesRow(pPanel, 'task', null);
-  },
+    addNumberedTask(task, taskId);
+  }
 });
 

@@ -23,17 +23,24 @@ AFRAME.registerComponent('object-control-desktop', {
     var radius = data.radius;
     var pos3 = new THREE.Vector3(data.posX, data.posY, data.posZ);
     var interactable = data.interactable;
+    var wireframe = data.wireframe;
 
     // Create container element
     var pEl = document.createElement('a-entity');
+    pEl.setAttribute('id', 'cid' + cid);
     pEl.setAttribute('cid', cid);
     pEl.setAttribute('position', pos3);
     pEl.setAttribute('class', 'entity');
+    pEl.setAttribute('scale', scale);
     pEl.setAttribute('entityName', name);
 
     // Create actual element
     var el = document.createElement('a-entity');
-    el.setAttribute('scale', scale);
+    var elWireframe = document.createElement('a-entity');
+
+    // Handle other attributes
+    el.setAttribute('material', 'color: #00FFFF');    
+    el.interactable = interactable;
 
     // Handle geometry/shape attribute
     if(shape == 'sphere') {
@@ -51,15 +58,14 @@ AFRAME.registerComponent('object-control-desktop', {
       el.setAttribute('geometry', 'primitive: ' + shape + ';');
       el.setAttribute('rotation', rotation);
       
+    }else if(shape == 'bowl') {
+      el.setAttribute('obj-model', 'obj: #bowl');
+      el.setAttribute('material', 'src: /img/ceramic_white.jpg; color: #1b688c');
+      
     }else{
       // TODO: Add method for specific models
       el.setAttribute('rotation', rotation);
     }
-
-    // Handle other attributes
-    el.setAttribute('material', 'color: #00FFFF');
-
-    el.interactable = interactable;
 
     // Check for selection
     var selectedById = data.selectedBy;
@@ -79,8 +85,14 @@ AFRAME.registerComponent('object-control-desktop', {
       el.setAttribute('selectable', '');
     }
 
-    var scene = this.el.sceneEl;
     pEl.appendChild(el);
+
+    // Handle wireframe
+    if(wireframe) {
+      pEl.appendChild(elWireframe);
+    }
+
+    var scene = this.el.sceneEl;
     scene.appendChild(pEl);
 
     // Add object to list 'Scene Objects'
@@ -796,7 +808,7 @@ AFRAME.registerComponent('object-control-desktop', {
             var el = pEl.children[0];
             var interactable = el.interactable;
 
-            // Sort out event areas
+            // Sort out task areas
             if(interactable != null) {
               var type = interactable.type;
               var cid = pEl.getAttribute('cid');
@@ -1203,7 +1215,7 @@ AFRAME.registerComponent('object-control-desktop', {
       pEl.setAttribute(type, data);
 
     }else if(type == 'name'){
-      // All other types should be changed for el itself
+      // Name has to be changed for parentEl
       pEl.setAttribute('entityName', data);
 
       // Update scene objects view
@@ -1272,10 +1284,6 @@ AFRAME.registerComponent('object-control-desktop', {
     var value = data.value;
 
     pEl.data[attribute] = value;
-
-    console.log("updateInteraction:");
-    console.log(attribute);
-    console.log(value);
 
     // Update property rows if element is currently selected by client
     if(data.sourceRtcId == clientRtcId) {

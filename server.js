@@ -495,8 +495,6 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       var clientList = roomObj['dev'].clientList;
 
       // Check for update type
-      console.log("updateType:");
-      console.log(updateType);
       if(updateType == 'interaction') {
         // Get data
         var attribute = dataObj.attribute;
@@ -620,9 +618,11 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
     listOfComponentData.forEach(comp => {
       // Set specific message data
       var data = JSON.stringify(comp);
-      message.msgType = 'spawnComponent'
-      console.log("getAllComponents:");
-      console.log(comp);
+      if(comp.type == 'eventarea') {
+        message.msgType = 'spawnInteraction';
+      }else{
+        message.msgType = 'spawnComponent';
+      }
       message.msgData = data;
 
       connectionObj.getApp().connection(easyrtcid, function(err, emitToConnectionObj) {
@@ -632,8 +632,24 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
           }
         });
       });
-      
     });
+
+    // Send all existing tasks to the newly joined user
+    tasks.forEach(task => {
+      // Set specific message data
+      var data = JSON.stringify(task);
+      message.msgType = 'addedTask'
+      message.msgData = data;
+
+      connectionObj.getApp().connection(easyrtcid, function(err, emitToConnectionObj) {
+        easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
+          if(err) {
+            console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+          }
+        });
+      });
+    });
+
   }else if(msgType === "addInteraction") {
     var data = msg.msgData;
     var newObj = JSON.parse(data);
@@ -644,7 +660,7 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
         // Add the new object to existing ones
         newObj['cid'] = componentCounter;
         newObj.selectedBy = -1;
-        newObj.name = 'New EventArea';
+        newObj.name = 'New TaskArea';
         listOfComponentData.push(newObj);
 
         // Create new message & set msgType
@@ -839,7 +855,7 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
     message.targetRoom = targetRoom;
 
     // Emit message to all room members
-    console.log("Server emitting 'addTask' event!");
+    console.log("Server emitting 'addedTask' event!");
     
     var roomObj; 
     connectionObj.generateRoomClientList("update", null, function(err, callback){
@@ -907,9 +923,51 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       })(currentEasyrtcid, msg);
     }
     
+  }else if(msgType === "removeTask") {
+    // Update server data
+    tasks.pop();
+
+    // Set message data
+    var message = {};
+    message.msgType = 'removedTask';
+    message.msgData = null;
+
+    // Set targetRoom name
+    var targetRoom = 'dev';
+    connectionObj.getRoomNames((err, roomNames) => {
+      if(roomNames.length > 0) {
+          targetRoom = roomNames[0];
+      }
+    });
+    message.targetRoom = targetRoom;
+
+    // Emit message to all room members
+    console.log("Server emitting 'removedTask' event!");
+    
+    var roomObj; 
+    connectionObj.generateRoomClientList("update", null, function(err, callback){
+      roomObj = callback;
+    });
+
+    var clientList = roomObj['dev'].clientList;
+
+    for (var currentEasyrtcid in clientList) {
+      (function(innerCurrentEasyrtcid, innerMsg){
+        connectionObj.getApp().connection(innerCurrentEasyrtcid, function(err, emitToConnectionObj) {
+          easyrtc.events.emit("emitEasyrtcMsg", emitToConnectionObj, message.msgType, message, null, function(err) {
+            if(err) {
+              console.log("[ERROR] Unhandled 'easyrtcMsg listener' error.", err);
+            }
+          });
+        });
+      })(currentEasyrtcid, msg);
+    }
+
+  }else if(msgType === "addedTask") {
+    // Only for client side --> SKIP
   }else if(msgType === "updatedTask") {
     // Only for client side --> SKIP
-  }else if(msgType === "addedTask") {
+  }else if(msgType === "removedTask") {
     // Only for client side --> SKIP
   }else if(msgType === "userJoined") {
     // Only for client side --> SKIP

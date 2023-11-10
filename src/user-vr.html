@@ -2,8 +2,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title id="title">Description pending...</title>
-    <meta name="description" content="VREUD Example - Aframe" />
+    <title id="title">User Study "cVECT"</title>
+    <meta name="description" content="cVECT User Study in Aframe." />
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.5.0/socket.io.slim.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/16.3.5/Tween.min.js"></script>
@@ -13,49 +13,6 @@
     <script src="/dist/aframe-keyboard.min.js"></script>
     <script type="text/javascript">
       AFRAME.ASSETS_PATH = "./assets";
-    </script>
-    <script>
-      AFRAME.registerComponent('thumbstick-controls',{
-        init: function () {
-          this.el.addEventListener('thumbstickmoved', this.thumbstickControl);
-        },
-        thumbstickControl: function (evt) {
-
-          var pos = this.getAttribute('position');
-
-          if (evt.detail.y > 0.95) { 
-            console.log("DOWN"); 
-            var pos = this.el.getAttribute("position");
-            pos.x = pos.x + 1;
-            this.el.setAttribute("position", pos);
-          }
-          if (evt.detail.y < -0.95) { 
-            console.log("UP"); 
-          }
-          if (evt.detail.x < -0.95) { 
-            console.log("LEFT"); 
-          }
-          if (evt.detail.x > 0.95) { 
-            console.log("RIGHT"); 
-          }
-        }
-      });
-
-      AFRAME.registerComponent('belt-positioning',{
-        init: function () {
-          
-        },
-
-        tick: function (evt) {
-          // Handle Position
-          var player = document.getElementById('player');
-          var el = this.el;
-          var pos3 = player.getAttribute('position');
-
-          var newPos3 = (Number(pos3.x) - 0.2) + ' ' + (Number(pos3.y) -0.8) + ' ' + (Number(pos3.z) - 0.4);
-          el.setAttribute('position', newPos3);
-        }
-      });
     </script>
     <script>
       // see issue https://github.com/networked-aframe/networked-aframe/issues/267
@@ -159,21 +116,23 @@
       }
     </script>
     <script>
-      function uploadGuiChanges(evt) {
-        console.log('uploadGuiChanges');
-        console.log('evt:');
-        console.log(evt);
+      function uploadGuiChanges(id, data) {
+        var name = id.replace('vr-submenu-edit-', '');
 
-        console.log("TODO: Update 'getElementsById' to 'byName' oder so");
-        return;
+        // Get cid
+        var input = document.querySelector('#currentInput');
 
-        var value = evt.value;
-        var target = evt.target;
-        var name = target.name;
+        var pEl = input.parentEl;
+        var pPEl = pEl.parentEl;
+        var child4 = pPEl.children[3];
+        var cidText = child4.getAttribute('text');
+        var cidFieldValue = cidText.value;
+        var cid = cidFieldValue.substring(4);
 
         // Fill data object
         var newObj = new Object();
-        newObj.cid = pEl.getAttribute('cid');
+        newObj.cid = cid;
+
 
         var interactable = false;
         if(interactable) {
@@ -183,66 +142,70 @@
           data.value = value;
           newObj.updateData = data;
         }else{
-
           switch(name){
-            case 'posX':
-            case 'posY':
-            case 'posZ':
-              var posX = document.getElementById('vr-submenu-edit-posx').getAttribute('value');
-              var posY = document.getElementById('vr-submenu-edit-posy').getAttribute('value');
-              var posZ = document.getElementById('vr-submenu-edit-posz').getAttribute('value');
-
-              newObj.updateType = 'position';
-              newObj.updateData = posX + ' ' + posY + ' ' + posZ;
+            case 'name':
+              newObj.updatetype = 'name';
+              newObj.updatedata = data;
               break;
 
-            case 'rotX':
-            case 'rotY':
-            case 'rotZ':
-              var rotX = document.getElementById('vr-submenu-edit-rotx').getAttribute('value');
-              var rotY = document.getElementById('vr-submenu-edit-roty').getAttribute('value');
-              var rotZ = document.getElementById('vr-submenu-edit-rotz').getAttribute('value');
+            case 'posx':
+            case 'posy':
+            case 'posz':
+              var posX = document.getElementById('vr-submenu-edit-posx').children[0].getAttribute('value');
+              var posY = document.getElementById('vr-submenu-edit-posy').children[0].getAttribute('value');
+              var posZ = document.getElementById('vr-submenu-edit-posz').children[0].getAttribute('value');
 
-              newObj.updateType = 'rotation';
-              newObj.updateData = rotX + ' ' + rotY + ' ' + rotZ;
+              newObj.updatetype = 'position';
+              newObj.updatedata = posX + ' ' + posY + ' ' + posZ;
               break;
 
-            case 'scaleX':
-            case 'scaleY':
-            case 'scaleZ':
-              var scaleX = document.getElementById('vr-submenu-edit-scalex').getAttribute('value');
-              var scaleY = document.getElementById('vr-submenu-edit-scaley').getAttribute('value');
-              var scaleZ = document.getElementById('vr-submenu-edit-scalez').getAttribute('value');
+            case 'rotx':
+            case 'roty':
+            case 'rotz':
+              var rotX = document.getElementById('vr-submenu-edit-rotx').children[0].getAttribute('value');
+              var rotY = document.getElementById('vr-submenu-edit-roty').children[0].getAttribute('value');
+              var rotZ = document.getElementById('vr-submenu-edit-rotz').children[0].getAttribute('value');
 
-              newObj.updateType = 'scale';
-              newObj.updateData = scaleX + ' ' + scaleY + ' ' + scaleZ;
+              newObj.updatetype = 'rotation';
+              newObj.updatedata = rotX + ' ' + rotY + ' ' + rotZ;
+              break;
+
+            case 'scalex':
+            case 'scaley':
+            case 'scalez':
+              var scaleX = document.getElementById('vr-submenu-edit-scalex').children[0].getAttribute('value');
+              var scaleY = document.getElementById('vr-submenu-edit-scaley').children[0].getAttribute('value');
+              var scaleZ = document.getElementById('vr-submenu-edit-scalez').children[0].getAttribute('value');
+
+              newObj.updatetype = 'scale';
+              newObj.updatedata = scaleX + ' ' + scaleY + ' ' + scaleZ;
               break;
 
             case 'height':
-              var height = document.getElementById('vr-submenu-edit-height').getAttribute('value');
-
-              newObj.updateType = 'height';
-              newObj.updateData = height;
+              newObj.updatetype = 'height';
+              newObj.updatedata = data;
               break;
 
             case 'radius':
-              var radius = document.getElementById('vr-submenu-edit-radius').getAttribute('value');
-
-              newObj.updateType = 'radius';
-              newObj.updateData = radius;
+              newObj.updatetype = 'radius';
+              newObj.updatedata = data;
               break;
 
             case 'offset':
-              var offset = document.getElementById('vr-submenu-edit-offset').getAttribute('value');
-
-              newObj.updateType = 'offset';
-              newObj.updateData = offset;
+              var dataObj = new Object();
+              dataObj.property = 'offset';
+              dataObj.value = data;
+              newObj.updatedata = dataObj;
+              newObj.updatetype = 'interactable';
               break;
 
             case 'rotAxis':
-              // TODO: This approach or above one for single-property updates?
-              newObj.updateType = 'rotAxis';
-              newObj.updateData = value;
+
+              var dataObj = new Object();
+              dataObj.property = 'rotAxis';
+              dataObj.value = data;
+              newObj.updatedata = dataObj;
+              newObj.updatetype = 'interactable';
               break;
 
             default:
@@ -258,33 +221,23 @@
       function showOnlySelectedSubmenu(submenuName) {
         var menuAdd = document.getElementById('vr-menu-add');
         var submenuAdd = document.getElementById('container-vr-submenu-add');
-        var submenuAddButtons = document.getElementsByName('vr-submenu-add');
 
         var menuEdit = document.getElementById('vr-menu-edit');
         var submenuEdit = document.getElementById('container-vr-submenu-edit');
-        var submenuEditButtons = document.getElementsByName('vr-submenu-edit');
 
         var menuTask = document.getElementById('vr-menu-task');
         var submenuTask = document.getElementById('container-vr-submenu-task');
-        var submenuTaskButtons = document.getElementsByName('vr-submenu-task');
 
         // Enable the given interface, disable the rest
         switch(submenuName) {
-          case 'add':
-            for(var i = 0; i < submenuAddButtons.length; i++) {
-              submenuAddButtons[i].classList.add('vr-submenu-add');
-            }
-            for(var i = 0; i < submenuEditButtons.length; i++) {
-              submenuEditButtons[i].classList.remove('vr-submenu-edit');
-            }
-            for(var i = 0; i < submenuTaskButtons.length; i++) {
-              submenuTaskButtons[i].classList.remove('vr-submenu-task');
-            }
-            
+          case 'add':            
             // Handle visiblity of other submenus
             submenuAdd.setAttribute('visible', true);
+            submenuAdd.setAttribute('position', '2.05 0 0');
             submenuEdit.setAttribute('visible', false);
+            submenuEdit.setAttribute('position', '0.35 100 0');
             submenuTask.setAttribute('visible', false);
+            submenuTask.setAttribute('position', '0 100 0');
             
             // Handle color of buttons
             menuAdd.setAttribute('baseColor', '#186e44');
@@ -293,28 +246,13 @@
             break;
 
           case 'edit':
-            for(var i = 0; i < submenuAddButtons.length; i++) {
-              submenuAddButtons[i].classList.remove('vr-submenu-add');
-            }
-            for(var i = 0; i < submenuEditButtons.length; i++) {
-              submenuEditButtons[i].classList.add('vr-submenu-edit');
-            }
-            for(var i = 0; i < submenuTaskButtons.length; i++) {
-              submenuTaskButtons[i].classList.remove('vr-submenu-task');
-            }
-
             // Handle visiblity of other submenus
             submenuAdd.setAttribute('visible', false);
+            submenuAdd.setAttribute('position', '2.05 100 0');
             submenuEdit.setAttribute('visible', true);
+            submenuEdit.setAttribute('position', '0.35 -1.5 0');
             submenuTask.setAttribute('visible', false);
-
-            // TODO: temp
-            var rotX = document.getElementById('vr-submenu-edit-rotx');
-            var rotY = document.getElementById('vr-submenu-edit-roty');
-            var rotZ = document.getElementById('vr-submenu-edit-rotz');
-            rotX.classList.add('vr-submenu-edit');
-            rotY.classList.add('vr-submenu-edit');
-            rotZ.classList.add('vr-submenu-edit');
+            submenuTask.setAttribute('position', '0 100 0');
 
             // Handle color of buttons
             menuAdd.setAttribute('baseColor', '#0377fc');
@@ -323,20 +261,13 @@
             break;
 
           case 'task':
-            for(var i = 0; i < submenuAddButtons.length; i++) {
-              submenuAddButtons[i].classList.remove('vr-submenu-add');
-            }
-            for(var i = 0; i < submenuEditButtons.length; i++) {
-              submenuEditButtons[i].classList.remove('vr-submenu-edit');
-            }
-            for(var i = 0; i < submenuTaskButtons.length; i++) {
-              submenuTaskButtons[i].classList.add('vr-submenu-task');
-            }
-
             // Handle visiblity of other submenus
             submenuAdd.setAttribute('visible', false);
+            submenuAdd.setAttribute('position', '2.05 100 0');
             submenuEdit.setAttribute('visible', false);
+            submenuEdit.setAttribute('position', '0.35 100 0');
             submenuTask.setAttribute('visible', true);
+            submenuTask.setAttribute('position', '0 0 0');
 
             // Handle color of buttons
             menuAdd.setAttribute('baseColor', '#0377fc');
@@ -345,20 +276,13 @@
             break;
 
           case 'close':
-            for(var i = 0; i < submenuAddButtons.length; i++) {
-              submenuAddButtons[i].classList.remove('vr-submenu-add');
-            }
-            for(var i = 0; i < submenuEditButtons.length; i++) {
-              submenuEditButtons[i].classList.remove('vr-submenu-edit');
-            }
-            for(var i = 0; i < submenuTaskButtons.length; i++) {
-              submenuTaskButtons[i].classList.remove('vr-submenu-task');
-            }
-
             // Handle visiblity of other submenus
             submenuAdd.setAttribute('visible', false);
+            submenuAdd.setAttribute('position', '2.05 100 0');
             submenuEdit.setAttribute('visible', false);
+            submenuEdit.setAttribute('position', '0.35 100 0');
             submenuTask.setAttribute('visible', false);
+            submenuTask.setAttribute('position', '0 100 0');
 
             menuAdd.setAttribute('baseColor', '#0377fc');
             menuEdit.setAttribute('baseColor', '#0377fc');
@@ -391,23 +315,31 @@
 
         var background = document.createElement('a-plane');
         background.setAttribute('class', 'vr-submenu-edit');
+        background.setAttribute('name', 'vr-submenu-edit');
         background.setAttribute('position', 0.7 + offsetX + ' 0 0');
         background.setAttribute('material', 'color: white');
         background.setAttribute('height', 0.2);
         background.setAttribute('width', width);
-        background.setAttribute('inputtable', '');
+        background.setAttribute('inputtable', '')
         container.appendChild(background);
 
         return container;
       }
 
       function updateSelectionMenu(pEl, bool) {
-        var el = pEl.children[0];
-        var type = el.getAttribute('class');
+        // Delete all entries 
+        var containerEdit = document.getElementById('container-vr-submenu-edit');
+        while(containerEdit.children.length > 0) {
+          var child = containerEdit.children[0];
+          containerEdit.removeChild(child);
+        }
 
+        // Check if there is an entity selected
         if(bool) {
+          var el = pEl.children[0];
+          var type = el.getAttribute('class');
           var cid = pEl.getAttribute('cid');
-          var name = el.getAttribute('entityName');
+          var name = pEl.getAttribute('entityName');
           var pos3 = pEl.getAttribute('position');
           var interactable = el.interactable;
           var rotation = el.getAttribute('rotation');
@@ -417,44 +349,23 @@
           var cHeight = geometry.height;
           var cRadius = geometry.radius;
 
-          // Remove listener
-          var containerEdit = document.getElementById('container-vr-submenu-edit');
-          containerEdit.removeEventListener('change', this.uploadGuiChanges);
-
-          // Delete all entries 
-          while(containerEdit.children.length > 0) {
-            var child = containerEdit.children[0];
-            try{
-              if(child.getAttribute('name') == 'a-form') {
-                while(child.children.length > 0) {
-                  var subchild = child.children[0];
-                  child.removeChild(subchild);
-                  // TODO: Maybe needed
-                  //subchild.destroy();
-                }
-              }
-              containerEdit.removeChild(child);
-              
-              // TODO: Maybe needed
-              //child.destroy();
-            }catch(e){
-              console.log('ERROR: ' + e);
-              console.log(child);
-              return;
-            }
-          }
-
           // Add fitting submenu-entries 
           switch(type) {
-            case 'selected-collidable': // equals 'entity'
+            case 'collidable': // equals 'entity'
+
+              var selectedBy = el.getAttribute('selectedby');
+
+              if(selectedBy != clientRtcId) {
+                return;
+              }
 
               // Background
               var backgroundUi = document.createElement('a-entity');
               //backgroundUi.setAttribute('name', 'vr-submenu-edit');
               backgroundUi.setAttribute('geometry', 'primitive: plane');
               backgroundUi.setAttribute('material', 'color: #808080');
-              backgroundUi.setAttribute('position', '2.17 1.55 0');
-              backgroundUi.setAttribute('scale', '4 3.5 1');
+              backgroundUi.setAttribute('position', '2.17 1.65 0');
+              backgroundUi.setAttribute('scale', '4 3.3 1');
 
               containerEdit.appendChild(backgroundUi);
 
@@ -507,10 +418,11 @@
               var colorpickerUi2 = document.createElement('a-entity');
               colorpickerUi2.setAttribute('position', '3.4 1.1 0');
               var colorpickerUi3 = document.createElement('a-colorwheel');
-              colorpickerUi3.setAttribute('name', 'vr-submenu-edit');
-              colorpickerUi3.setAttribute('scale', '1 1 1');
               colorpickerUi3.setAttribute('showhexvalue', true);
               colorpickerUi3.setAttribute('showswatches', true);
+              colorpickerUi3.setAttribute('name', 'vr-submenu-edit');
+              colorpickerUi3.setAttribute('scale', '1.1 1.1 1');
+              colorpickerUi3.setAttribute('map-colorwheel-to-raycaster', '');
               
               colorpickerUi2.appendChild(colorpickerUi3);
               containerEdit.appendChild(colorpickerUi1);
@@ -756,7 +668,35 @@
               break;
           }
 
-          containerEdit.addEventListener('change', this.uploadGuiChanges);
+          // Delete button
+          var deleteEntityContainer = document.createElement('a-entity');
+          deleteEntityContainer.setAttribute('position', '1.15 0.175 0');
+
+          var deleteEntityButton = document.createElement('a-entity');
+          deleteEntityButton.setAttribute('class', 'vr-submenu-edit');
+          deleteEntityButton.setAttribute('scale', '1.8 0.25 0.01');
+          deleteEntityButton.setAttribute('position', '0 0 0');
+          deleteEntityButton.setAttribute('geometry', 'primitive: box');
+          deleteEntityButton.setAttribute('material', 'color: #990000');
+          deleteEntityButton.setAttribute('raycaster-listen', '');
+          deleteEntityButton.setAttribute('priority', 'level: hud');
+          deleteEntityButton.addEventListener('select-object', function handleSelect(event) {
+            var dataObj = new Object();
+            dataObj.cid = cid;
+            var data = JSON.stringify(dataObj);
+            easyrtc.sendDataWS(clientRtcId, 'removeComponent', data);
+            updateSelectionMenu(null, false);
+          });
+          deleteEntityContainer.appendChild(deleteEntityButton);
+
+          var deleteEntityButtonText = document.createElement('a-entity');
+          deleteEntityButtonText.setAttribute('scale', '3 3 3');
+          deleteEntityButtonText.setAttribute('position', '0.7 0 0.05');
+          deleteEntityButtonText.setAttribute('text', 'value: Delete; color: black');
+          deleteEntityButtonText.setAttribute('priority', 'level: hud');
+          deleteEntityContainer.appendChild(deleteEntityButtonText);
+
+          containerEdit.appendChild(deleteEntityContainer);
           
           // Refresh raycaster target objects
           var hand = document.getElementById('hand-right');
@@ -765,7 +705,18 @@
 
         }else{
           // Set 'select something' screen 
+          var backgroundUi = document.createElement('a-entity');
+          backgroundUi.setAttribute('geometry', 'primitive: plane');
+          backgroundUi.setAttribute('material', 'color: #808080');
+          backgroundUi.setAttribute('position', '2.17 1.65 0');
+          backgroundUi.setAttribute('scale', '4 3.3 1');
+          containerEdit.appendChild(backgroundUi);
 
+          var noSelectionUi = document.createElement('a-entity');
+          noSelectionUi.setAttribute('position', '2.6 2 0');
+          noSelectionUi.setAttribute('scale', '3 3 3');
+          noSelectionUi.setAttribute('text', 'value: Select an Entity to edit its properties!; color: #990000');
+          containerEdit.appendChild(noSelectionUi);
         }
       }
 
@@ -807,6 +758,7 @@
             var cid = data.cid;
             var type = data.updatetype;
             var newData = data.updatedata;
+
             var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
             controller.updateComponent(cid, type, newData);
 
@@ -820,6 +772,16 @@
             var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
             controller.updateInteractable(cid, sourceRtcId, property, value);
 
+          }else if(msgType === 'spawnInteraction') {
+            var newData = JSON.parse(msgData);
+            var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
+            controller.spawnInteraction(newData);
+
+          }else if(msgType === 'updatedInteraction') {
+            var newData = JSON.parse(msgData);
+            var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
+            controller.updateInteraction(newData);
+
           }else if(msgType === 'userJoined') {
             var data = JSON.parse(msgData);
             //window.parent.addUserToStatusBar(data.easyrtcid, data.name, false);
@@ -830,22 +792,26 @@
 
           }else if(msgType === 'selectedTasks') {
             var newData = JSON.parse(msgData);
-            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
             controller.selectTasks(newData);
 
           }else if(msgType === 'addedTask') {
             var newData = JSON.parse(msgData);
-            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
             controller.addTask(newData);
 
           }else if(msgType === 'updatedTask') {
             var newData = JSON.parse(msgData);
-            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
             controller.updateTask(newData);
 
           }else if(msgType === 'deselectTasks') {
-            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
             controller.deselectTasks();
+
+          }else if(msgType === 'removedTask') {
+            var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
+            controller.removeTask();
 
           }else{
             console.log("Received unknown message type '" + msgType + "'.");
@@ -859,19 +825,37 @@
         var clientData = JSON.stringify(obj);
         easyrtc.sendDataWS(clientRtcId, "broadcastUserName", clientData);
 
+        // Fetch existing components from server
+        easyrtc.sendDataWS(clientRtcId, "getAllComponents", null);
       }
     </script>
     <script>
       AFRAME.registerComponent('raycaster-listen', {
         init: function () {
           var el = this.el;
+          var className = el.getAttribute('class');
           // TODO: GET MATERIAL PROPERTY OF TEMPORARY AXIS SLIDERS
           var baseColor = this.el.getAttribute('material').color;
-          this.el.setAttribute('baseColor', baseColor);
+          el.setAttribute('baseColor', baseColor);
           // Use events to figure out what raycaster is listening so we don't have to
           // hardcode the raycaster.
-          this.el.addEventListener('raycaster-intersected', evt => {
+          el.addEventListener('raycaster-intersected', evt => {
             this.raycaster = evt.detail.el;
+
+            if(className == 'axis-slider') {              
+              var pEl = el.parentEl;
+              var pos3 = pEl.getAttribute('position');
+              var axis = el.getAttribute('axis');
+              /*
+              var intersection = this.raycaster.intersectObject(el, false);
+              var intersectPoint = intersection.point;
+              var offset = pos3[axis] - intersectPoint[axis];
+              */
+
+              var offset = 0;
+              
+              el.setAttribute('axis-offset', offset);
+            }
           });
 
           this.el.addEventListener('raycaster-intersected-cleared', evt => {
@@ -888,11 +872,13 @@
         },
         
         setHoverLeave: function() {
-          var cid = this.el.getAttribute('cid');
+          var el = this.el;
+          var pEl = el.parentEl;
+          var cid = el.getAttribute('cid');
           var hand = this.raycaster;
 
           if(hand != null) {
-            var intersectCid = this.el.getAttribute('intersect-cid');
+            var intersectCid = el.getAttribute('intersect-cid');
 
             if(cid == intersectCid) {
               this.el.setAttribute('intersect-cid', 'null');
@@ -900,17 +886,17 @@
           }
           
           // Update color
-          var material = this.el.getAttribute('material');
+          var material = el.getAttribute('material');
           var currentColor = material.color;
-          var baseColor = this.el.getAttribute('baseColor');
+          var baseColor = el.getAttribute('baseColor');
 
           if(currentColor != baseColor){
             material.color = baseColor;
-            this.el.setAttribute('material', material);
+            el.setAttribute('material', material);
 
             // Check if wireframe exists and make it visible
             if(this.el.getAttribute('wireframed') == "true") {
-              var name = this.el.getAttribute('entityName');
+              var name = pEl.getAttribute('entityName');
               var wfObjectName = name + "-wireframe";
               var wfObjects = document.querySelectorAll("[wireframe]");
               var wfObject = null;
@@ -933,21 +919,26 @@
           var pEl = el.parentEl;
           var cid = pEl.getAttribute('cid');
 
+          var debug = document.getElementById('debugtext');
+          debug.setAttribute('value', 'HoverOver: ' + cid + ' != ' + intersectCid + '(' + (cid!=intersectCid) + ')');
+          debug.setAttribute('value', debug.getAttribute('value') + '\ntypeof: ' + cid + ' & ' + intersectCid);
+          debug.setAttribute('value', debug.getAttribute('value') + '\n' + typeof(cid) + ' & ' + typeof(intersectCid));
+
           if(cid != intersectCid) {
             el.setAttribute('intersect-cid', cid);
 
             // Update color
-            var material = this.el.getAttribute('material');
+            var material = el.getAttribute('material');
             var currentColor = material.color;
-            var baseColor = this.el.getAttribute('baseColor');
+            var baseColor = el.getAttribute('baseColor');
 
             if(currentColor == baseColor){
               material.color = '#ffffff';
-              this.el.setAttribute('material', material);
+              el.setAttribute('material', material);
 
               // Check if wireframe exists and make it insivible
               if(this.el.getAttribute('wireframed') == "true") {
-                var name = this.el.getAttribute('entityName');
+                var name = pEl.getAttribute('entityName');
                 var wfObjectName = name + "-wireframe";
                 var wfObjects = document.querySelectorAll("[wireframe]");
                 var wfObject = null;
@@ -1065,6 +1056,13 @@
           var el = this.el;
           var pEl = el.parentEl;
           el.addEventListener('grab-object-start', function handleSendSelect(event) {
+            // Adjust distance multiplier
+            var hand = document.getElementById('hand-right');
+            var hPos3 = hand.getAttribute('position');
+            var ePos3 = pEl.getAttribute('position');
+            var distance = ePos3.distanceTo(hPos3);
+            hand.setAttribute('range-multiplier', distance);
+
             // Start moving the object
             pEl.setAttribute('placeable', '');
           });
@@ -1094,8 +1092,11 @@
           var axis = el.getAttribute('axis');
 
           el.addEventListener('trigger-grab-object-start', function handleSendSelect(event) {
+            // Handle position offset
+            var offset = el.getAttribute('axis-offset');
+
             // Start moving the object
-            el.setAttribute('axis-grabbed', 'axis: ' + axis);
+            el.setAttribute('axis-grabbed', 'axis: ' + axis + '; offset: ' + offset);
           });
 
           el.addEventListener('trigger-grab-object-end', function handleSendSelect(event) {
@@ -1117,10 +1118,8 @@
 
       AFRAME.registerComponent('axis-grabbed', {
         schema: {
-          axis: { default: "x" }
-        },
-        init: function () {
-          var axis = this.data.axis;
+          axis: { default: "x" },
+          offset: { default: 0 }
         },
 
         tick: function () {
@@ -1129,6 +1128,7 @@
           var el = this.el;
           var pEl = el.parentEl;
           var axis = this.data.axis;
+          var offset = this.data.offset;
                     
           try {
             hand = document.getElementById('hand-right');
@@ -1151,7 +1151,7 @@
           
           var pPosition3 = pEl.getAttribute('position');
           var newPos3 = pPosition3.clone();
-          newPos3[axis] = tempPos3[axis];
+          newPos3[axis] = tempPos3[axis] - offset;
           pEl.setAttribute('position', newPos3);
         }
       });
@@ -1165,7 +1165,49 @@
           var el = this.el;
           var firstHit = null;
           
-          el.addEventListener('triggerdown', function (evt) { // Actual implementation
+          el.addEventListener('triggerdown', function (evt) {
+            // Check for 'currently placing new object'
+            // Approve & upload object the right hand is currently placing
+            var element = document.getElementById('currently-placing');
+            
+            if(element != null) {
+              var pos3 = element.getAttribute('position');
+
+              // Create data object to stringify
+              var obj = new Object();
+              obj.posX = pos3.x;
+              obj.posY = pos3.y;
+              obj.posZ = pos3.z;
+
+              var type = element.getAttribute('interaction');
+              if(type == 'eventarea') {
+                // Get data from interaction 'element'
+                obj.geometry = element.getAttribute('geometry');
+                obj.material = element.getAttribute('material');
+                obj.scale = element.getAttribute('scale');
+
+                // Send 'create new interaction'
+                var data = JSON.stringify(obj);
+                console.log("Sending: 'Add interaction of type:' " + type);
+                easyrtc.sendDataWS(clientRtcId, "addInteraction", data);
+
+              }else{
+                // Get data from entity 'element'
+                var shape = element.getAttribute('geometry').primitive;
+                obj.shape = shape;
+                obj.color = "#FF00FF"; 
+                
+                // Send 'create new component'
+                var data = JSON.stringify(obj);
+                console.log("Sending: 'Create new object with data:' " + data);
+                easyrtc.sendDataWS(clientRtcId, "addNewObject", data);
+              }
+
+              // Remove temporary 'element'
+              element.parentEl.removeChild(element);
+              return;
+            }
+
             // Get raycaster
             var rc = el.components.raycaster;
 
@@ -1196,17 +1238,59 @@
         }
       });
 
-      AFRAME.registerComponent('grip-button-listener', {
+      AFRAME.registerComponent('scale-with-hands', {
+        init: function() {
+          var el = this.el;
+          var leftHand = document.getElementById('hand-left');
+          var rightHand = document.getElementById('hand-right');
+          var distance = leftHand.getAttribute('position').distanceTo(rightHand.getAttribute('position'));
+          el.distance = distance;
+        },
+
+        tick: function () {
+          var el = this.el;
+          var pEl = el.parentEl;
+          var leftHand = document.getElementById('hand-left');
+          var rightHand = document.getElementById('hand-right');
+          var lPos3 = leftHand.getAttribute('position');
+          var rPos3 = rightHand.getAttribute('position');
+          var distance = lPos3.distanceTo(rPos3);
+
+          var diff = el.distance - distance;
+          if(diff > 0.02 || diff < -0.02) {
+            var scale = pEl.getAttribute('scale');
+            var size = scale.x * scale.y * scale.z;
+            var sign = Math.sign(diff) * 1;
+            
+            if(sign > 0) {
+              if(size > 0.001) {
+                scale.subScalar(0.01);
+              }
+            }else{
+              if(size < 8) {
+                scale.addScalar(0.01);
+              }
+            }
+
+            pEl.setAttribute('scale', scale);
+            el.distance = distance;
+          }
+        }
+      });
+
+      AFRAME.registerComponent('right-grip-button-listener', {
         init: function () {
           const grabObjectStartEvent = new Event("grab-object-start");
           const grabObjectEndEvent = new Event("grab-object-end");
 
           var el = this.el;
           var firstHit;
-          el.addEventListener('gripdown', function (evt) { 
+          var player = document.getElementById('player');
+
+          el.addEventListener('gripdown', function (evt) {
             // Get raycaster
             var rc = el.components.raycaster;
-            
+              
             // Get intersections
             var intersectedEls = rc.intersectedEls;
             if(intersectedEls.length < 1) {
@@ -1216,11 +1300,36 @@
             // Get first intersection
             firstHit = rc.intersectedEls[0];
 
-            // Trigger event 'Start Grab Object'
-            firstHit.dispatchEvent(grabObjectStartEvent);
+            // Decide whether to grab or scale
+            var leftGrab = player.getAttribute('leftGrab');
+
+            if(leftGrab != null) {
+              var cid = firstHit.parentEl.getAttribute('cid');
+
+              if(cid == null) {
+                return;
+              }
+
+              player.setAttribute('scaling-object', 'cid' + cid);
+
+              // Add 'scaleWithHands' component
+              firstHit.setAttribute('scale-with-hands', '');
+
+            }else{
+              // Trigger event 'Start Grab Object'
+              firstHit.dispatchEvent(grabObjectStartEvent);
+            }
           });
           
           el.addEventListener('gripup', function (evt) { 
+            // Remove 'scaleWithHands' component if necessary
+            var scalingObject = player.getAttribute('scaling-object');
+            if(scalingObject != null) {
+              var element = document.getElementById(scalingObject);
+              element.children[0].removeAttribute('scale-with-hands');
+              player.removeAttribute('scaling-object');
+            }
+
             // Trigger event 'End Grab Object'
             if(firstHit == null) {
               return;
@@ -1230,37 +1339,36 @@
         }
       });
 
+      AFRAME.registerComponent('left-grip-button-listener', {
+        init: function () {
+          var el = this.el;
+          var player = document.getElementById('player');
+
+          el.addEventListener('gripdown', function (evt) {
+            // Add 'leftGrab' to player
+            player.setAttribute('leftGrab', '');
+          });
+          
+          el.addEventListener('gripup', function (evt) { 
+            // Remove 'scaleWithHands' component if necessary
+            var scalingObject = player.getAttribute('scaling-object');
+            if(scalingObject != null) {
+              var element = document.getElementById(scalingObject);
+              element.children[0].removeAttribute('scale-with-hands');
+              player.removeAttribute('scaling-object');
+            }
+
+            // Remove'leftGrab' from player
+            player.removeAttribute('leftGrab');
+          });
+        }
+      });
+
       AFRAME.registerComponent('a-button-listener', {
         init: function () {
           var el = this.el;
           el.addEventListener('abuttondown', function (evt) {
-            // Approve & upload object the right hand is currently placing
-            var element = document.getElementById('currently-placing');
             
-            if(element == null) {
-              return;
-            }
-
-            // Get data from 'element'
-            var shape = element.getAttribute('geometry').primitive;
-            var pos3 = element.getAttribute('position');
-
-            // Create data object to stringify
-            var obj = new Object();
-            obj.shape = shape;
-            obj.posX = pos3.x;
-            obj.posY = pos3.y;
-            obj.posZ = pos3.z;
-            obj.color = "#FF00FF"; 
-
-            var data = JSON.stringify(obj);
-            
-            // Remove temporary 'element'
-            element.parentEl.removeChild(element);
-
-            // Send 'create new component'
-            console.log("Sending: 'Create new object with data:' " + data);
-            easyrtc.sendDataWS(clientRtcId, "addNewObject", data);
           });
         }
       });
@@ -1311,17 +1419,44 @@
         }
       });
 
-      AFRAME.registerComponent('thumbstick-object-listener', {
+      AFRAME.registerComponent('thumbstick-object-listener',{
         init: function () {
+          this.el.addEventListener('thumbstickmoved', this.thumbstickControl);
+        },
+        
+        thumbstickControl: function (evt) {
           var el = this.el;
           var hand = document.getElementById('hand-right');
-          el.addEventListener('thumbstickdown', function (evt) {
+
+          if (evt.detail.y > 0.90) { 
+            // DOWN
             var multiplier = hand.getAttribute('range-multiplier');
-            if(multiplier < 0.2 || multiplier > 5) {
+
+            if(multiplier < 0.2) {
               return;
             }
-            hand.setAttribute('range-multiplier', multiplier + 0.2);
-          });
+
+            hand.setAttribute('range-multiplier', Number(multiplier) - 0.02 );
+          }
+
+          if (evt.detail.y < -0.90) { 
+            // UP
+            var multiplier = hand.getAttribute('range-multiplier');
+
+            if(multiplier > 2) {
+              return;
+            }
+
+            hand.setAttribute('range-multiplier', Number(multiplier) + 0.02);
+          }
+
+          if (evt.detail.x < -0.95) { 
+            console.log("LEFT"); 
+          }
+
+          if (evt.detail.x > 0.95) { 
+            console.log("RIGHT"); 
+          }
         }
       });
     </script>
@@ -1353,8 +1488,9 @@
         dependencies: ['material'],
         init: function () {
           var level = this.data.level;
-          this.el.sceneEl.renderer.sortObjects = true;
-          this.el.components.material.material.depthTest = false;
+          var el = this.el;
+          el.sceneEl.renderer.sortObjects = true;
+          el.components.material.material.depthTest = false;
           var renderOrder;
           switch (level) {
             case "standard":
@@ -1372,18 +1508,65 @@
             default:
               break;
           }
-          this.el.object3D.renderOrder = renderOrder;
+          el.object3D.renderOrder = renderOrder;
         }
       });
     </script>
 
     <!-- VR Menu -->
     <script>
-      AFRAME.registerComponent("placeable", {
-        init: function () {
+      AFRAME.registerComponent('belt-positioning',{
+        tick: function (evt) {
+          var player = document.getElementById('player');
           var el = this.el;
-        },
+          var pos3 = player.getAttribute('position');
+          var rot = player.getAttribute('rotation');
 
+          // Calc position
+          var newPos3 = pos3.x + ' ' + (0.15 + pos3.y) + ' ' + (-0.05 + pos3.z);
+
+          // Calc rotation
+          var rotY = Math.abs(rot.y) % 360;
+          var sign = Math.sign(rot.y);
+          
+          if(rotY < 45) {
+            rotY = 0;
+          }else if(rotY < 135) {
+            rotY = 90;
+          }else if(rotY < 225) {
+            rotY = 180;
+          }else if(rotY < 315) {
+            rotY = 270;
+          }else{
+            rotY = 0;
+          }
+
+          var newRot = "0 " + (sign * rotY) + " 0";
+
+          // Set attributes
+          el.setAttribute('position', newPos3);
+          el.setAttribute('rotation', newRot);          
+        }
+      });
+
+      AFRAME.registerComponent('map-colorwheel-to-raycaster',{
+        tick: function() {
+          var el = this.el;
+          var children = el.children;
+
+          if(children.length > 6) {
+            var circle = el.children[3];
+            circle.classList.add('colorwheel');
+
+            var saturation = el.children[4];
+            saturation.classList.add('colorwheel');
+
+            el.removeAttribute('map-colorwheel-to-raycaster');
+          }
+        }   
+      });
+
+      AFRAME.registerComponent("placeable", {
         tick: function () {
           var hand = null;
           var raycaster = null;
@@ -1410,28 +1593,26 @@
           newPos3 = newPos3.add(vector);
 
           el.setAttribute('position', newPos3);
-          
         }
       });
 
       AFRAME.registerComponent("vr-menu-edit", {
         init: function () {
           var el = this.el;
-          var submenu = document.getElementById('container-vr-submenu-edit');          
+          var submenu = document.getElementById('container-vr-submenu-edit');
+          updateSelectionMenu(null, false);
 
           el.addEventListener('select-object', function handleSendSelect(event) {
-
             // Open or close the 'Edit'-Menu
             if(submenu.getAttribute('visible') == false) {
               // Make visible and close other open submenus
-              submenu.setAttribute('visible', true);
               el.setAttribute('baseColor', '#186e44');
               showOnlySelectedSubmenu('edit');
             }else{
               // Make invisible
-              submenu.setAttribute('visible', false);
               el.setAttribute('baseColor', '#0377fc');
               showOnlySelectedSubmenu('close');
+              closeKeyboard();
             }
           });
         }
@@ -1440,21 +1621,74 @@
       AFRAME.registerComponent("vr-menu-task", {
         init: function () {
           var el = this.el;
-          var submenu = document.getElementById('container-vr-submenu-task');
+          var submenu = document.getElementById('container-vr-submenu-task'); 
 
           el.addEventListener('select-object', function handleSendSelect(event) {
             // Open or close the 'Task'-Menu
             if(submenu.getAttribute('visible') == false) {
               // Make visible and close other open submenus
-              submenu.setAttribute('visible', true);
               el.setAttribute('baseColor', '#186e44');
               showOnlySelectedSubmenu('task');
             }else{
               // Make invisible
-              submenu.setAttribute('visible', false);
               el.setAttribute('baseColor', '#0377fc');
               showOnlySelectedSubmenu('close');
             }
+          });
+        }
+      });
+
+      AFRAME.registerComponent("vr-submenu-task-add", {
+        init: function () {
+          var el = this.el; 
+          el.addEventListener('select-object', function handleSendSelect(event) {
+            // Send 'addTask'
+            easyrtc.sendDataWS(clientRtcId, "addTask", null);
+          });
+        }
+      });
+
+      AFRAME.registerComponent("vr-submenu-task-delete", {
+        init: function () {
+          var el = this.el; 
+          el.addEventListener('select-object', function handleSendSelect(event) {
+            // Send 'removeTask'
+            easyrtc.sendDataWS(clientRtcId, "removeTask", null);
+          });
+        }
+      });
+
+      AFRAME.registerComponent("vr-submenu-task-add-taskarea", {
+        init: function () {
+          var el = this.el; 
+          var type = 'eventarea';
+          el.addEventListener('select-object', function handleSendSelect(event) {
+            var hand = document.getElementById('hand-right');
+            var raycaster = hand.components.raycaster;
+            var quaternion = raycaster.el.object3D.quaternion;
+
+            hand.setAttribute('range-multiplier', 0.5);
+            
+            // Close the submenu GUI
+            showOnlySelectedSubmenu('close');
+
+            // Add Interaction properties
+            var newElement = document.createElement('a-entity');
+            newElement.setAttribute('geometry', 'primitive: box');
+            newElement.setAttribute('material', 'color: #a8a8a8; opacity: 0.4');
+            newElement.setAttribute('scale', '0.2 0.2 0.1');
+            newElement.setAttribute('interaction', type);
+
+            // Attach object to the raycaster
+            newElement.setAttribute('class', 'collidable');
+            newElement.setAttribute('id', 'currently-placing');
+            
+            // Handle Position with 'placeable' attribute 
+            newElement.setAttribute('placeable', '');
+
+            // Add obj to scene
+            var scene = el.sceneEl;
+            scene.appendChild(newElement);
           });
         }
       });
@@ -1518,17 +1752,14 @@
           var scene = el.sceneEl;
 
           el.addEventListener('select-object', function handleSendSelect(event) {
-            
             var hand = document.getElementById('hand-right');
             var raycaster = hand.components.raycaster;
             var quaternion = raycaster.el.object3D.quaternion;
+
+            hand.setAttribute('range-multiplier', 0.5);
             
             // Close the submenu GUI
             showOnlySelectedSubmenu('close');
-
-            // TODO: Delete other 'currently-placing' objects WITH IF-NOT-EMPTY-CLAUSE
-            // var toDelete = document.getElementById('currently-placing');
-            // toDelete.parentEl.removeChild(toDelete);
 
             var newElement = document.createElement('a-entity');
 
@@ -1587,10 +1818,6 @@
     </script>
     <script>
       AFRAME.registerComponent('mimic-head-color', {
-        init: function () {
-          
-        },
-
         tick: function() {
           var nafEntities = NAF.entities.entities;
           var objProperties = Object.getOwnPropertyNames(nafEntities);
@@ -1673,6 +1900,63 @@
     </script>
     <script>
       // Keyboard
+      function openKeyboard(){
+        var keyboard = document.getElementById('keyboard');
+        var opened = keyboard.opened;
+
+        if(opened == null || opened == false) {
+          keyboard.opened = true;
+
+          var pos3 = keyboard.getAttribute('position');
+          pos3.y = -0.25;
+          keyboard.setAttribute('position', pos3);
+        }
+      }
+
+      function closeKeyboard(){
+        var keyboard = document.getElementById('keyboard');
+        var opened = keyboard.opened;
+
+        var input = document.querySelector('currentInput');
+        if(input != null) {
+          input.setAttribute('value', text);
+          input.removeAttribute('currentInput');
+        }
+
+        if(opened == true) {
+          keyboard.opened = false;
+
+          var pos3 = keyboard.getAttribute('position');
+          pos3.y = 100;
+          keyboard.setAttribute('position', pos3);
+        }
+      }
+
+      AFRAME.registerComponent('adjust-keyboard-gui',{
+        tick: function (evt) {
+          var el = this.el;
+
+          if(el.children.length > 46) {
+            var child = el.children[0];
+            var mat = child.getAttribute('material');
+            mat.opacity = 0.8;
+            child.setAttribute('material', mat);
+            child.classList.add('vr-menu');
+            child.setAttribute('priority', 'level: keyboard');
+
+            for(var i = 1; i < el.children.length; i++) {
+              child = el.children[i];
+
+              child.setAttribute('priority', 'level: keyboard');
+              child.children[0].setAttribute('priority', 'level: keyboard');
+              child.children[1].setAttribute('priority', 'level: keyboard');
+            }
+
+            el.removeAttribute('adjust-keyboard-gui');
+          }
+        }
+      });
+
       var text = ''
       function updateInput(e) {
         var code = parseInt(e.detail.code);
@@ -1684,18 +1968,19 @@
 
         switch(code) {
         case 13:
+          // Enter
           break;
 
         case 8:
+          // Delete
           text = text.slice(0, -1);
           break;
 
-        case '06':
-          console.log('submitted');
-          var keyboard = document.querySelector('#keyboard');
+        case 6:
+          // Hide keyboard
           input.setAttribute('value', text);
-          input.setAttribute('color', 'blue');
-          keyboard.parentNode.removeChild(keyboard);
+
+          closeKeyboard();
           return;
 
         default:
@@ -1704,19 +1989,21 @@
         }
 
         input.setAttribute('value', text + '_');
+
+        // Upload changes to the server
+        var updateId = input.parentEl.getAttribute('id');
+        var updateData = text;
+
+        uploadGuiChanges(updateId, updateData);
       }
 
       document.addEventListener('a-keyboard-update', updateInput);
 
       // Register input component
       function changeInput(newInputBackground) {
-        var debug = document.getElementById('debugtext');
-        
-        debug.setAttribute('value', debug.getAttribute('value') + "\nRemoving old id:");
-
         // Remove old input
         var input = document.querySelector('#currentInput');
-        debug.setAttribute('value', debug.getAttribute('value') + "\nid = " + input);
+
         if(input != null) {;
           input.setAttribute('value', text);
           input.removeAttribute('id');
@@ -1724,10 +2011,14 @@
 
         // Make new input listen to changes
         var newInput = newInputBackground.parentEl.children[0];
+
         text = newInput.getAttribute('value');
 
         newInput.setAttribute('value', text + '_');
         newInput.setAttribute('id', 'currentInput');
+
+        // Open keyboard
+        openKeyboard();
       }
 
       AFRAME.registerComponent("inputtable", {
@@ -1736,7 +2027,6 @@
 
           el.addEventListener('select-object', function handleSendSelect(event) {
             // Open or close the 'Task'-Menu
-            var debug = document.getElementById('debugtext');
             changeInput(el);
           });
         }
@@ -1804,7 +2094,9 @@
         <img id="play" src="/img/play.png">
         <img id="plus" src="/img/plus.png">
         <img id="stop" src="/img/stop.png">
-        <img id="task-img" src="/img/task.png"-->>
+        <img id="task-img" src="/img/task.png">
+        <img id="next" src="/img/next.png">
+        <img id="previous" src="/img/previous.png">
 
         <img id="box" src="/img/box.png">
         <img id="cylinder" src="/img/cylinder.png">
@@ -1841,7 +2133,7 @@
 
       <a-entity position="0.5 0 -3" scale="0.01 0.01 0.01" obj-model="obj: #kitchen-obj; mtl: #kitchen-mtl"></a-entity>
 
-      <a-entity position="1.2 0.85 -2.4" scale="0.2 0.2 0.2" obj-model="obj: #bowl" material="src: /img/ceramic_white.jpg; color: #1b688c"></a-entity>
+      <a-entity class="collidable" raycaster-listen position="1.2 0.85 -2.4" scale="0.2 0.2 0.2" obj-model="obj: #bowl" material="src: /img/ceramic_white.jpg; color: #1b688c"></a-entity>
       <!--a-entity position="-0.1 0.85 -2.6" scale="0.2 0.2 0.2" obj-model="obj: #bowl" material="src: /img/ceramic_white.jpg; color: #1b688c"></a-entity>
       <a-entity position="-0.105 0.9 -2.605" scale="0.2 0.2 0.2" obj-model="obj: #bowl" material="src: /img/ceramic_white.jpg; color: #1b688c"></a-entity>
       <a-entity position="-0.11 0.95 -2.61" scale="0.2 0.2 0.2" obj-model="obj: #bowl" material="src: /img/ceramic_white.jpg; color: #1b688c"></a-entity-->
@@ -1849,10 +2141,6 @@
       <!-- Light -->
       <a-entity light="color: #ccccff; intensity: 1; type: ambient;" visible="true"></a-entity>
       <a-entity light="type: point; intensity: 0.6; distance: 10; decay: 2" position="0 2.5 0"></a-entity>
-
-      <!-- Input -->
-      <a-text class="vr-submenu-edit" id="currentInput" font="dejavu" color="#000" value="Input value..." scale="0.5 0.5 0.5" position="-1 1.5 -2"></a-text>
-      <a-entity id="keyboard" position="0 1.5 -1" a-keyboard></a-entity>
 
       <!-- Taskboard -->
       <a-plane width="2" height="1" rotation="0 90 0" position="-2.99 1.5 -1.5" color="#6C7A89">
@@ -1863,7 +2151,7 @@
       </a-plane>
 
       <!-- AVATAR -->
-      <a-entity id="rig">
+      <a-entity id="rig" priority="level: hud">
         <a-entity
           id="player"
           networked="template:#avatar-template;attachTemplateToLocal:false;"
@@ -1873,302 +2161,389 @@
           object-control-vr="template:#block-template"
           look-controls
           wasd-controls
+          priority="level: hud"
         >
           <a-sphere id="playerhead" scale="0.2 0.2 0.2" class="head" visible="false" random-color></a-sphere>
         </a-entity>
 
         <!-- Belt menu -->
         <a-entity 
-          id="container-vr-menu"
-          scale="0.1 0.1 0.1"
-          rotation="-45 0 0"
-          visible="true"
+          id="belt" 
           belt-positioning
+          priority="level: hud"
         >
-          <a-entity
-            class="vr-menu" 
-            geometry="primitive: plane"
-            material="color: #323236"
-            position="0 0.5 0"
-            rotation="0 0 0" 
-            scale="1 4 1"
+          <a-entity 
+            id="keyboard" 
+            position="-0.2 -0.25 -0.65" 
+            rotation="-15 0 0" 
+            a-keyboard
+            visible="false"
+          ></a-entity>
+          <a-entity 
+            id="container-vr-menu"
+            scale="0.1 0.1 0.1"
+            position="-0.2 -0.8 -0.4"
+            rotation="-45 0 0"
             visible="true"
             priority="level: hud"
-          ></a-entity>
-          
-          <!-- Menu EDIT -->
-          <a-entity
-            position = "0 0 0"
-            rotation="0 0 0" 
-            scale="0.9 0.9 0.1"
           >
             <a-entity
-              id="vr-menu-edit" 
-              class="vr-menu-edit" 
-              geometry="primitive: box"
-              material="color: #0377fc"
-              visible="true"
-              priority="level: hud"
-              raycaster-listen
-              vr-menu-edit
-            ></a-entity>
-            <a-entity
-              class="vr-menu-edit-img" 
+              class="vr-menu" 
               geometry="primitive: plane"
-              material="src: #edit; transparent: true"
+              material="color: #323236"
+              position="0 0.5 0"
+              rotation="0 0 0" 
+              scale="1 4 1"
               visible="true"
               priority="level: hud"
             ></a-entity>
-          </a-entity>
+            
+            <!-- Menu EDIT -->
+            <a-entity
+              position = "0 0 0"
+              rotation="0 0 0" 
+              scale="0.9 0.9 0.1"
+              priority="level: hud"
+            >
+              <a-entity
+                id="vr-menu-edit" 
+                class="vr-menu-edit" 
+                geometry="primitive: box"
+                material="color: #0377fc"
+                visible="true"
+                priority="level: hud"
+                raycaster-listen
+                vr-menu-edit
+              ></a-entity>
+              <a-entity
+                class="vr-menu-edit-img" 
+                geometry="primitive: plane"
+                material="src: #edit; transparent: true"
+                visible="true"
+                priority="level: hud"
+              ></a-entity>
+            </a-entity>
 
-          <!-- Submenu EDIT -->
-          <a-entity
-            id="container-vr-submenu-edit" 
-            position="0.35 -1.5 0" 
-            visible="true"
-            scale="1.2 1.2 1.2"
-          > 
-          </a-entity>
-
-          <!-- Menu PLAY -->
-          <a-entity
-            position = "0 2 0"
-            rotation="0 0 0" 
-            scale="0.9 0.9 0.1"
-          >
+            <!-- Submenu EDIT -->
             <a-entity
-              class="vr-menu-play" 
-              geometry="primitive: box"
-              material="color: #0377fc"
-              visible="true"
-              priority="level: hud"
-              raycaster-listen
-              vr-menu-play
-            ></a-entity>
-            <a-entity
-              class="vr-menu-play-img" 
-              geometry="primitive: plane"
-              material="src: #play; transparent: true"
-              visible="true"
-              priority="level: hud"
-            ></a-entity>
-            <a-entity
-              class="vr-menu-stop-img" 
-              geometry="primitive: plane"
-              material="src: #stop; transparent: true"
+              id="container-vr-submenu-edit" 
+              position="0.35 -1.5 0" 
               visible="false"
-              priority="level: hud"
-            ></a-entity>
-          </a-entity>
+              scale="1.2 1.2 1.2"
+            > 
+            </a-entity>
 
-          <!-- Menu TASK -->
-          <a-entity
-            position = "0 1 0"
-            rotation="0 0 0" 
-            scale="0.9 0.9 0.1"
-          >
+            <!-- Menu PLAY -->
             <a-entity
-              id="vr-menu-task" 
-              class="vr-menu-task" 
-              geometry="primitive: box"
-              material="color: #0377fc"
-              visible="true"
-              priority="level: hud"
-              raycaster-listen
-              vr-menu-task
-            ></a-entity>
-            <a-entity
-              class="vr-menu-task-img" 
-              geometry="primitive: plane"
-              material="src: #task-img; transparent: true"
-              visible="true"
-              priority="level: hud"
-            ></a-entity>
-          </a-entity>
-
-          <!-- Submenu TASK -->
-          <a-entity
-            id="container-vr-submenu-task" 
-            position="2.05 0 0" 
-            scale="3 3 1"
-            visible="false"
-          > 
-          </a-entity>
-
-          <!-- Menu ADD -->
-          <a-entity
-            position="0 -1 0"
-            rotation="0 0 0" 
-            scale="0.9 0.9 0.1"
-          >
-            <a-entity
-              id="vr-menu-add" 
-              class="vr-menu-add" 
-              geometry="primitive: box"
-              material="color: #0377fc"
-              visible="true"
-              priority="level: hud"
-              raycaster-listen
-              vr-menu-add
-            ></a-entity>
-            <a-entity
-              class="vr-menu-add-img" 
-              geometry="primitive: plane"
-              material="src: #plus; transparent: true"
-              visible="true"
-              priority="level: hud"
-            ></a-entity>
-          </a-entity>
-
-          <!-- Submenu ADD -->
-          <a-entity
-            id="container-vr-submenu-add" 
-            position="2.05 0 0" 
-            scale="3 3 1"
-            visible="false"
-          >  
-            <a-entity
-              name="vr-submenu-add"
-              geometry="primitive: plane"
-              material="color: #31b5cc"
+              position = "0 2 0"
               rotation="0 0 0" 
-              visible="true"
-              priority="level: hud"
-            ></a-entity>
-
-            <!-- Submenu ADD BOX -->
-            <a-entity
-              id="container-vr-submenu-add-box" 
-              position="-0.33 0.33 0"
-              rotation="0 0 0" 
-              scale="0.3 0.3 0.1"
-              priority="level: hud"
+              scale="0.9 0.9 0.1"
             >
               <a-entity
-                id="vr-submenu-add-box" 
-                name="vr-submenu-add"
+                class="vr-menu-play" 
                 geometry="primitive: box"
                 material="color: #0377fc"
                 visible="true"
                 priority="level: hud"
                 raycaster-listen
-                vr-submenu-add="shape: box"
+                vr-menu-play
               ></a-entity>
               <a-entity
-                class="vr-submenu-add-box-img"
+                class="vr-menu-play-img" 
                 geometry="primitive: plane"
-                material="src: #box; transparent: true"
+                material="src: #play; transparent: true"
+                visible="true"
+                priority="level: hud"
+              ></a-entity>
+              <a-entity
+                class="vr-menu-stop-img" 
+                geometry="primitive: plane"
+                material="src: #stop; transparent: true"
+                visible="false"
+                priority="level: hud"
+              ></a-entity>
+            </a-entity>
+
+            <!-- Menu TASK -->
+            <a-entity
+              position = "0 1 0"
+              rotation="0 0 0" 
+              scale="0.9 0.9 0.1"
+            >
+              <a-entity
+                id="vr-menu-task" 
+                class="vr-menu-task" 
+                geometry="primitive: box"
+                material="color: #0377fc"
+                visible="true"
+                priority="level: hud"
+                raycaster-listen
+                vr-menu-task
+              ></a-entity>
+              <a-entity
+                class="vr-menu-task-img" 
+                geometry="primitive: plane"
+                material="src: #task-img; transparent: true"
                 visible="true"
                 priority="level: hud"
               ></a-entity>
             </a-entity>
 
-            <!-- Submenu ADD CYLINDER -->
+            <!-- Submenu TASK -->
             <a-entity
-              id="container-vr-submenu-add-cylinder" 
-              position="0 0.33 0"
-              rotation="0 0 0" 
-              scale="0.3 0.3 0.1"
-              priority="level: hud"
+              position="0.35 -1.225 0" 
+              visible="true"
+              scale="1.2 1.125 1.2"
+              visible="true" 
             >
               <a-entity
-                id="vr-submenu-add-cylinder" 
-                name="vr-submenu-add"
+                id="container-vr-submenu-task" 
+                visible="false"
+              >
+                <a-entity 
+                  name="addTaskButton" 
+                  position="1.15 0 0"
+                >
+                  <a-entity
+                    class="vr-submenu-task"
+                    geometry="primitive: box"
+                    material="color: #0377fc"
+                    scale="1.9 0.3 0.01"
+                    priority="level: hud"
+                    raycaster-listen
+                    vr-submenu-task-add
+                  ></a-entity>
+                  <a-entity
+                    text="value: Add Task; color: black"
+                    scale="3 3 3"
+                    position="1.25 0 0.05"
+                    priority="level: hud"
+                  ></a-entity>
+                </a-entity>
+                <a-entity 
+                  name="removeTaskButton" 
+                  position="3.1 0 0"
+                >
+                  <a-entity
+                    class="vr-submenu-task"
+                    geometry="primitive: box"
+                    material="color: #990000"
+                    scale="1.9 0.3 0.01"
+                    priority="level: hud"
+                    raycaster-listen
+                    vr-submenu-task-delete
+                  ></a-entity>
+                  <a-entity
+                    text="value: Remove Task; color: black"
+                    scale="3 3 3"
+                    position="1.15 0 0.05"
+                    priority="level: hud"
+                  ></a-entity>
+                </a-entity>
+                <a-entity 
+                  name="addTaskAreaButton" 
+                  position="4.6 0 0"
+                >
+                  <a-entity
+                    class="vr-submenu-task"
+                    geometry="primitive: box"
+                    material="color: #31b5cc"
+                    scale="1 0.3 0.01"
+                    priority="level: hud"
+                    raycaster-listen
+                    vr-submenu-task-add-taskarea
+                  ></a-entity>
+                  <a-entity
+                    text="value: Add TaskArea; color: black"
+                    scale="3 3 3"
+                    position="1.05 0 0.05"
+                    priority="level: hud"
+                  ></a-entity>
+                </a-entity>
+                <a-entity
+                  geometry="primitive: plane"
+                  material="color: #808080"
+                  position="2.67 1.55 0"
+                  scale="5 3.5 1"
+                ></a-entity>
+              </a-entity>
+            </a-entity>
+
+            <!-- Menu ADD -->
+            <a-entity
+              position="0 -1 0"
+              rotation="0 0 0" 
+              scale="0.9 0.9 0.1"
+            >
+              <a-entity
+                id="vr-menu-add" 
+                class="vr-menu-add" 
                 geometry="primitive: box"
                 material="color: #0377fc"
                 visible="true"
                 priority="level: hud"
                 raycaster-listen
-                vr-submenu-add="shape: cylinder"
+                vr-menu-add
               ></a-entity>
               <a-entity
-                class="vr-submenu-add-cylinder-img" 
+                class="vr-menu-add-img" 
                 geometry="primitive: plane"
-                material="src: #cylinder; transparent: true"
+                material="src: #plus; transparent: true"
                 visible="true"
                 priority="level: hud"
               ></a-entity>
             </a-entity>
 
-            <!-- Submenu ADD PLANE -->
+            <!-- Submenu ADD -->
             <a-entity
-              id="container-vr-submenu-add-plane" 
-              position="0.33 0.33 0"
-              rotation="0 0 0" 
-              scale="0.3 0.3 0.1"
-              priority="level: hud"
-            >
+              id="container-vr-submenu-add" 
+              position="2.05 0 0" 
+              scale="3 3 1"
+              visible="false"
+            >  
               <a-entity
-                id="vr-submenu-add-plane" 
                 name="vr-submenu-add"
-                geometry="primitive: box"
-                material="color: #0377fc"
-                visible="true"
-                priority="level: hud"
-                raycaster-listen
-                vr-submenu-add="shape: plane"
-              ></a-entity>
-              <a-entity
-                class="vr-submenu-add-plane-img" 
                 geometry="primitive: plane"
-                material="src: #plane; transparent: true"
+                material="color: #31b5cc"
+                rotation="0 0 0" 
                 visible="true"
                 priority="level: hud"
               ></a-entity>
-            </a-entity>
 
-            <!-- Submenu ADD SPHERE -->
-            <a-entity
-              id="container-vr-submenu-add-sphere" 
-              position="-0.33 0 0"
-              rotation="0 0 0" 
-              scale="0.3 0.3 0.1"
-              priority="level: hud"
-            >
+              <!-- Submenu ADD BOX -->
               <a-entity
-                id="vr-submenu-add-sphere" 
-                name="vr-submenu-add"
-                geometry="primitive: box"
-                material="color: #0377fc"
-                visible="true"
+                id="container-vr-submenu-add-box" 
+                position="-0.33 0.33 0"
+                rotation="0 0 0" 
+                scale="0.3 0.3 0.1"
                 priority="level: hud"
-                raycaster-listen
-                vr-submenu-add="shape: sphere"
-              ></a-entity>
-              <a-entity
-                class="vr-submenu-add-sphere-img" 
-                geometry="primitive: plane"
-                material="src: #sphere; transparent: true"
-                visible="true"
-                priority="level: hud"
-              ></a-entity>
-            </a-entity>
+              >
+                <a-entity
+                  id="vr-submenu-add-box" 
+                  class="vr-submenu-add"
+                  geometry="primitive: box"
+                  material="color: #0377fc"
+                  visible="true"
+                  priority="level: hud"
+                  raycaster-listen
+                  vr-submenu-add="shape: box"
+                ></a-entity>
+                <a-entity
+                  class="vr-submenu-add-box-img"
+                  geometry="primitive: plane"
+                  material="src: #box; transparent: true"
+                  visible="true"
+                  priority="level: hud"
+                ></a-entity>
+              </a-entity>
 
-            <!-- Submenu ADD WAFFELMAKER -->
-            <a-entity
-              id="container-vr-submenu-add-wafflemaker" 
-              position="0 0 0"
-              rotation="0 0 0" 
-              scale="0.3 0.3 0.1"
-              priority="level: hud"
-            >
+              <!-- Submenu ADD CYLINDER -->
               <a-entity
-                id="vr-submenu-add-wafflemaker" 
-                name="vr-submenu-add"
-                geometry="primitive: box"
-                material="color: #0377fc"
-                visible="true"
+                id="container-vr-submenu-add-cylinder" 
+                position="0 0.33 0"
+                rotation="0 0 0" 
+                scale="0.3 0.3 0.1"
                 priority="level: hud"
-                raycaster-listen
-                vr-submenu-add="shape: wafflemaker"
-              ></a-entity>
+              >
+                <a-entity
+                  id="vr-submenu-add-cylinder" 
+                  class="vr-submenu-add"
+                  geometry="primitive: box"
+                  material="color: #0377fc"
+                  visible="true"
+                  priority="level: hud"
+                  raycaster-listen
+                  vr-submenu-add="shape: cylinder"
+                ></a-entity>
+                <a-entity
+                  class="vr-submenu-add-cylinder-img" 
+                  geometry="primitive: plane"
+                  material="src: #cylinder; transparent: true"
+                  visible="true"
+                  priority="level: hud"
+                ></a-entity>
+              </a-entity>
+
+              <!-- Submenu ADD PLANE -->
               <a-entity
-                class="vr-submenu-add-wafflemaker-img" 
-                geometry="primitive: plane"
-                material="src: #wafflemaker; transparent: true"
-                visible="true"
+                id="container-vr-submenu-add-plane" 
+                position="0.33 0.33 0"
+                rotation="0 0 0" 
+                scale="0.3 0.3 0.1"
                 priority="level: hud"
-              ></a-entity>
+              >
+                <a-entity
+                  id="vr-submenu-add-plane" 
+                  class="vr-submenu-add"
+                  geometry="primitive: box"
+                  material="color: #0377fc"
+                  visible="true"
+                  priority="level: hud"
+                  raycaster-listen
+                  vr-submenu-add="shape: plane"
+                ></a-entity>
+                <a-entity
+                  class="vr-submenu-add-plane-img" 
+                  geometry="primitive: plane"
+                  material="src: #plane; transparent: true"
+                  visible="true"
+                  priority="level: hud"
+                ></a-entity>
+              </a-entity>
+
+              <!-- Submenu ADD SPHERE -->
+              <a-entity
+                id="container-vr-submenu-add-sphere" 
+                position="-0.33 0 0"
+                rotation="0 0 0" 
+                scale="0.3 0.3 0.1"
+                priority="level: hud"
+              >
+                <a-entity
+                  id="vr-submenu-add-sphere" 
+                  class="vr-submenu-add"
+                  geometry="primitive: box"
+                  material="color: #0377fc"
+                  visible="true"
+                  priority="level: hud"
+                  raycaster-listen
+                  vr-submenu-add="shape: sphere"
+                ></a-entity>
+                <a-entity
+                  class="vr-submenu-add-sphere-img" 
+                  geometry="primitive: plane"
+                  material="src: #sphere; transparent: true"
+                  visible="true"
+                  priority="level: hud"
+                ></a-entity>
+              </a-entity>
+
+              <!-- Submenu ADD WAFFELMAKER -->
+              <a-entity
+                id="container-vr-submenu-add-wafflemaker" 
+                position="0 0 0"
+                rotation="0 0 0" 
+                scale="0.3 0.3 0.1"
+                priority="level: hud"
+              >
+                <a-entity
+                  id="vr-submenu-add-wafflemaker" 
+                  class="vr-submenu-add"
+                  geometry="primitive: box"
+                  material="color: #0377fc"
+                  visible="true"
+                  priority="level: hud"
+                  raycaster-listen
+                  vr-submenu-add="shape: wafflemaker"
+                ></a-entity>
+                <a-entity
+                  class="vr-submenu-add-wafflemaker-img" 
+                  geometry="primitive: plane"
+                  material="src: #wafflemaker; transparent: true"
+                  visible="true"
+                  priority="level: hud"
+                ></a-entity>
+              </a-entity>
             </a-entity>
           </a-entity>
         </a-entity>
@@ -2183,11 +2558,13 @@
           laser-controls="hand: right"
           a-button-listener
           b-button-listener
-          grip-button-listener
+          right-grip-button-listener
           trigger-button-listener
           thumbstick-object-listener
           raycaster="objects: .collidable,
                               .axis-slider,
+                              .colorwheel,
+                              .swatch,
                               .vr-menu, 
                               .vr-menu-add, 
                               .vr-menu-edit, 
@@ -2210,29 +2587,23 @@
           class="hand-left"
           networked="template:#hand-left-template;attachTemplateToLocal:false;"
           laser-controls="hand: left"
+          raycaster="enabled: false;"
+          left-grip-button-listener
           x-button-listener
           y-button-listener
         >
           <!-- NAF Hand -->
           <a-entity class="lefthand" visible="false" mimic-head-color></a-entity>
-
-          <!-- VR MENU -->
         </a-entity>
       </a-entity>
 
-
-      <a-entity entityName="o1" class="collidable" geometry="primitive: box" material="color: #0000ff" raycaster-listen position="5 0 0"></a-entity>
+      <!-- DEBUG --> 
+      <a-text id='debugtext' visible="true" value="DEBUG TEXT" geometry="primitive: plane;" material="color: #20d67e" position="-1 3 -2.5"></a-text>
+      <!--a-entity entityName="o1" class="collidable" geometry="primitive: box" material="color: #0000ff" raycaster-listen position="5 0 0"></a-entity>
       <a-entity entityName="o2" class="collidable" geometry="primitive: box" material="color: #00ff00" raycaster-listen position="5.5 0.5 0.5" wireframed="true"></a-entity>
-      <a-entity entityName="o2-wireframe" geometry="primitive: box" material="color: #ff0000; wireframe: true" wireframe priority="level: wireframe" position="5.5 0.5 0.5"></a-entity>
-      <a-text id='debugtext' visible="true" value="DEBUG TEXT" geometry="primitive: plane;" material="color: #20d67e" position="1 3 -2.5"></a-text>
-
+      <a-entity entityName="o2-wireframe" geometry="primitive: box" material="color: #ff0000; wireframe: true" wireframe priority="level: wireframe" position="5.5 0.5 0.5"></a-entity-->
       <!--a-entity networked="template:#hand-right-template;attachTemplateToLocal:true;" test-comp></a-entity-->
-      
       <!--a-entity geometry="primitive: box" placeable position="3 0 0" scale="0.2 0.2 0.2"></a-entity-->
     </a-scene>
-
-    <div class="controls">
-      <p>Description pending...</p>
-    </div>
   </body>
 </html>
