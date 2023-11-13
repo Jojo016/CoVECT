@@ -17,13 +17,14 @@ AFRAME.registerComponent('object-control-desktop', {
     var cid = data.cid;
     var name = data.name;
     var shape = data.shape;
+    var material = data.material;
     var scale = data.scaleX + " " + data.scaleY + " " + data.scaleZ;
     var rotation = data.rotX + " " + data.rotY + " " + data.rotZ;
     var height = data.height;
     var radius = data.radius;
     var pos3 = new THREE.Vector3(data.posX, data.posY, data.posZ);
     var interactable = data.interactable;
-    var wireframe = data.wireframe;
+    var wireframed = data.wireframed;
 
     // Create container element
     var pEl = document.createElement('a-entity');
@@ -31,39 +32,78 @@ AFRAME.registerComponent('object-control-desktop', {
     pEl.setAttribute('cid', cid);
     pEl.setAttribute('position', pos3);
     pEl.setAttribute('class', 'entity');
-    pEl.setAttribute('scale', scale);
+    pEl.setAttribute('scale', '0.2 0.2 0.2');
     pEl.setAttribute('entityName', name);
 
     // Create actual element
     var el = document.createElement('a-entity');
+    el.setAttribute('class', 'clickable');
+    el.setAttribute('scale', scale);
+    el.setAttribute('wireframed', String(wireframed));
+    pEl.appendChild(el);
+
+    // Handle wireframe
     var elWireframe = document.createElement('a-entity');
+    if(wireframed == 'true') {
+      elWireframe.setAttribute('id', 'cid' + cid + '-wireframe');
+      elWireframe.setAttribute('position', '0 0 0');
+      elWireframe.setAttribute('material', 'color: #ff0000; wireframe: true;');
+      elWireframe.setAttribute('geometry', 'primitive: box;');
+      elWireframe.setAttribute('wireframe', '');
+      elWireframe.setAttribute('priority', 'level: wireframe;');
+      pEl.appendChild(elWireframe);
+    }
+
+    // Append to scene
+    var scene = this.el.sceneEl;
+    scene.appendChild(pEl);
 
     // Handle other attributes 
     el.interactable = interactable;
 
-    // Handle geometry/shape attribute
+    // Handle geometry/shape attribute 
     if(shape == 'sphere') {
-      el.setAttribute('material', 'color: #00FFFF');   
       el.setAttribute('geometry', 'primitive: sphere; segmentsWidth: 16; segmentsHeight: 16;');
       el.setAttribute('radius', radius);
+      el.setAttribute('material', material);
+
+      var scaler = radius*2;
+      elWireframe.setAttribute('scale', scaler + ' ' + scaler + ' ' + scaler);
 
     }else if(shape == 'plane') {
-      el.setAttribute('material', 'color: #00FFFF');   
       el.setAttribute('geometry', 'primitive: plane;');
       el.setAttribute('rotation', rotation);
+      el.setAttribute('material', material);
+      el.setAttribute('rotation', rotation);
+
+      elWireframe.setAttribute('geometry', 'primitive: plane;');
+      elWireframe.setAttribute('rotation', rotation);
 
     }else if(shape == 'cylinder'){
-      el.setAttribute('material', 'color: #00FFFF');   
       el.setAttribute('geometry', 'primitive: ' + shape + '; radius: ' + radius + '; height: ' + height + '; rotation: ' + rotation + ';');
+      el.setAttribute('material', material);
+
+      var scaler = Number(radius)*2;
+      var heightNum = Number(height);
+
+      var tempScale = scaler + ' ' + heightNum + ' ' + scaler;
+
+      elWireframe.setAttribute('scale', tempScale);
+      elWireframe.setAttribute('rotation', rotation);
 
     }else if(shape == 'box') {
-      el.setAttribute('material', 'color: #00FFFF');   
       el.setAttribute('geometry', 'primitive: ' + shape + ';');
       el.setAttribute('rotation', rotation);
-      
+      el.setAttribute('material', material);
+
+      elWireframe.setAttribute('geometry', 'primitive: box');
+      elWireframe.setAttribute('rotation', rotation);
+
     }else if(shape == 'bowl') {
       el.setAttribute('obj-model', 'obj: #bowl');
       el.setAttribute('material', 'src: /img/ceramic_white.jpg; color: #80bbd1');
+      
+      elWireframe.setAttribute('scale', '1 1 1');
       
     }else if(shape == 'plate') {
       el.setAttribute('obj-model', 'obj: #plate');
@@ -79,14 +119,19 @@ AFRAME.registerComponent('object-control-desktop', {
     }else{
       // TODO: Add method for specific models
       el.setAttribute('rotation', rotation);
+      elWireframe.setAttribute('geometry', 'primitive: box');
+      elWireframe.setAttribute('rotation', rotation);
     }
 
     // Check for selection
     var selectedById = data.selectedBy;
     if(selectedById != -1) {
       // Make selected object transparent and untargetable
-      var mat = el.getDOMAttribute('material');
-      mat.opacity = 0.4;
+      var mat = el.getAttribute('material');
+      if(mat == null) {
+        mat = new Object();
+      }
+      mat.opacity = 0.4;;
       el.setAttribute('material', mat);
 
       // Set as untargetable for raycaster
@@ -99,16 +144,6 @@ AFRAME.registerComponent('object-control-desktop', {
       el.setAttribute('selectable', '');
     }
 
-    pEl.appendChild(el);
-
-    // Handle wireframe
-    if(wireframe) {
-      pEl.appendChild(elWireframe);
-    }
-
-    var scene = this.el.sceneEl;
-    scene.appendChild(pEl);
-
     // Add object to list 'Scene Objects'
     var table = parent.document.getElementById('scene-objects');
     var tr = table.insertRow();
@@ -116,8 +151,10 @@ AFRAME.registerComponent('object-control-desktop', {
 
     var cidCell = tr.insertCell();
     cidCell.appendChild(document.createTextNode(cid));
+    cidCell.style.color = "white";
     var elementNameCell = tr.insertCell();
     elementNameCell.appendChild(document.createTextNode(name));
+    elementNameCell.style.color = "white";
     var buttonCell = tr.insertCell();
     var button = document.createElement('button');
     button.innerText = "X";
@@ -129,6 +166,21 @@ AFRAME.registerComponent('object-control-desktop', {
       easyrtc.sendDataWS(clientRtcId, "removeComponent", newData);
     }
     buttonCell.appendChild(button);
+  },
+
+  markObject(evt) {
+    var pEl = evt.currentTarget.el;
+    var checked = evt.target.checked;
+
+    // Send changes to server
+    var obj = new Object();
+    var cid = pEl.getAttribute('cid');
+    obj.cid = cid; 
+    obj.updatetype = 'wireframed';
+    obj.updatedata = String(checked);
+    var newData = JSON.stringify(obj);
+
+    easyrtc.sendDataWS(clientRtcId, "updateComponent", newData);
   },
 
   onMouseMove: function(event){
@@ -149,24 +201,18 @@ AFRAME.registerComponent('object-control-desktop', {
     ySlider.setAttribute('material', 'color: #ff0000');
     zSlider.setAttribute('material', 'color: #0000ff');
 
-    xSlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.03; height: 0.8; segmentsRadial: 6');
-    ySlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.03; height: 0.8; segmentsRadial: 6');
-    zSlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.03; height: 0.8; segmentsRadial: 6');
+    xSlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.1; height: 2; segmentsRadial: 6');
+    ySlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.1; height: 2; segmentsRadial: 6');
+    zSlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.1; height: 2; segmentsRadial: 6');
     
     xSlider.setAttribute('rotation', '0 0 -90');
     zSlider.setAttribute('rotation', '90 0 0');
     
     var el = pEl.children[0];
 
-    if(el.getAttribute('geometry').primitive == 'box') {
-      xSlider.setAttribute('position', '0.2 -0.2 -0.2');
-      ySlider.setAttribute('position', '-0.2 0.2 -0.2');
-      zSlider.setAttribute('position', '-0.2 -0.2 0.2');
-    }else{
-      xSlider.setAttribute('position', '0 -0.4 -0.4');
-      ySlider.setAttribute('position', '-0.4 0 -0.4');
-      zSlider.setAttribute('position', '-0.4 -0.4 0');
-    }
+    xSlider.setAttribute('position', '1 0 0');
+    ySlider.setAttribute('position', '0 1 0');
+    zSlider.setAttribute('position', '0 0 1');
 
     xSlider.setAttribute('grab-axisslider-listener', '');
     ySlider.setAttribute('grab-axisslider-listener', '');
@@ -185,22 +231,18 @@ AFRAME.registerComponent('object-control-desktop', {
     pEl.appendChild(zSlider);
   },
 
-  removeAxes: function(pEl) {
-    var firstChild = null;
-  
+  removeAxes: function(pEl) {  
     Array.from(pEl.children).forEach(child => {
-      if(firstChild != null) {
+      if(child.getAttribute('class') == 'axis-slider') {
         pEl.removeChild(child);
-      }else{
-        firstChild = child;
       }
     });
   },
 
   colorChanged: function(event) {
-    var el = event.currentTarget.el;
-    var pEl = el.parentEl;
-    var mat = el.getAttribute('material');
+    var pEl = event.currentTarget.el;
+    var el = pEl.children[0];
+    var mat = el.getDOMAttribute('material');
 
     mat.color = event.target.value;
 
@@ -259,6 +301,54 @@ AFRAME.registerComponent('object-control-desktop', {
     easyrtc.sendDataWS(clientRtcId, "updateComponent", newData);
   },
 
+  rotationChanged: function(event) {
+    var pEl = event.currentTarget.el;
+    var el = pEl.children[0];
+    var rot = pEl.getAttribute('rotation');
+    var value = event.target.value;
+
+    // Get the correct  x-/y- or z-coord and update it
+    var name = event.target.name;
+    var coord = name.substr(0, 1);
+    rot[coord] = value; 
+
+    // Update local data 
+    el.setAttribute('rotation', rot);
+
+    // Send changes to server
+    var obj = new Object();
+    var cid = pEl.getAttribute('cid');
+    obj.cid = cid; 
+    obj.updatetype = 'rotation';
+    obj.updatedata = rot;
+    var newData = JSON.stringify(obj);
+    easyrtc.sendDataWS(clientRtcId, "updateComponent", newData);
+  },
+
+  scaleChanged: function(event) {
+    var pEl = event.currentTarget.el;
+    var el = pEl.children[0];
+    var scale = el.getAttribute('scale');
+    var value = event.target.value;
+
+    // Get the correct  x-/y- or z-coord and update it
+    var name = event.target.name;
+    var coord = name.substr(0, 1);
+    scale[coord] = value; 
+
+    // Update local data 
+    el.setAttribute('scale', scale);
+
+    // Send changes to server
+    var obj = new Object();
+    var cid = pEl.getAttribute('cid');
+    obj.cid = cid; 
+    obj.updatetype = 'scale';
+    obj.updatedata = scale;
+    var newData = JSON.stringify(obj);
+    easyrtc.sendDataWS(clientRtcId, "updateComponent", newData);
+  },
+
   interactionPropertyChanged: function(event) {
     var pEl = event.currentTarget.el;
     var eventTarget = event.target;
@@ -285,7 +375,6 @@ AFRAME.registerComponent('object-control-desktop', {
     var name = eventTarget.name;
     var value = eventTarget.value;
 
-    
     // Add updated data to data object
     var newObj = new Object();
     var cid = pEl.getAttribute('cid');
@@ -417,11 +506,11 @@ AFRAME.registerComponent('object-control-desktop', {
       };
 
       div.el = pEl;
-      div.addEventListener("change", this.positionChanged, false);
+      div.addEventListener("change", this.rotationChanged, false);
       pPanel.appendChild(div);
 
       // Scale
-      var scale = pEl.getAttribute('scale');
+      var scale = el.getAttribute('scale');
       div = document.createElement('div');
       div.className = 'property-row';
       div.innerHTML = `
@@ -441,7 +530,7 @@ AFRAME.registerComponent('object-control-desktop', {
       };
 
       div.el = pEl;
-      div.addEventListener("change", this.positionChanged, false);
+      div.addEventListener("change", this.scaleChanged, false);
       pPanel.appendChild(div);
 
       // Material
@@ -554,6 +643,36 @@ AFRAME.registerComponent('object-control-desktop', {
       
       div.el = pEl;
       div.addEventListener("change", this.interactableChanged, false);
+
+      pPanel.appendChild(div);
+
+      // Wireframe
+      div = document.createElement('div');
+      div.className = 'property-row';
+
+      var wireframed = el.getAttribute('wireframed');
+      var checked = '';
+      if(wireframed == 'true') {
+        checked = 'checked ';
+      }
+      
+      div.className = 'property-row';
+      div.innerHTML = `
+        <span class="property-row-element">
+          <b>Collaboration</b>
+        </span>
+        <div class="property-row-element">
+          <input class="property-row-checkbox" type="checkbox" id="wireframe-property" ${checked}value="wireframe"/>
+          <label for="wireframe-property">Highlight Element</label><br>
+        </div>
+        <div class="property-row-element">
+        </div>
+        <div class="property-row-element">
+        </div>
+      `;
+
+      div.el = pEl;
+      div.addEventListener("change", this.markObject, false);
 
       pPanel.appendChild(div);
 
@@ -1002,6 +1121,11 @@ AFRAME.registerComponent('object-control-desktop', {
           }
         }
 
+        if(pEl == null) {
+          // Entity possibly deleted, skip
+          continue;
+        }
+
         var compType = pEl.getAttribute('class');
         if(compType == 'interaction') {
           taskType = 'eventArea';
@@ -1113,6 +1237,7 @@ AFRAME.registerComponent('object-control-desktop', {
       var pPanel = window.parent.document.getElementById('properties-panel');
       var objectType = pEl.getAttribute('class');
 
+
       // Decide whether to select or deselect the object
       if(sourceRtcId == clientRtcId) {
         // Client's own EasyRTCid
@@ -1170,6 +1295,9 @@ AFRAME.registerComponent('object-control-desktop', {
       if(selectBool) {
         // Make selected object untargetable
         var selectable = el.getAttribute('selectable');
+        if(selectable == null) {
+          selectable = new Object();
+        }
         selectable.targetable = false;
         el.setAttribute('selectable', selectable);
 
@@ -1178,6 +1306,11 @@ AFRAME.registerComponent('object-control-desktop', {
       }else {
         // Make selected object targetable again
         var selectable = el.getAttribute('selectable');
+
+        if(selectable == null) {
+          selectable = new Object();
+        }
+
         selectable.targetable = true;
         el.setAttribute('selectable', selectable);
 
@@ -1209,7 +1342,7 @@ AFRAME.registerComponent('object-control-desktop', {
       pEl.parentNode.removeChild(pEl);
   },
 
-  updateComponent: function(componentId, type, data) {
+  updateComponent: function(componentId, type, data, sourcertcid) {
     console.log("updateComponent");
     var el = null;
     var pEl = null;
@@ -1239,11 +1372,86 @@ AFRAME.registerComponent('object-control-desktop', {
 
     }else{
       // All other types should be changed for el itself
-      el.setAttribute(type, data);
+      if(type == 'wireframed') {
+        var cid = pEl.getAttribute('id');
+
+        if(data == 'true') {
+          // Add wireframe
+          var geometry = el.getAttribute('geometry');
+          var shape;
+          if(geometry == null) {
+            shape = 'model';
+          }else{
+            shape = geometry.primitive;
+          }
+
+          // Handle wireframe
+          el.setAttribute('wireframed', 'true');
+          var elWireframe = document.createElement('a-entity');
+          elWireframe.setAttribute('id', cid + '-wireframe');
+          elWireframe.setAttribute('position', '0 0 0');
+          elWireframe.setAttribute('material', 'color: #ff0000; wireframe: true');
+          elWireframe.setAttribute('geometry', 'primitive: box;');
+          elWireframe.setAttribute('wireframe', '');
+          elWireframe.setAttribute('priority', 'level: wireframe');
+          pEl.appendChild(elWireframe);
+
+          // Handle geometry/shape attribute
+          if(shape == 'sphere') {
+            var radius = el.getAttribute('radius');
+
+            var scaler = radius*2;
+            elWireframe.setAttribute('scale', scaler + ' ' + scaler + ' ' + scaler);
+
+          }else if(shape == 'plane') {
+            var rotation = el.getAttribute('rotation');
+
+            elWireframe.setAttribute('geometry', 'primitive: plane;');
+            elWireframe.setAttribute('rotation', rotation);
+
+          }else if(shape == 'cylinder'){
+            var geometry = el.getAttribute('geometry');
+            var height = geometry.height;
+            var radius = geometry.radius;
+            var rotation = el.getAttribute('rotation');
+
+            var scaler = radius*2;
+            elWireframe.setAttribute('scale', scaler + ' ' + height + ' ' + scaler);
+            elWireframe.setAttribute('rotation', rotation);
+
+          }else if(shape == 'box') {
+            var rotation = el.getAttribute('rotation');
+            elWireframe.setAttribute('geometry', 'primitive: box');
+            elWireframe.setAttribute('rotation', rotation);
+
+          }else{
+            // TODO: Add method for specific models
+            var rotation = el.getAttribute('rotation');
+            elWireframe.setAttribute('geometry', 'primitive: box');
+            elWireframe.setAttribute('rotation', rotation);
+          };
+        }else {
+          // Remove wireframe if necessary
+          var wireframed = el.getAttribute('wireframed'); 
+          if(wireframed == 'false') {
+            return;
+          }
+
+          var wfObjectId = cid + "-wireframe"
+          var wfObject = document.getElementById(wfObjectId);
+
+          el.setAttribute('wireframed', 'false');
+          if(wfObject != null) {
+            wfObject.parentEl.removeChild(wfObject);
+          }
+        }
+      }else{
+        el.setAttribute(type, data);
+      }
     }
 
     // Update property rows if element is currently selected by client
-    if(data.sourceRtcId == clientRtcId) {
+    if(sourcertcid == clientRtcId) {
       this.selectEntity(componentId, clientRtcId, true);
     }
 
@@ -1345,16 +1553,20 @@ AFRAME.registerComponent('object-control-desktop', {
 
       // Create actual element & handle attributes
       var el = document.createElement('a-entity');
+      el.setAttribute('class', 'clickable');
+      el.setAttribute('scale', scale);
       el.setAttribute('geometry', interaction.geometry);
       el.setAttribute('material', interaction.material);
-      el.setAttribute('scale', scale);
 
       // Check for selection
       var selectedById = interaction.selectedBy;
       if(selectedById != -1) {
         // Make selected object transparent and untargetable
-        var mat = el.getDOMAttribute('material');
-        mat.opacity = 0.1;
+        var mat = el.getAttribute('material');
+        if(mat == null) {
+          mat = new Object();
+        }
+        mat.opacity = 0.4;;
         el.setAttribute('material', mat);
 
         // Set as untargetable for raycaster
@@ -1378,8 +1590,10 @@ AFRAME.registerComponent('object-control-desktop', {
 
       var cidCell = tr.insertCell();
       cidCell.appendChild(document.createTextNode(cid));
+      cidCell.style.color = '#ffffff';
       var elementNameCell = tr.insertCell();
       elementNameCell.appendChild(document.createTextNode(name));
+      elementNameCell.style.color = '#ffffff';
       var buttonCell = tr.insertCell();
       var button = document.createElement('button');
       button.innerText = "X";

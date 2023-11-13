@@ -12,7 +12,7 @@
       });
     </script>
     <script>
-      var clientName = prompt("Please enter your name", "Jojo");
+      var clientName = prompt("Please enter your name", "WEB User");
 
       // Send specific commands to the server 
       function addObject(shape) {
@@ -58,6 +58,11 @@
         iframe.contentWindow.sendToServer("addTask", null);
       }
 
+      function exportFiles() {
+        var iframe = document.getElementById("iframe");
+        iframe.contentWindow.sendToServer("exportFiles", null);
+      }
+
       // Status Bar functions
       function addUserToStatusBar(clientId, clientName, isYourself) {
         // Create Div
@@ -101,7 +106,7 @@
               <tbody class="labels">
                 <tr class="tr1">
                   <td class="td1" colspan="2">
-                    <label for="geometry">Geometry</label>
+                    <label for="geometry">Add Entities</label>
                     <input type="checkbox" name="geometry" id="geometry" data-toggle="toggle">
                   </td>
                 </tr>
@@ -167,7 +172,24 @@
               <tbody class="labels">
                 <tr class="tr1">
                   <td class="td1" colspan="2">
-                    <label for="task">Task</label>
+                    <label for="interaction">Interactions</label>
+                    <input type="checkbox" name="interaction" id="interaction" data-toggle="toggle">
+                  </td>
+                </tr>
+              </tbody>
+              <tbody class="hide">
+                <tr class="tr1">
+                  <td class="td1">
+                    <div style="width: 100%;">
+                      <button class="seamless-button" onClick="addInteraction('eventarea')">Add EventArea</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+              <tbody class="labels">
+                <tr class="tr1">
+                  <td class="td1" colspan="2">
+                    <label for="task">Tasks</label>
                     <input type="checkbox" name="task" id="task" data-toggle="toggle">
                   </td>
                 </tr>
@@ -176,8 +198,16 @@
                 <tr class="tr1">
                   <td class="td1">
                     <div style="width: 100%;">
-                      <button class="seamless-button" onClick="addInteraction('eventarea')">Add TaskArea</button>
+                      <button class="seamless-button" onClick="editTasks()">Edit Tasks</button>
                     </div>
+                  </td>
+                </tr>
+              </tbody>
+              <tbody class="labels">
+                <tr class="tr1">
+                  <td class="td1" colspan="2">
+                    <label for="export">Export</label>
+                    <input type="checkbox" name="export" id="export" data-toggle="toggle">
                   </td>
                 </tr>
               </tbody>
@@ -185,7 +215,7 @@
                 <tr class="tr1">
                   <td class="td1">
                     <div style="width: 100%;">
-                      <button class="seamless-button" onClick="editTasks()">Edit Tasks</button>
+                      <button class="seamless-button" onClick="exportFiles()">Export now</button>
                     </div>
                   </td>
                 </tr>
@@ -217,7 +247,7 @@
 
         <div class="right-panel">
           <div style="text-align: center;" >
-            <span style="font-size: 20px; font-weight:bold;">Scene Objects</span>
+            <span style="font-size: 20px; font-weight:bold; color: white;">Scene Objects</span>
           </div>
           <table id="scene-objects" width="100%">
             <thead>

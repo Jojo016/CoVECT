@@ -197,6 +197,10 @@
           if(tasksSelectedBy == null) {
             easyrtc.sendDataWS(clientRtcId, command, data);
           }
+
+        }else if(command == 'exportFiles'){
+          easyrtc.sendDataWS(clientRtcId, command, data);
+
         }
       }
 
@@ -212,12 +216,9 @@
             controller.spawnEntity(newData);
 
           }else if(msgType === 'selectedComponent') {
-            console.log('received selectedComponent!');
             var data = JSON.parse(msgData);
-            console.log("data:");
-            console.log(data);
             var cid = data.cid;
-            var sourceRtcId = data.sourcertcid;
+            var sourceRtcId = data.sourceRtcId;
             var bool = data.bool;
             var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
             controller.selectEntity(cid, sourceRtcId, bool);
@@ -233,13 +234,14 @@
             var cid = data.cid;
             var type = data.updatetype;
             var newData = data.updatedata;
+            var sourceRtcId = data.sourceRtcId;
             var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
-            controller.updateComponent(cid, type, newData);
+            controller.updateComponent(cid, type, newData, sourceRtcId);
 
           }else if(msgType === 'updatedInteractable') {
             var data = JSON.parse(msgData);
             var cid = data.cid;
-            var sourceRtcId = data.sourcertcid;
+            var sourceRtcId = data.sourceRtcId;
             var newData = data.updatedata;
             var property = newData.property;
             var value = newData.value;
@@ -252,7 +254,14 @@
 
           }else if(msgType === 'userLeft') {
             var data = JSON.parse(msgData);
-            window.parent.removeUserFromStatusBar(data.easyrtcid);
+            window.parent.removeUserFromStatusBar(data.sourceRtcId);
+
+            var cid = data.cid;
+            var sourceRtcId = data.sourceRtcId;
+            if(cid != -1) {
+              var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+              controller.selectEntity(cid, sourceRtcId, false);
+            }
 
           }else if(msgType === 'spawnInteraction') {
             var newData = JSON.parse(msgData);
@@ -339,6 +348,30 @@
       });
     </script>
     <script>
+      function sendMarkObject(pEl) {
+        // Create data object to stringify
+        var el = pEl.children[0];
+        var cid = pEl.getAttribute('cid');
+        var obj = new Object();
+        obj.cid = cid;
+
+        // Check if wireframe is enabled
+        var wireframed = el.getAttribute('wireframed');
+        obj.updatetype = 'wireframe';
+        
+        if(wireframed == "false") {
+          // Remove wireframe
+          obj.updatedata = true;
+        }else {
+          // Add wireframe
+          obj.updatedata = false;
+        }
+
+        var entityData = JSON.stringify(obj); 
+        console.log("Sending: 'UpdateComponent to switch wireframe on object:' " + entityData);
+        easyrtc.sendDataWS(clientRtcId, "updateComponent", entityData);
+      }
+
       AFRAME.registerComponent('grab-axisslider-listener', {
         init: function () {
           var el = this.el;
@@ -378,44 +411,10 @@
               origin.x = offsetX;
 
               // Map offset to position
-              offset = offset/1000;
+              offset = offset/500;
               var pos3 = pEl.getAttribute('position');
               pos3[axis] = pos3[axis] + offset;
               pEl.setAttribute('position', pos3);
-
-              // Send changes to server
-              var obj = new Object();
-              var cid = pEl.getAttribute('cid');
-              obj.cid = cid; 
-              obj.updatetype = 'position';
-              obj.updatedata = pos3;
-              var newData = JSON.stringify(obj);
-              easyrtc.sendDataWS(clientRtcId, "updateComponent", newData);
-
-              // TODO: UPDATE POSITION IN PROPERTY WINDOW
-              /*
-              // Determine axis & offset
-              var axis = axisGrabbed.axis;
-              var offsetX = e.offsetX;
-              var offsetY = e.offsetY;
-
-              var diffX = offsetX - origin.x;
-              var diffY = offsetY - origin.y;
-
-              var offset = Math.sqrt(diffX*diffX + diffY*diffY)/1000;
-
-              origin.x = e.offsetX;
-              origin.y = e.offsetY;
-
-              // Determine positive or negative
-              var presign = this.posOrNeg(origin.x, origin.y, offsetX, offsetY);
-              console.log(presign);
-
-              // Map offset to position
-              var pos3 = pEl.getAttribute('position');
-              pos3[axis] = pos3[axis] + presign * offset;
-              pEl.setAttribute('position', pos3);
-              */
             }
           });
 
@@ -596,6 +595,7 @@
             wasd-controls="fly:true;"
             look-controls
             cursor="rayOrigin: mouse"
+            raycaster="objects: .clickable"
           >
           <!-- 
             raycaster="objects: .cursor-listener"

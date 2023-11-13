@@ -291,6 +291,7 @@ AFRAME.registerComponent('object-control-vr', {
     var cid = data.cid;
     var name = data.name;
     var shape = data.shape;
+    var material = data.material;
     var scale = data.scaleX + " " + data.scaleY + " " + data.scaleZ;
     var rotation = data.rotX + " " + data.rotY + " " + data.rotZ;
     var height = data.height;
@@ -304,17 +305,17 @@ AFRAME.registerComponent('object-control-vr', {
     pEl.setAttribute('id', 'cid' + cid);
     pEl.setAttribute('cid', cid);
     pEl.setAttribute('position', pos3);
+    pEl.setAttribute('scale', '0.2 0.2 0.2');
     pEl.setAttribute('class', 'entity');
-    pEl.setAttribute('scale', scale);
     pEl.setAttribute('entityName', name);
 
     // Create actual element & wireframe
     var el = document.createElement('a-entity');
+    el.setAttribute('scale', scale);
     var elWireframe = document.createElement('a-entity');
     pEl.appendChild(el);
 
     // Handle other attributes
-    el.setAttribute('material', 'color: #00FFFF');
     el.interactable = interactable;
 
     // TODO: MAYBE NOT NEEDED
@@ -324,6 +325,7 @@ AFRAME.registerComponent('object-control-vr', {
     if(shape == 'sphere') {
       el.setAttribute('geometry', 'primitive: sphere; segmentsWidth: 16; segmentsHeight: 16;');
       el.setAttribute('radius', radius);
+      el.setAttribute('material', material);
 
       elWireframe.setAttribute('geometry', 'primitive: sphere; segmentsWidth: 16; segmentsHeight: 16;');
       elWireframe.setAttribute('radius', radius);
@@ -331,18 +333,21 @@ AFRAME.registerComponent('object-control-vr', {
     }else if(shape == 'plane') {
       el.setAttribute('geometry', 'primitive: plane;');
       el.setAttribute('rotation', rotation);
+      el.setAttribute('material', material);
 
       elWireframe.setAttribute('geometry', 'primitive: plane;');
       elWireframe.setAttribute('rotation', rotation);
 
     }else if(shape == 'cylinder'){
       el.setAttribute('geometry', 'primitive: ' + shape + '; radius: ' + radius + '; height: ' + height + '; rotation: ' + rotation + ';');
+      el.setAttribute('material', material);
 
       elWireframe.setAttribute('geometry', 'primitive: ' + shape + '; radius: ' + radius + '; height: ' + height + '; rotation: ' + rotation + ';');
 
     }else if(shape == 'box') {
       el.setAttribute('geometry', 'primitive: ' + shape + ';');
       el.setAttribute('rotation', rotation);
+      el.setAttribute('material', material);
 
       elWireframe.setAttribute('geometry', 'primitive: ' + shape + ';');
       elWireframe.setAttribute('rotation', rotation);
@@ -350,6 +355,17 @@ AFRAME.registerComponent('object-control-vr', {
     }else if(shape == 'bowl') {
       el.setAttribute('obj-model', 'obj: #bowl');
       el.setAttribute('material', 'src: /img/ceramic_white.jpg; color: #1b688c');
+      
+    }else if(shape == 'plate') {
+      el.setAttribute('obj-model', 'obj: #plate');
+      el.setAttribute('material', 'src: /img/ceramic_white.jpg; color: #80bbd1');
+      
+    }else if(shape == 'stool') {
+      el.setAttribute('obj-model', 'obj: #woodenstool');
+      el.setAttribute('material', 'src: /img/wood1.jpg');
+      
+    }else if(shape == 'table') {
+      el.setAttribute('obj-model', 'obj: #coffeetable-obj; mtl: coffeetable-mtl');
       
     }else{
       // TODO: Add method for specific models
@@ -373,7 +389,7 @@ AFRAME.registerComponent('object-control-vr', {
     var selectedById = data.selectedBy;
     if(selectedById != -1) {
       // Make selected object transparent and untargetable
-      var mat = el.getAttribute('material');
+      var mat = el.getDOMAttribute('material');
       mat.opacity = 0.4;
       el.setAttribute('material', mat);
 
@@ -410,9 +426,9 @@ AFRAME.registerComponent('object-control-vr', {
     ySlider.setAttribute('material', 'color: #ff0000');
     zSlider.setAttribute('material', 'color: #0000ff');
 
-    xSlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.1; height: 2; segmentsRadial: 4');
-    ySlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.1; height: 2; segmentsRadial: 4');
-    zSlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.1; height: 2; segmentsRadial: 4');
+    xSlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.1; height: 2; segmentsRadial: 6');
+    ySlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.1; height: 2; segmentsRadial: 6');
+    zSlider.setAttribute('geometry', 'primitive: cylinder; radius: 0.1; height: 2; segmentsRadial: 6');
     
     xSlider.setAttribute('rotation', '0 0 -90');
     zSlider.setAttribute('rotation', '90 0 0');
@@ -469,13 +485,9 @@ AFRAME.registerComponent('object-control-vr', {
   },
 
   removeAxes: function(pEl) {
-    var firstChild = null;
-  
     Array.from(pEl.children).forEach(child => {
-      if(firstChild != null) {
+      if(child.getAttribute('class') == 'axis-slider') {
         pEl.removeChild(child);
-      }else{
-        firstChild = child;
       }
     });
   },
@@ -755,13 +767,14 @@ AFRAME.registerComponent('object-control-vr', {
       pEl.setAttribute('type', type);
       pEl.setAttribute('cid', cid);
       pEl.setAttribute('position', pos3);
+      pEl.setAttribute('scale', '0.2 0.2 0.2');
       pEl.setAttribute('entityName', name);
-      pEl.setAttribute('scale', scale);
 
       pEl.data = data;
 
       // Create actual element & handle attributes
       var el = document.createElement('a-entity');
+      el.setAttribute('scale', scale);
       el.setAttribute('geometry', interaction.geometry);
       el.setAttribute('material', interaction.material);
 
@@ -772,7 +785,7 @@ AFRAME.registerComponent('object-control-vr', {
       var selectedById = interaction.selectedBy;
       if(selectedById != -1) {
         // Make selected object transparent and untargetable
-        var mat = el.getAttribute('material');
+        var mat = el.getDOMAttribute('material');
         mat.opacity = 0.1;
         el.setAttribute('material', mat);
 

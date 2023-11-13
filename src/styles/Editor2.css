@@ -116,12 +116,15 @@
     width: calc(20% - 1px);
     float: right; /*align right*/
     border-left: 1px solid #333;
+    background-color: #414141;
 }
 
 html { height:100% }
 body { height:100%; width:100%; margin:0; display:table;}
 .iframe_container { height:100%; display:table-cell; }
 iframe { height:100%; width:100%; display:block; }
+
+table thead th { color: white; }
 
 table.table1 { 
     border-collapse: separate; 
