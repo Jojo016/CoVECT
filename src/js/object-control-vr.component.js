@@ -102,7 +102,6 @@ function changeEventOption(input, next) {
 
   debug.setAttribute('value', debug.getAttribute('value') + '\ncurrentOptionIndex: ' + currentOptionIndex);
 
-
   if(next) {
     nextOptionIndex = currentOptionIndex + 1;
     if(nextOptionIndex > eventOptions.length-1) {
@@ -374,7 +373,7 @@ AFRAME.registerComponent('object-control-vr', {
     var selectedById = data.selectedBy;
     if(selectedById != -1) {
       // Make selected object transparent and untargetable
-      var mat = el.getDOMAttribute('material');
+      var mat = el.getAttribute('material');
       mat.opacity = 0.4;
       el.setAttribute('material', mat);
 
@@ -757,6 +756,7 @@ AFRAME.registerComponent('object-control-vr', {
       pEl.setAttribute('cid', cid);
       pEl.setAttribute('position', pos3);
       pEl.setAttribute('entityName', name);
+      pEl.setAttribute('scale', scale);
 
       pEl.data = data;
 
@@ -764,13 +764,15 @@ AFRAME.registerComponent('object-control-vr', {
       var el = document.createElement('a-entity');
       el.setAttribute('geometry', interaction.geometry);
       el.setAttribute('material', interaction.material);
-      el.setAttribute('scale', scale);
+
+      // Handle raycaster attribute 
+      el.setAttribute('raycaster-listen', '');
 
       // Check for selection
       var selectedById = interaction.selectedBy;
       if(selectedById != -1) {
         // Make selected object transparent and untargetable
-        var mat = el.getDOMAttribute('material');
+        var mat = el.getAttribute('material');
         mat.opacity = 0.1;
         el.setAttribute('material', mat);
 

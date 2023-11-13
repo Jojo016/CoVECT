@@ -682,7 +682,7 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
         // Add the new object to existing ones
         newObj['cid'] = componentCounter;
         newObj.selectedBy = -1;
-        newObj.name = 'New TaskArea';
+        newObj.name = 'New EventArea';
         listOfComponentData.push(newObj);
 
         // Create new message & set msgType

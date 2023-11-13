@@ -917,15 +917,15 @@
         },
 
         setHoverOver: function() {
-          var intersectCid = this.el.getAttribute('intersect-cid');
           var el = this.el;
           var pEl = el.parentEl;
           var cid = pEl.getAttribute('cid');
+          var intersectCid = el.getAttribute('intersect-cid');
 
-          var debug = document.getElementById('debugtext');
-          debug.setAttribute('value', 'HoverOver: ' + cid + ' != ' + intersectCid + '(' + (cid!=intersectCid) + ')');
-          debug.setAttribute('value', debug.getAttribute('value') + '\ntypeof: ' + cid + ' & ' + intersectCid);
-          debug.setAttribute('value', debug.getAttribute('value') + '\n' + typeof(cid) + ' & ' + typeof(intersectCid));
+          // Needed for VR-menu
+          if(cid == null) {
+            pEl.setAttribute('cid', '-1');
+          }
 
           if(cid != intersectCid) {
             el.setAttribute('intersect-cid', cid);
@@ -1183,11 +1183,13 @@
               obj.posZ = pos3.z;
 
               var type = element.getAttribute('interaction');
+
               if(type == 'eventarea') {
                 // Get data from interaction 'element'
                 obj.geometry = element.getAttribute('geometry');
                 obj.material = element.getAttribute('material');
                 obj.scale = element.getAttribute('scale');
+                obj.type = type;
 
                 // Send 'create new interaction'
                 var data = JSON.stringify(obj);
@@ -1679,7 +1681,7 @@
             var newElement = document.createElement('a-entity');
             newElement.setAttribute('geometry', 'primitive: box');
             newElement.setAttribute('material', 'color: #a8a8a8; opacity: 0.4');
-            newElement.setAttribute('scale', '0.2 0.2 0.1');
+            newElement.setAttribute('scale', '0.2 0.1 0.2');
             newElement.setAttribute('interaction', type);
 
             // Attach object to the raycaster
@@ -2191,10 +2193,10 @@
         >
           <a-entity 
             id="keyboard" 
-            position="-0.2 -0.25 -0.65" 
+            position="-0.2 100 -0.65" 
             rotation="-15 0 0" 
             a-keyboard
-            visible="false"
+            visible="true"
           ></a-entity>
           <a-entity 
             id="container-vr-menu"
