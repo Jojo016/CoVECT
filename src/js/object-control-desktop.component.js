@@ -14,6 +14,8 @@ AFRAME.registerComponent('object-control-desktop', {
   },
 
   spawnEntity: function(data) {
+    console.log("spawnEntity data:");
+    console.log(data);
     var cid = data.cid;
     var name = data.name;
     var shape = data.shape;
@@ -74,12 +76,11 @@ AFRAME.registerComponent('object-control-desktop', {
       el.setAttribute('geometry', 'primitive: plane;');
       el.setAttribute('rotation', rotation);
       el.setAttribute('material', material);
-      el.setAttribute('rotation', rotation);
 
       elWireframe.setAttribute('geometry', 'primitive: plane;');
       elWireframe.setAttribute('rotation', rotation);
 
-    }else if(shape == 'cylinder'){
+    }else if(shape == 'cylinder') {
       el.setAttribute('geometry', 'primitive: ' + shape + '; radius: ' + radius + '; height: ' + height + '; rotation: ' + rotation + ';');
       el.setAttribute('material', material);
 
@@ -97,24 +98,39 @@ AFRAME.registerComponent('object-control-desktop', {
       el.setAttribute('material', material);
 
       elWireframe.setAttribute('geometry', 'primitive: box');
+      elWireframe.setAttribute('scale', scale);
       elWireframe.setAttribute('rotation', rotation);
 
     }else if(shape == 'bowl') {
+      var color = material.color;
+      var opacity = material.opacity;
+      el.setAttribute('position', '0 0 0');
       el.setAttribute('obj-model', 'obj: #bowl');
-      el.setAttribute('material', 'src: /img/ceramic_white.jpg; color: #80bbd1');
+      el.setAttribute('material', 'src: /img/ceramic_white.jpg; color: ' + color + '; opacity: ' + String(opacity) +';');
+      el.setAttribute('rotation', rotation);
       
       elWireframe.setAttribute('scale', '1 1 1');
+      elWireframe.setAttribute('rotation', rotation);
       
     }else if(shape == 'plate') {
+      var color = material.color;
+      var opacity = material.opacity;
+      el.setAttribute('position', '0 0 0');
       el.setAttribute('obj-model', 'obj: #plate');
-      el.setAttribute('material', 'src: /img/ceramic_white.jpg; color: #80bbd1');
+      el.setAttribute('material', 'src: /img/ceramic_white.jpg; color: ' + color + '; opacity: ' + String(opacity) +';');
+      el.setAttribute('rotation', rotation);
+      
+      elWireframe.setAttribute('scale', '1 0.2 1');
+      elWireframe.setAttribute('rotation', rotation);
       
     }else if(shape == 'stool') {
       el.setAttribute('obj-model', 'obj: #woodenstool');
       el.setAttribute('material', 'src: /img/wood1.jpg');
+      el.setAttribute('rotation', rotation);
       
     }else if(shape == 'table') {
       el.setAttribute('obj-model', 'obj: #coffeetable-obj; mtl: coffeetable-mtl');
+      el.setAttribute('rotation', rotation);
       
     }else{
       // TODO: Add method for specific models
@@ -304,7 +320,7 @@ AFRAME.registerComponent('object-control-desktop', {
   rotationChanged: function(event) {
     var pEl = event.currentTarget.el;
     var el = pEl.children[0];
-    var rot = pEl.getAttribute('rotation');
+    var rot = el.getAttribute('rotation');
     var value = event.target.value;
 
     // Get the correct  x-/y- or z-coord and update it
@@ -486,7 +502,7 @@ AFRAME.registerComponent('object-control-desktop', {
       }
 
       // Rotation
-      var rotation = pEl.getAttribute('rotation');
+      var rotation = el.getAttribute('rotation');
       div = document.createElement('div');
       div.className = 'property-row';
       div.innerHTML = `
@@ -1343,7 +1359,6 @@ AFRAME.registerComponent('object-control-desktop', {
   },
 
   updateComponent: function(componentId, type, data, sourcertcid) {
-    console.log("updateComponent");
     var el = null;
     var pEl = null;
     var els = this.el.sceneEl.querySelectorAll('[cid]');
@@ -1357,96 +1372,119 @@ AFRAME.registerComponent('object-control-desktop', {
       }
     }
 
-    if(type == 'position') {
-      // Position has to be changed for parentEl
-      pEl.setAttribute(type, data);
+    if(type == 'wireframed') {
+      var cid = pEl.getAttribute('id');
 
-    }else if(type == 'name'){
-      // Name has to be changed for parentEl
-      pEl.setAttribute('entityName', data);
+      if(data == 'true') {
+        // Add wireframe
+        var geometry = el.getAttribute('geometry');
+        var shape;
+        if(geometry == null) {
+          shape = 'model';
+        }else{
+          shape = geometry.primitive;
+        }
 
-      // Update scene objects view
-      var tr = parent.document.getElementById("cid" + componentId);
-      var elementNameCell = tr.cells[1];
-      elementNameCell.innerHTML = data;
+        // Handle wireframe
+        el.setAttribute('wireframed', 'true');
+        var elWireframe = document.createElement('a-entity');
+        elWireframe.setAttribute('id', cid + '-wireframe');
+        elWireframe.setAttribute('position', '0 0 0');
+        elWireframe.setAttribute('material', 'color: #ff0000; wireframe: true');
+        elWireframe.setAttribute('geometry', 'primitive: box;');
+        elWireframe.setAttribute('wireframe', '');
+        elWireframe.setAttribute('priority', 'level: wireframe');
+        pEl.appendChild(elWireframe);
+
+        // Handle geometry/shape attribute
+        if(shape == 'sphere') {
+          var radius = el.getAttribute('radius');
+
+          var scaler = radius*2;
+          elWireframe.setAttribute('scale', scaler + ' ' + scaler + ' ' + scaler);
+
+        }else if(shape == 'plane') {
+          var rotation = el.getAttribute('rotation');
+
+          elWireframe.setAttribute('geometry', 'primitive: plane;');
+          elWireframe.setAttribute('rotation', rotation);
+
+        }else if(shape == 'cylinder'){
+          var geometry = el.getAttribute('geometry');
+          var height = geometry.height;
+          var radius = geometry.radius;
+          var rotation = el.getAttribute('rotation');
+
+          var scaler = radius*2;
+          elWireframe.setAttribute('scale', scaler + ' ' + height + ' ' + scaler);
+          elWireframe.setAttribute('rotation', rotation);
+
+        }else if(shape == 'box') {
+          var rotation = el.getAttribute('rotation');
+          var scale = el.getAttribute('scale');
+          
+          elWireframe.setAttribute('geometry', 'primitive: box');
+          elWireframe.setAttribute('scale', scale);
+          elWireframe.setAttribute('rotation', rotation);
+
+        }else{
+          // TODO: Add method for specific models
+          elWireframe.setAttribute('geometry', 'primitive: box');
+        };
+      }else {
+        // Remove wireframe if necessary
+        var wireframed = el.getAttribute('wireframed'); 
+        if(wireframed == 'false') {
+          return;
+        }
+
+        var wfObjectId = cid + "-wireframe"
+        var wfObject = document.getElementById(wfObjectId);
+
+        el.setAttribute('wireframed', 'false');
+        if(wfObject != null) {
+          wfObject.parentEl.removeChild(wfObject);
+        }
+      }
+      // Update entity data
+      el.setAttribute(type, data);
 
     }else{
-      // All other types should be changed for el itself
-      if(type == 'wireframed') {
-        var cid = pEl.getAttribute('id');
+      if(type == 'position') {
+        // Position has to be changed for parentEl
+        pEl.setAttribute(type, data);
+  
+      }else if(type == 'name'){
+        // Name has to be changed for parentEl
+        pEl.setAttribute('entityName', data);
+  
+        // Update scene objects view
+        var tr = parent.document.getElementById("cid" + componentId);
+        var elementNameCell = tr.cells[1];
+        elementNameCell.innerHTML = data;
+  
+      }else{
+        // All other types should be changed for el itself
+        el.setAttribute(type, data);
+      }
 
-        if(data == 'true') {
-          // Add wireframe
-          var geometry = el.getAttribute('geometry');
-          var shape;
-          if(geometry == null) {
-            shape = 'model';
-          }else{
-            shape = geometry.primitive;
-          }
+      // Check for wireframe
+      var wireframed = el.getAttribute('wireframed');
+      if(wireframed == 'true') {
+        var wfObject = document.getElementById(pEl.getAttribute('cid') + '-wireframe');
+        if(wfObject != null) {
+          switch(type) {
+            case 'scale':
+            case 'rotation':
+            case 'height':
+            case 'radius':
+              wfObject.setAttribute(type, data);
+              break;
 
-          // Handle wireframe
-          el.setAttribute('wireframed', 'true');
-          var elWireframe = document.createElement('a-entity');
-          elWireframe.setAttribute('id', cid + '-wireframe');
-          elWireframe.setAttribute('position', '0 0 0');
-          elWireframe.setAttribute('material', 'color: #ff0000; wireframe: true');
-          elWireframe.setAttribute('geometry', 'primitive: box;');
-          elWireframe.setAttribute('wireframe', '');
-          elWireframe.setAttribute('priority', 'level: wireframe');
-          pEl.appendChild(elWireframe);
-
-          // Handle geometry/shape attribute
-          if(shape == 'sphere') {
-            var radius = el.getAttribute('radius');
-
-            var scaler = radius*2;
-            elWireframe.setAttribute('scale', scaler + ' ' + scaler + ' ' + scaler);
-
-          }else if(shape == 'plane') {
-            var rotation = el.getAttribute('rotation');
-
-            elWireframe.setAttribute('geometry', 'primitive: plane;');
-            elWireframe.setAttribute('rotation', rotation);
-
-          }else if(shape == 'cylinder'){
-            var geometry = el.getAttribute('geometry');
-            var height = geometry.height;
-            var radius = geometry.radius;
-            var rotation = el.getAttribute('rotation');
-
-            var scaler = radius*2;
-            elWireframe.setAttribute('scale', scaler + ' ' + height + ' ' + scaler);
-            elWireframe.setAttribute('rotation', rotation);
-
-          }else if(shape == 'box') {
-            var rotation = el.getAttribute('rotation');
-            elWireframe.setAttribute('geometry', 'primitive: box');
-            elWireframe.setAttribute('rotation', rotation);
-
-          }else{
-            // TODO: Add method for specific models
-            var rotation = el.getAttribute('rotation');
-            elWireframe.setAttribute('geometry', 'primitive: box');
-            elWireframe.setAttribute('rotation', rotation);
-          };
-        }else {
-          // Remove wireframe if necessary
-          var wireframed = el.getAttribute('wireframed'); 
-          if(wireframed == 'false') {
-            return;
-          }
-
-          var wfObjectId = cid + "-wireframe"
-          var wfObject = document.getElementById(wfObjectId);
-
-          el.setAttribute('wireframed', 'false');
-          if(wfObject != null) {
-            wfObject.parentEl.removeChild(wfObject);
+            default:
+              break;
           }
         }
-      }else{
-        el.setAttribute(type, data);
       }
     }
 

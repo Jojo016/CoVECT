@@ -287,6 +287,27 @@ AFRAME.registerComponent('object-control-vr', {
     return pEl;
   },
 
+  createGrillerTop: function(el) {
+    var body = document.createElement('a-box');
+    body.setAttribute('scale', '0.8 0.2 0.8');
+    body.setAttribute('position', '0 0.1 0');
+    body.setAttribute('material', 'color: #4d4d4d');
+    el.appendChild(body);
+
+    var handle = document.createElement('a-box');
+    handle.setAttribute('scale', '0.2 0.1 0.1');
+    handle.setAttribute('position', '0 0.1 0.45');
+    handle.setAttribute('material', 'color: #4d4d4d');
+    el.appendChild(handle);
+
+    var surface = document.createElement('a-plane');
+    surface.setAttribute('scale', '0.8 0.8 0.8');
+    surface.setAttribute('position', '0 -0.01 0');
+    surface.setAttribute('rotation', '90 0 0');
+    surface.setAttribute('material', 'src: #griller-texture; transparent: true');
+    el.appendChild(surface);
+  },
+
   spawnEntity: function(data) {
     var cid = data.cid;
     var name = data.name;
@@ -298,7 +319,7 @@ AFRAME.registerComponent('object-control-vr', {
     var radius = data.radius;
     var pos3 = new THREE.Vector3(data.posX, data.posY, data.posZ);
     var interactable = data.interactable;
-    var wireframe = data.wireframe;
+    var wireframed = data.wireframed;
 
     // Create container element
     var pEl = document.createElement('a-entity');
@@ -312,14 +333,21 @@ AFRAME.registerComponent('object-control-vr', {
     // Create actual element & wireframe
     var el = document.createElement('a-entity');
     el.setAttribute('scale', scale);
+    el.setAttribute('wireframed', String(wireframed));
+
+    // Handle wireframe attributes
     var elWireframe = document.createElement('a-entity');
-    pEl.appendChild(el);
+    if(wireframed == 'true') {
+      elWireframe.setAttribute('id', 'cid' + cid + '-wireframe');
+      elWireframe.setAttribute('position', '0 0 0');
+      elWireframe.setAttribute('material', 'color: #ff0000; wireframe: true;');
+      elWireframe.setAttribute('geometry', 'primitive: box;');
+      elWireframe.setAttribute('wireframe', '');
+      elWireframe.setAttribute('priority', 'level: wireframe;');
+    }
 
     // Handle other attributes
     el.interactable = interactable;
-
-    // TODO: MAYBE NOT NEEDED
-    //el.setAttribute('entityName', 'New ' + shape);
 
     // Handle geometry/shape attribute
     if(shape == 'sphere') {
@@ -327,8 +355,8 @@ AFRAME.registerComponent('object-control-vr', {
       el.setAttribute('radius', radius);
       el.setAttribute('material', material);
 
-      elWireframe.setAttribute('geometry', 'primitive: sphere; segmentsWidth: 16; segmentsHeight: 16;');
-      elWireframe.setAttribute('radius', radius);
+      var scaler = radius*2;
+      elWireframe.setAttribute('scale', scaler + ' ' + scaler + ' ' + scaler);
 
     }else if(shape == 'plane') {
       el.setAttribute('geometry', 'primitive: plane;');
@@ -338,27 +366,48 @@ AFRAME.registerComponent('object-control-vr', {
       elWireframe.setAttribute('geometry', 'primitive: plane;');
       elWireframe.setAttribute('rotation', rotation);
 
-    }else if(shape == 'cylinder'){
+    }else if(shape == 'cylinder') {
       el.setAttribute('geometry', 'primitive: ' + shape + '; radius: ' + radius + '; height: ' + height + '; rotation: ' + rotation + ';');
       el.setAttribute('material', material);
 
-      elWireframe.setAttribute('geometry', 'primitive: ' + shape + '; radius: ' + radius + '; height: ' + height + '; rotation: ' + rotation + ';');
+      var scaler = Number(radius)*2;
+      var heightNum = Number(height);
+
+      var tempScale = scaler + ' ' + heightNum + ' ' + scaler;
+
+      elWireframe.setAttribute('scale', tempScale);
+      elWireframe.setAttribute('rotation', rotation);
 
     }else if(shape == 'box') {
       el.setAttribute('geometry', 'primitive: ' + shape + ';');
       el.setAttribute('rotation', rotation);
       el.setAttribute('material', material);
 
-      elWireframe.setAttribute('geometry', 'primitive: ' + shape + ';');
+      elWireframe.setAttribute('geometry', 'primitive: box');
+      elWireframe.setAttribute('scale', scale);
       elWireframe.setAttribute('rotation', rotation);
 
     }else if(shape == 'bowl') {
+      var color = material.color;
+      var opacity = material.opacity;
+      el.setAttribute('position', '0 0 0');
       el.setAttribute('obj-model', 'obj: #bowl');
-      el.setAttribute('material', 'src: /img/ceramic_white.jpg; color: #1b688c');
+      el.setAttribute('material', 'src: /img/ceramic_white.jpg; color: ' + color + '; opacity: ' + String(opacity) +';');
+      el.setAttribute('rotation', rotation);
       
+      elWireframe.setAttribute('scale', '1 1 1');
+      elWireframe.setAttribute('rotation', rotation);
+
     }else if(shape == 'plate') {
+      var color = material.color;
+      var opacity = material.opacity;
+      el.setAttribute('position', '0 0 0');
       el.setAttribute('obj-model', 'obj: #plate');
-      el.setAttribute('material', 'src: /img/ceramic_white.jpg; color: #80bbd1');
+      el.setAttribute('material', 'src: /img/ceramic_white.jpg; color: ' + color + '; opacity: ' + String(opacity) +';');
+      el.setAttribute('rotation', rotation);
+
+      elWireframe.setAttribute('scale', '1 0.2 1');
+      elWireframe.setAttribute('rotation', rotation);
       
     }else if(shape == 'stool') {
       el.setAttribute('obj-model', 'obj: #woodenstool');
@@ -367,29 +416,42 @@ AFRAME.registerComponent('object-control-vr', {
     }else if(shape == 'table') {
       el.setAttribute('obj-model', 'obj: #coffeetable-obj; mtl: coffeetable-mtl');
       
+    }else if(shape == 'griller-top') {
+      this.createGrillerTop(el);
+      el.setAttribute('position', '0 0 0');
+      el.setAttribute('rotation', rotation);
+
+      elWireframe.setAttribute('geometry', 'primitive: box');
+      elWireframe.setAttribute('rotation', rotation);
     }else{
       // TODO: Add method for specific models
       el.setAttribute('rotation', rotation);
 
-      elWireframe.setAttribute('geometry', 'primitive: ' + box + ';');
+      elWireframe.setAttribute('geometry', 'primitive: box');
       elWireframe.setAttribute('rotation', rotation);
     }
 
-    // Handle wireframe attributes
-    el.setAttribute('wireframed', wireframe);
-    elWireframe.setAttribute('entityName', pEl.getAttribute('entityName') + '-wireframe');
-    elWireframe.setAttribute('wireframe', '');
-    elWireframe.setAttribute('priority', 'level: wireframe');
-    elWireframe.setAttribute('material', 'color: #ff0000; wireframe: true');
+    // Append to scene
+    pEl.appendChild(el);
+    if(wireframed == 'true') {
+      pEl.appendChild(elWireframe);
+    }
+    var scene = this.el.sceneEl;
+    scene.appendChild(pEl);
 
-    // Handle raycaster attribute 
+    // Handle raycaster attribute AFTER adding el to scene
     el.setAttribute('raycaster-listen', '');
 
     // Check for selection
     var selectedById = data.selectedBy;
     if(selectedById != -1) {
       // Make selected object transparent and untargetable
-      var mat = el.getDOMAttribute('material');
+      var mat = el.getAttribute('material');
+      console.log("mat");
+      console.log(mat);
+      if(mat == null) {
+        mat = new Object();
+      }
       mat.opacity = 0.4;
       el.setAttribute('material', mat);
 
@@ -404,11 +466,6 @@ AFRAME.registerComponent('object-control-vr', {
       el.setAttribute('select-listener', '');
       el.setAttribute('trigger-button-listener');
       el.setAttribute('grab-listener', '');
-    }
-
-    // Handle wireframe
-    if(wireframe) {
-      pEl.appendChild(elWireframe);
     }
     
     var scene = this.el.sceneEl;
@@ -514,6 +571,9 @@ AFRAME.registerComponent('object-control-vr', {
         // Select object: Add AxesHelper
         this.createAxes(pEl);
 
+        // Listen for thumbstick-rotation
+        el.setAttribute('currentlySelected', '');
+
         // Add color-listener for Colorwheel
         el.setAttribute('color-listener', '');
 
@@ -546,6 +606,9 @@ AFRAME.registerComponent('object-control-vr', {
         }
 
       }else{
+        // Remove thumbstick-rotation
+        el.removeAttribute('currentlySelected');
+
         // Deselect object: Remove AxesHelper
         this.removeAxes(pEl);
 
@@ -612,8 +675,9 @@ AFRAME.registerComponent('object-control-vr', {
 
   updateComponent: function(componentId, type, data) {
     var el = null;
-    var pEl = null;
-    var els = this.el.sceneEl.querySelectorAll('[cid]');
+    var pEl = document.getElementById('cid' + componentId); // = null;
+    
+    /*var els = this.el.sceneEl.querySelectorAll('[cid]');
 
     for (var i = 0; i < els.length; i++) {
 
@@ -622,7 +686,143 @@ AFRAME.registerComponent('object-control-vr', {
         el = pEl.children[0];
         break;
       }
+    }*/
+
+    if(type == 'wireframed') {
+      var cid = pEl.getAttribute('id');
+
+      if(data == 'true') {
+        // Add wireframe
+        var geometry = el.getAttribute('geometry');
+        var shape;
+        if(geometry == null) {
+          shape = 'model';
+        }else{
+          shape = geometry.primitive;
+        }
+
+        // Handle wireframe
+        el.setAttribute('wireframed', 'true');
+        var elWireframe = document.createElement('a-entity');
+        elWireframe.setAttribute('id', cid + '-wireframe');
+        elWireframe.setAttribute('position', '0 0 0');
+        elWireframe.setAttribute('material', 'color: #ff0000; wireframe: true');
+        elWireframe.setAttribute('geometry', 'primitive: box;');
+        elWireframe.setAttribute('wireframe', '');
+        elWireframe.setAttribute('priority', 'level: wireframe');
+        pEl.appendChild(elWireframe);
+
+        // Handle geometry/shape attribute
+        if(shape == 'sphere') {
+          var radius = el.getAttribute('radius');
+
+          var scaler = radius*2;
+          elWireframe.setAttribute('scale', scaler + ' ' + scaler + ' ' + scaler);
+
+        }else if(shape == 'plane') {
+          var rotation = el.getAttribute('rotation');
+
+          elWireframe.setAttribute('geometry', 'primitive: plane;');
+          elWireframe.setAttribute('rotation', rotation);
+
+        }else if(shape == 'cylinder'){
+          var geometry = el.getAttribute('geometry');
+          var height = geometry.height;
+          var radius = geometry.radius;
+          var rotation = el.getAttribute('rotation');
+
+          var scaler = radius*2;
+          elWireframe.setAttribute('scale', scaler + ' ' + height + ' ' + scaler);
+          elWireframe.setAttribute('rotation', rotation);
+
+        }else if(shape == 'box') {
+          var rotation = el.getAttribute('rotation');
+          var scale = el.getAttribute('scale');
+          
+          elWireframe.setAttribute('geometry', 'primitive: box');
+          elWireframe.setAttribute('scale', scale);
+          elWireframe.setAttribute('rotation', rotation);
+
+        }else{
+          // TODO: Add method for specific models
+          elWireframe.setAttribute('geometry', 'primitive: box');
+        };
+      }else {
+        // Remove wireframe if necessary
+        var wireframed = el.getAttribute('wireframed'); 
+        if(wireframed == 'false') {
+          return;
+        }
+
+        var wfObjectId = cid + "-wireframe"
+        var wfObject = document.getElementById(wfObjectId);
+
+        el.setAttribute('wireframed', 'false');
+        if(wfObject != null) {
+          wfObject.parentEl.removeChild(wfObject);
+        }
+      }
+      // Update entity data
+      el.setAttribute(type, data);
+
+    }else{
+      if(type == 'position') {
+        // Position has to be changed for parentEl
+        pEl.setAttribute(type, data);
+  
+      }else if(type == 'name'){
+        // Name has to be changed for parentEl
+        pEl.setAttribute('entityName', data);
+  
+        // Update scene objects view
+        var tr = parent.document.getElementById("cid" + componentId);
+        var elementNameCell = tr.cells[1];
+        elementNameCell.innerHTML = data;
+  
+      }else{
+        // All other types should be changed for el itself
+        el.setAttribute(type, data);
+      }
+
+      // Check for wireframe
+      var wireframed = el.getAttribute('wireframed');
+      if(wireframed == 'true') {
+        var wfObject = document.getElementById(pEl.getAttribute('cid') + '-wireframe');
+        if(wfObject != null) {
+          switch(type) {
+            case 'scale':
+            case 'rotation':
+            case 'height':
+            case 'radius':
+              wfObject.setAttribute(type, data);
+              break;
+
+            default:
+              break;
+          }
+        }
+      }
     }
+
+    // Update property rows if element is currently selected by client
+    if(sourcertcid == clientRtcId) {
+      this.selectEntity(componentId, clientRtcId, true);
+    }
+
+    // Update taskboard & properties-view
+    this.updateTaskboard();
+
+    if(tasksSelectedBy == clientRtcId) {
+      this.selectTasks('update');
+    }
+
+
+    /***
+     * 
+     *  TODO: UNTEN ENTFERNEN
+     * 
+     * 
+     * **********************/
 
     if(type == 'position') {
       // Position has to be changed for parentEl

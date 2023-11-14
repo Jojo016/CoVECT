@@ -62,16 +62,101 @@ con.connect(function(err) {
 });
 */
 
+
+
 // Temporary list for data store (later handled by MySql)
 var componentCounter = 0;
 var listOfComponentData = [];
 var tasks = [];
 var tasksSelectedBy = null;
 var dictOfSelectedComponents = new Object();
+setupScenario1();
+
+function setupScenario1() {
+  var plate1 = new Object();
+  var plate2 = new Object();
+  var grillerTop = new Object();
+
+  plate1.cid = 1;
+  plate1.shape = 'plate';
+  plate1.name = 'Plate Green';
+  plate1.posX = '0.8';
+  plate1.posY = '0.79';
+  plate1.posZ = '1.4';
+  plate1.material = new Object();
+  plate1.material.color = '#66ff66';
+  plate1.material.opacity = 1;
+  plate1.selectedBy = -1;
+  plate1.rotX = '0';
+  plate1.rotY = '0';
+  plate1.rotZ = '0';
+  plate1.scaleX = '0.4';
+  plate1.scaleY = '0.4';
+  plate1.scaleZ = '0.4';
+  plate1.wireframed = 'false';
+  var interactable = new Object();
+  interactable.type = 'none';
+  interactable.axis = 'X';
+  interactable.offset = 0;
+  plate1.interactable = interactable;
+
+  plate2.cid = 2;
+  plate2.shape = 'plate';
+  plate2.name = 'Plate Blue';
+  plate2.posX = '1.4';
+  plate2.posY = '0.79';
+  plate2.posZ = '0.8';
+  plate2.material = new Object();
+  plate2.material.color = '#6666ff';
+  plate2.material.opacity = 1;
+  plate2.selectedBy = -1;
+  plate2.rotX = '0';
+  plate2.rotY = '0';
+  plate2.rotZ = '0';
+  plate2.scaleX = '0.4';
+  plate2.scaleY = '0.4';
+  plate2.scaleZ = '0.4';
+  plate2.wireframed = 'false';
+  var interactable = new Object();
+  interactable.type = 'none';
+  interactable.axis = 'X';
+  interactable.offset = 0;
+  plate2.interactable = interactable;
+
+  grillerTop.cid = 3;
+  grillerTop.shape = 'griller-top';
+  grillerTop.name = 'Wafflemaker Top';
+  grillerTop.posX = '1.215';
+  grillerTop.posY = '0.99';
+  grillerTop.posZ = '-2.53';
+  grillerTop.material = new Object();
+  grillerTop.material.color = '#ff00ff';
+  grillerTop.material.opacity = 1;
+  grillerTop.selectedBy = -1;
+  grillerTop.rotX = '-36';
+  grillerTop.rotY = '-24';
+  grillerTop.rotZ = '0';
+  grillerTop.scaleX = '1.5';
+  grillerTop.scaleY = '1.5';
+  grillerTop.scaleZ = '1.5';
+  grillerTop.wireframed = 'false';
+  var interactable = new Object();
+  interactable.type = 'none';
+  interactable.axis = 'X';
+  interactable.offset = 0;
+  grillerTop.interactable = interactable;
+
+  listOfComponentData.push(plate1);
+  listOfComponentData.push(plate2);
+  listOfComponentData.push(grillerTop);
+
+  componentCounter = 3;
+}
 
 function exportComponents() {
   
 }
+
 
 // Serve the files from the examples folder
 app.use(express.static(path.resolve(__dirname, "src")));
@@ -122,6 +207,8 @@ easyrtc.events.on("easyrtcAuth", (socket, easyrtcid, msg, socketCallback, callba
 easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) => {
   var msgType = msg.msgType;
   var easyrtcid = connectionObj.getEasyrtcid();
+
+  console.log('Received message of type: ' + msgType);
 
   // Id '0' indicates a wanted access to the file system
   if(msgType === "addNewObject") {
@@ -638,9 +725,25 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
 
     // Send all existing components to the newly joined user
     listOfComponentData.forEach(comp => {
+
+      console.log(comp);
+
       // Set specific message data
-      var data = JSON.stringify(comp);
-      if(comp.type == 'eventarea') {
+      var tempComp = {...comp};
+      if(tempComp.rotation != null) {
+        tempComp.rotX = tempComp.rotation.x;
+        tempComp.rotY = tempComp.rotation.y;
+        tempComp.rotZ = tempComp.rotation.z;
+      }
+
+      if(tempComp.scale != null) {
+        tempComp.scaleX = tempComp.scale.x;
+        tempComp.scaleY = tempComp.scale.y;
+        tempComp.scaleZ = tempComp.scale.z;
+      }
+
+      var data = JSON.stringify(tempComp);
+      if(tempComp.type == 'eventarea') {
         message.msgType = 'spawnInteraction';
       }else{
         message.msgType = 'spawnComponent';

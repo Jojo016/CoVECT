@@ -38,3 +38,6 @@ If you have trouble during the build, use *--unsafe-perm* on both *npm install* 
 
 server.js is the implementation of the server-side.
 
+## Credits
+<a href="https://www.freepik.com/free-vector/seamless-realistic-cheese-pattern_10603243.htm#query=cheese%20texture&position=4&from_view=search&track=ais&uuid=0bd8c0d8-f3f7-4143-9b61-96f5ba2ec69c">Image by macrovector</a> on Freepik
+<a href="https://www.freepik.com/free-photo/collage-green-leaves-arugula-basil-sliced-red-spicy-bell-pepper-onion-tomatoes-black-pepper-peas-are-isolated-white-background-cooking-concept-close-up-copy-space_26593837.htm#query=tomato&position=8&from_view=search&track=sph&uuid=a2e41571-ecd2-4176-87e6-bfa585987445">Image by YuliiaKa</a> on Freepik
