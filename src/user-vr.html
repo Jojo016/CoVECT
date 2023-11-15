@@ -861,9 +861,10 @@
             var cid = data.cid;
             var type = data.updatetype;
             var newData = data.updatedata;
+            var sourceRtcId = data.sourceRtcId;
 
             var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
-            controller.updateComponent(cid, type, newData);
+            controller.updateComponent(cid, type, newData, sourceRtcId);
 
           }else if(msgType === 'updatedInteractable') {
             var data = JSON.parse(msgData);
@@ -892,6 +893,13 @@
           }else if(msgType === 'userLeft') {
             var data = JSON.parse(msgData);
             //window.parent.removeUserFromStatusBar(data.easyrtcid);
+
+            var cid = data.cid;
+            var sourceRtcId = data.sourceRtcId;
+            if(cid != -1) {
+              var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
+              controller.selectEntity(cid, sourceRtcId, false);
+            }
 
           }else if(msgType === 'selectedTasks') {
             var newData = JSON.parse(msgData);

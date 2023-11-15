@@ -143,12 +143,14 @@ AFRAME.registerComponent('object-control-desktop', {
     var selectedById = data.selectedBy;
     if(selectedById != -1) {
       // Make selected object transparent and untargetable
-      var mat = el.getAttribute('material');
-      if(mat == null) {
-        mat = new Object();
+      if(shape == 'box' || shape == 'plane' || shape == 'sphere' || shape == 'cylinder') {
+        var mat = el.getAttribute('material');
+        if(mat == null) {
+          mat = new Object();
+        }
+        mat.opacity = 0.4;
+        el.setAttribute('material', mat);
       }
-      mat.opacity = 0.4;;
-      el.setAttribute('material', mat);
 
       // Set as untargetable for raycaster
       el.removeAttribute('selectable');

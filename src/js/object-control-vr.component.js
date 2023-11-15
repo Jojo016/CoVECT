@@ -334,6 +334,7 @@ AFRAME.registerComponent('object-control-vr', {
     var el = document.createElement('a-entity');
     el.setAttribute('scale', scale);
     el.setAttribute('wireframed', String(wireframed));
+    pEl.appendChild(el);
 
     // Handle wireframe attributes
     var elWireframe = document.createElement('a-entity');
@@ -344,7 +345,12 @@ AFRAME.registerComponent('object-control-vr', {
       elWireframe.setAttribute('geometry', 'primitive: box;');
       elWireframe.setAttribute('wireframe', '');
       elWireframe.setAttribute('priority', 'level: wireframe;');
+      pEl.appendChild(elWireframe);
     }
+
+    // Append to scene
+    var scene = this.el.sceneEl;
+    scene.appendChild(pEl);
 
     // Handle other attributes
     el.interactable = interactable;
@@ -431,14 +437,6 @@ AFRAME.registerComponent('object-control-vr', {
       elWireframe.setAttribute('rotation', rotation);
     }
 
-    // Append to scene
-    pEl.appendChild(el);
-    if(wireframed == 'true') {
-      pEl.appendChild(elWireframe);
-    }
-    var scene = this.el.sceneEl;
-    scene.appendChild(pEl);
-
     // Handle raycaster attribute AFTER adding el to scene
     el.setAttribute('raycaster-listen', '');
 
@@ -446,14 +444,14 @@ AFRAME.registerComponent('object-control-vr', {
     var selectedById = data.selectedBy;
     if(selectedById != -1) {
       // Make selected object transparent and untargetable
-      var mat = el.getAttribute('material');
-      console.log("mat");
-      console.log(mat);
-      if(mat == null) {
-        mat = new Object();
+      if(shape == 'box' || shape == 'plane' || shape == 'sphere' || shape == 'cylinder') {
+        var mat = el.getAttribute('material');
+        if(mat == null) {
+          mat = new Object();
+        }
+        mat.opacity = 0.4;
+        el.setAttribute('material', mat);
       }
-      mat.opacity = 0.4;
-      el.setAttribute('material', mat);
 
       // Set as untargetable for raycaster
       el.setAttribute('class', 'selected-collidable');
@@ -467,9 +465,6 @@ AFRAME.registerComponent('object-control-vr', {
       el.setAttribute('trigger-button-listener');
       el.setAttribute('grab-listener', '');
     }
-    
-    var scene = this.el.sceneEl;
-    scene.appendChild(pEl);
 
     updateEventOptions();
   },
@@ -673,9 +668,9 @@ AFRAME.registerComponent('object-control-vr', {
       pEl.parentNode.removeChild(pEl);
   },
 
-  updateComponent: function(componentId, type, data) {
-    var el = null;
+  updateComponent: function(componentId, type, data, sourcertcid) {
     var pEl = document.getElementById('cid' + componentId); // = null;
+    var el = pEl.children[0];
     
     /*var els = this.el.sceneEl.querySelectorAll('[cid]');
 
@@ -809,103 +804,16 @@ AFRAME.registerComponent('object-control-vr', {
       this.selectEntity(componentId, clientRtcId, true);
     }
 
-    // Update taskboard & properties-view
+    // Update taskboard & event options
     this.updateTaskboard();
+    updateEventOptions();
 
+    // TODO: ADD TASK-BLOCKER
+    /*
     if(tasksSelectedBy == clientRtcId) {
       this.selectTasks('update');
     }
-
-
-    /***
-     * 
-     *  TODO: UNTEN ENTFERNEN
-     * 
-     * 
-     * **********************/
-
-    if(type == 'position') {
-      // Position has to be changed for parentEl
-      pEl.setAttribute(type, data);
-
-    }else if(type == 'name'){
-      // Name has to be changed for parentEl
-      pEl.setAttribute('entityName', data);
-
-    }else{
-      // All other types should be changed for el itself
-      el.setAttribute(type, data);
-
-      if(type == 'wireframe') {
-        var name = pEl.getAttribute('entityName');
-
-        if(data) {
-          // Add wireframe
-          var geometry = el.getAttribute('geometry');
-          var shape;
-          if(geometry == null) {
-            shape = 'model';
-          }
-          var shape = geometry.primitive;
-
-          var elWireframe = document.createElement('a-entity');
-
-          // Handle geometry/shape attribute
-          if(shape == 'sphere') {
-            var radius = el.getAttribute('radius');
-            elWireframe.setAttribute('geometry', 'primitive: sphere; segmentsWidth: 16; segmentsHeight: 16;');
-            elWireframe.setAttribute('radius', radius);
-
-          }else if(shape == 'plane') {
-            var rotation = el.getAttribute('rotation');
-            elWireframe.setAttribute('geometry', 'primitive: plane;');
-            elWireframe.setAttribute('rotation', rotation);
-
-          }else if(shape == 'cylinder'){
-            var radius = el.getAttribute('radius');
-            var height = el.getAttribute('height');
-            var rotation = el.getAttribute('rotation');
-            elWireframe.setAttribute('geometry', 'primitive: ' + shape + '; radius: ' + radius + '; height: ' + height + '; rotation: ' + rotation + ';');
-
-          }else if(shape == 'box') {
-            var rotation = el.getAttribute('rotation');
-            elWireframe.setAttribute('geometry', 'primitive: ' + shape + ';');
-            elWireframe.setAttribute('rotation', rotation);
-
-          }else{
-            // TODO: Add method for specific models
-            var rotation = el.getAttribute('rotation');
-            elWireframe.setAttribute('geometry', 'primitive: ' + box + ';');
-            elWireframe.setAttribute('rotation', rotation);
-          }
-
-          // Handle wireframe attributes
-          el.setAttribute('wireframed', data);
-          elWireframe.setAttribute('entityName', name + '-wireframe');
-          elWireframe.setAttribute('wireframe', '');
-          elWireframe.setAttribute('priority', 'level: wireframe');
-          elWireframe.setAttribute('material', 'color: #ff0000; wireframe: true');
-
-          pEl.appendChild(elWireframe);
-        }else {
-          // Remove wireframe
-          var wfObjectName = name + "-wireframe"
-          var wfObjects = document.querySelectorAll("[wireframe]");
-          var wfObject = null;
-
-          wfObjects.forEach(obj => {
-            var objName = obj.getAttribute('entityName');
-            if(objName == wfObjectName) {
-              wfObject = obj;
-            }
-          });
-
-          wfObject.parentEl.removeChild(wfObject);
-        }
-      }
-    }
-
-    updateEventOptions();
+    */
   },
 
   taskChanged: function(evt) {
@@ -1045,6 +953,10 @@ AFRAME.registerComponent('object-control-vr', {
     }
 
     return false;
+  },
+
+  selectTasks: function(sourceRtcId) {
+    tasksSelectedBy = sourceRtcId;
   },
 
   deselectTasks: function() {
