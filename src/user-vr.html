@@ -1178,7 +1178,13 @@
         init: function () {
           var el = this.el;
           var pEl = el.parentEl;
-          el.addEventListener('grab-object-start', function handleSendSelect(event) {
+          el.addEventListener('grab-object-start', function handleSendSelect(event) { 
+            // Check if selectedBy client
+            var currentlySelected = el.getAttribute('currentlySelected');
+            if(currentlySelected == null || currentlySelected == '') {
+              return;
+            }
+
             // Adjust distance multiplier
             var hand = document.getElementById('hand-right');
             var hPos3 = hand.getAttribute('position');
@@ -1191,6 +1197,12 @@
           });
 
           el.addEventListener('grab-object-end', function handleSendSelect(event) {
+            // Check if selectedBy client
+            var currentlySelected = el.getAttribute('currentlySelected');
+            if(currentlySelected == null || currentlySelected == '') {
+              return;
+            }
+
             // Stop moving the object
             pEl.removeAttribute('placeable');
 
@@ -1308,7 +1320,7 @@
                 // Get data from interaction 'element'
                 obj.geometry = element.getAttribute('geometry');
                 obj.material = element.getAttribute('material');
-                obj.scale = element.getAttribute('scale');
+                obj.scale = '1 0.5 1';
                 obj.type = type;
 
                 // Send 'create new interaction'
@@ -1577,42 +1589,12 @@
 
           if (evt.detail.x < -0.95) { 
             // LEFT
-            var debug = document.getElementById('debugtext');
-            debug.setAttribute('value', 'Inside LEFT');
-            
-            var el = document.querySelector('#currentlySelected');
+            var el = document.querySelector('[currentlySelected]');
             if(el == null) {
               return;
             }
             
-            debug.setAttribute('value', debug.getAttribute('value') + '\nel = ' + el);
-
             var rotation = el.getAttribute('rotation');
-
-            debug.setAttribute('value', debug.getAttribute('value') + '\nrot = ' + rotation);
-
-            if(rotation == null) {
-              rotation = new Object();
-              rotation.x = 0;
-              rotation.y = 0;
-              rotation.z = 0;
-            }
-
-            rotation.y = rotation.y - 1;
-
-            debug.setAttribute('value', debug.getAttribute('value') + '\nafter setting rotation');
-
-            el.setAttribute('rotation', rotation);
-          }
-
-          if (evt.detail.x > 0.95) { 
-            // RIGHT
-            var el = document.querySelector('#currentlySelected');
-            if(el == null) {
-              return;
-            }
-            var rotation = el.getAttribute('rotation');
-
             if(rotation == null) {
               rotation = new Object();
               rotation.x = 0;
@@ -1621,7 +1603,25 @@
             }
 
             rotation.y = rotation.y + 1;
+            el.setAttribute('rotation', rotation);
+          }
 
+          if (evt.detail.x > 0.95) { 
+            // RIGHT
+            var el = document.querySelector('[currentlySelected]');
+            if(el == null) {
+              return;
+            }
+
+            var rotation = el.getAttribute('rotation');
+            if(rotation == null) {
+              rotation = new Object();
+              rotation.x = 0;
+              rotation.y = 0;
+              rotation.z = 0;
+            }
+
+            rotation.y = rotation.y - 1;
             el.setAttribute('rotation', rotation);
           }
         }
@@ -2833,7 +2833,7 @@
       </a-entity>
 
       <!-- DEBUG --> 
-      <a-text id='debugtext' visible="true" value="DEBUG TEXT" geometry="primitive: plane;" material="color: #20d67e" position="-1 3 -2.5"></a-text>
+      <a-text id='debugtext' visible="true" value="DEBUG TEXT" geometry="primitive: plane;" material="color: #20d67e" color="#000000" position="-1 3 -2.5"></a-text>
       <!--a-entity entityName="o1" class="collidable" geometry="primitive: box" material="color: #0000ff" raycaster-listen position="5 0 0"></a-entity>
       <a-entity entityName="o2" class="collidable" geometry="primitive: box" material="color: #00ff00" raycaster-listen position="5.5 0.5 0.5" wireframed="true"></a-entity>
       <a-entity entityName="o2-wireframe" geometry="primitive: box" material="color: #ff0000; wireframe: true" wireframe priority="level: wireframe" position="5.5 0.5 0.5"></a-entity-->

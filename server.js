@@ -80,9 +80,10 @@ function setupScenario1() {
   plate1.cid = 1;
   plate1.shape = 'plate';
   plate1.name = 'Plate Green';
-  plate1.posX = '0.8';
-  plate1.posY = '0.79';
-  plate1.posZ = '1.4';
+  plate1.position = new Object();
+  plate1.position.x = '0.8';
+  plate1.position.y = '0.79';
+  plate1.position.z = '1.4';
   plate1.material = new Object();
   plate1.material.color = '#66ff66';
   plate1.material.opacity = 1;
@@ -90,9 +91,10 @@ function setupScenario1() {
   plate1.rotX = '0';
   plate1.rotY = '0';
   plate1.rotZ = '0';
-  plate1.scaleX = '0.4';
-  plate1.scaleY = '0.4';
-  plate1.scaleZ = '0.4';
+  plate1.scale = new Object();
+  plate1.scale.x = '0.4';
+  plate1.scale.y = '0.4';
+  plate1.scale.z = '0.4';
   plate1.wireframed = 'false';
   var interactable = new Object();
   interactable.type = 'none';
@@ -103,9 +105,10 @@ function setupScenario1() {
   plate2.cid = 2;
   plate2.shape = 'plate';
   plate2.name = 'Plate Blue';
-  plate2.posX = '1.4';
-  plate2.posY = '0.79';
-  plate2.posZ = '0.8';
+  plate2.position = new Object();
+  plate2.position.x = '1.4';
+  plate2.position.y = '0.79';
+  plate2.position.z = '0.8';
   plate2.material = new Object();
   plate2.material.color = '#6666ff';
   plate2.material.opacity = 1;
@@ -113,9 +116,10 @@ function setupScenario1() {
   plate2.rotX = '0';
   plate2.rotY = '0';
   plate2.rotZ = '0';
-  plate2.scaleX = '0.4';
-  plate2.scaleY = '0.4';
-  plate2.scaleZ = '0.4';
+  plate2.scale = new Object();
+  plate2.scale.x = '0.4';
+  plate2.scale.y = '0.4';
+  plate2.scale.z = '0.4';
   plate2.wireframed = 'false';
   var interactable = new Object();
   interactable.type = 'none';
@@ -126,9 +130,10 @@ function setupScenario1() {
   grillerTop.cid = 3;
   grillerTop.shape = 'griller-top';
   grillerTop.name = 'Wafflemaker Top';
-  grillerTop.posX = '1.215';
-  grillerTop.posY = '0.99';
-  grillerTop.posZ = '-2.53';
+  grillerTop.position = new Object();
+  grillerTop.position.x = '1.215';
+  grillerTop.position.y = '0.99';
+  grillerTop.position.z = '-2.53';
   grillerTop.material = new Object();
   grillerTop.material.color = '#ff00ff';
   grillerTop.material.opacity = 1;
@@ -136,9 +141,10 @@ function setupScenario1() {
   grillerTop.rotX = '-36';
   grillerTop.rotY = '-24';
   grillerTop.rotZ = '0';
-  grillerTop.scaleX = '1.5';
-  grillerTop.scaleY = '1.5';
-  grillerTop.scaleZ = '1.5';
+  grillerTop.scale = new Object();
+  grillerTop.scale.x = '1.5';
+  grillerTop.scale.y = '1.5';
+  grillerTop.scale.z = '1.5';
   grillerTop.wireframed = 'false';
   var interactable = new Object();
   interactable.type = 'none';
@@ -222,9 +228,11 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       newObj.name = 'New ' + shape;
       newObj.material = 'color: #00ffff; opacity: 1';
       newObj.selectedBy = -1;
-      newObj.scaleX = '1';
-      newObj.scaleY = '1';
-      newObj.scaleZ = '1';
+      newObj.rotation = new Object();
+      newObj.scale = new Object();
+      newObj.scale.x = '1';
+      newObj.scale.y = '1';
+      newObj.scale.z = '1';
       newObj.wireframed = 'false';
       var interactable = new Object();
       interactable.type = 'none';
@@ -235,22 +243,22 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       switch(shape) {
         case 'wafflemaker':
         case 'box':
-          newObj.rotX = '0';
-          newObj.rotY = '0';
-          newObj.rotZ = '0';
+          newObj.rotation.x = '0';
+          newObj.rotation.y = '0';
+          newObj.rotation.z = '0';
           break;
 
         case 'plane':
-          newObj.rotX = '-90';
-          newObj.rotY = '0';
-          newObj.rotZ = '0';
+          newObj.rotation.x = '-90';
+          newObj.rotation.y = '0';
+          newObj.rotation.z = '0';
 
         case 'cylinder':
           newObj.height = '1';
           newObj.radius = '1';
-          newObj.rotX = '0';
-          newObj.rotY = '0';
-          newObj.rotZ = '0';
+          newObj.rotation.x = '0';
+          newObj.rotation.y = '0';
+          newObj.rotation.z = '0';
           break;
 
         case 'sphere':
@@ -262,21 +270,21 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
           break;
 
         case 'plate':
-          newObj.scaleX = '0.08';
-          newObj.scaleY = '0.08';
-          newObj.scaleZ = '0.08';
+          newObj.scale.x = '0.08';
+          newObj.scale.y = '0.08';
+          newObj.scale.z = '0.08';
           break;
 
         case 'stool':
-          newObj.scaleX = '0.06';
-          newObj.scaleY = '0.06';
-          newObj.scaleZ = '0.06';
+          newObj.scale.x = '0.06';
+          newObj.scale.y = '0.06';
+          newObj.scale.z = '0.06';
           break;
 
         case 'table':
-          newObj.scaleX = '0.016';
-          newObj.scaleY = '0.02';
-          newObj.scaleZ = '0.016';
+          newObj.scale.x = '0.016';
+          newObj.scale.y = '0.02';
+          newObj.scale.z = '0.016';
           break;
 
         default:
@@ -725,25 +733,9 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
 
     // Send all existing components to the newly joined user
     listOfComponentData.forEach(comp => {
-
-      console.log(comp);
-
       // Set specific message data
-      var tempComp = {...comp};
-      if(tempComp.rotation != null) {
-        tempComp.rotX = tempComp.rotation.x;
-        tempComp.rotY = tempComp.rotation.y;
-        tempComp.rotZ = tempComp.rotation.z;
-      }
-
-      if(tempComp.scale != null) {
-        tempComp.scaleX = tempComp.scale.x;
-        tempComp.scaleY = tempComp.scale.y;
-        tempComp.scaleZ = tempComp.scale.z;
-      }
-
-      var data = JSON.stringify(tempComp);
-      if(tempComp.type == 'eventarea') {
+      var data = JSON.stringify(comp);
+      if(comp.type == 'eventarea') {
         message.msgType = 'spawnInteraction';
       }else{
         message.msgType = 'spawnComponent';
@@ -794,12 +786,9 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
 
         // Add default interaction data
         var interactionData = new Object();
-        interactionData.action = 'modify';
-        interactionData.attribute = 'geometry';
-        interactionData.target = 1;
-        interactionData.toshape = 'cylinder';
-        interactionData.toheight = '0.05';
-        interactionData.toradius = '0.1';
+        interactionData.target = 'none'; // Should be a cid
+        interactionData.action = 'changeTo'; // Possible actions: none, addLayer, changeTo 
+        interactionData.reaction = 'cylinder';
         newObj.data = interactionData;
 
         // Set message data

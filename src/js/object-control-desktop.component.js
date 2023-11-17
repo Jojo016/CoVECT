@@ -14,17 +14,15 @@ AFRAME.registerComponent('object-control-desktop', {
   },
 
   spawnEntity: function(data) {
-    console.log("spawnEntity data:");
-    console.log(data);
     var cid = data.cid;
     var name = data.name;
     var shape = data.shape;
     var material = data.material;
-    var scale = data.scaleX + " " + data.scaleY + " " + data.scaleZ;
-    var rotation = data.rotX + " " + data.rotY + " " + data.rotZ;
+    var scale = data.scale;
+    var rotation = data.rotation;
     var height = data.height;
     var radius = data.radius;
-    var pos3 = new THREE.Vector3(data.posX, data.posY, data.posZ);
+    var pos3 = data.position;
     var interactable = data.interactable;
     var wireframed = data.wireframed;
 
@@ -225,8 +223,6 @@ AFRAME.registerComponent('object-control-desktop', {
     
     xSlider.setAttribute('rotation', '0 0 -90');
     zSlider.setAttribute('rotation', '90 0 0');
-    
-    var el = pEl.children[0];
 
     xSlider.setAttribute('position', '1 0 0');
     ySlider.setAttribute('position', '0 1 0');
@@ -306,9 +302,6 @@ AFRAME.registerComponent('object-control-desktop', {
     var coord = name.substr(0, 1);
     pos[coord] = value; 
 
-    // Update local data 
-    pEl.setAttribute('position', pos);
-
     // Send changes to server
     var obj = new Object();
     var cid = pEl.getAttribute('cid');
@@ -330,9 +323,6 @@ AFRAME.registerComponent('object-control-desktop', {
     var coord = name.substr(0, 1);
     rot[coord] = value; 
 
-    // Update local data 
-    el.setAttribute('rotation', rot);
-
     // Send changes to server
     var obj = new Object();
     var cid = pEl.getAttribute('cid');
@@ -353,9 +343,6 @@ AFRAME.registerComponent('object-control-desktop', {
     var name = event.target.name;
     var coord = name.substr(0, 1);
     scale[coord] = value; 
-
-    // Update local data 
-    el.setAttribute('scale', scale);
 
     // Send changes to server
     var obj = new Object();
@@ -387,8 +374,6 @@ AFRAME.registerComponent('object-control-desktop', {
 
   interactionChanged: function(event) {
     var eventTarget = event.target;
-    console.log("event:");
-    console.log(eventTarget);
     var pEl = eventTarget.parentElement.parentElement.el;
     var name = eventTarget.name;
     var value = eventTarget.value;
@@ -396,7 +381,6 @@ AFRAME.registerComponent('object-control-desktop', {
     // Add updated data to data object
     var newObj = new Object();
     var cid = pEl.getAttribute('cid');
-    console.log(cid);
     newObj.cid = cid; 
     newObj.updatetype = 'interaction';
     newObj.attribute = name;
@@ -695,7 +679,7 @@ AFRAME.registerComponent('object-control-desktop', {
       pPanel.appendChild(div);
 
     }else if(classType == 'interaction') {
-      // ###### INTERACTION ######
+      // INTERACTION
       var pEl = data;
       var el = pEl.children[0];
       var div = document.createElement('div');
@@ -737,34 +721,51 @@ AFRAME.registerComponent('object-control-desktop', {
         `;
       };
 
-      console.log("div.el:");
-      console.log(pEl);
       div.el = pEl;
       div.addEventListener("change", this.positionChanged, false);
       pPanel.appendChild(div);
 
       // Interaction DIVs
-      var data = pEl.data;
+      var interaction = pEl.interaction;
 
-      var target = data.target;
-      var action = data.action;
-      var attribute = data.attribute;
-      var toshape = data.toshape;
-      var toheight = data.toheight;
-      var toradius = data.toradius; 
+      var target = interaction.target;
+      var action = interaction.action;
+      var reaction = interaction.reaction;
 
       div = document.createElement('div');
-      var appendDiv = document.createElement('div');
-
       div.className = 'property-row';
 
-      // Append actual property rows
-      var actionOptions = [['none', 'Keep current'], ['grabbable', 'Grabbable'], ['modify', 'Modify'], ['remove', 'Remove'], ['rotation', 'Rotation']];
+      // Get target options
+      var targetOptions = [['none', 'None']];
+      var pEls = document.getElementsByClassName('entity');
+      for(var i = 0; i < pEls.length; i++) {
+        var ent = pEls[i];
+        var cid = ent.getAttribute('id');
+        var entName = ent.getAttribute('entityName');
+        targetOptions.push([cid, entName]);
+      }
+
+      // Append target property rows
+      var targetOptionsText = ``;
+      for(var i=0; i < targetOptions.length; i++) {
+        var tar = targetOptions[i];
+        if(tar[0] == target) {
+          targetOptionsText += `
+            <option selected="selected" value="${tar[0]}">${tar[1]}</option>
+          `;
+        }else{
+          targetOptionsText += `
+            <option value="${tar[0]}">${tar[1]}</option>
+          `;
+        }
+      }
+
+      // Append action property rows
+      var actionOptions = [['none', 'Nothing'], ['addLayer', 'Add Layer'], ['changeTo', 'Change To']];
       var actionOptionsText = ``;
 
       for(var i=0; i<actionOptions.length; i++) {
         var act = actionOptions[i];
-
         if(act[0] == action) {
           actionOptionsText += `
             <option selected="selected" value="${act[0]}">${act[1]}</option>
@@ -778,13 +779,15 @@ AFRAME.registerComponent('object-control-desktop', {
 
       div.innerHTML += `
         <span class="property-row-element">
-          <b>Interaction</b>
+          <b>Event Area</b>
         </span>
         <div class="property-row-element">
           <span class="properties-parameter-name">
             <b>Target</b>
           </span>
-          <input type="text" name="target" list="cids" value="${target}"/>
+          <select name="target">
+            ${targetOptionsText}
+          </select>
         </div>
         <div class="property-row-element">
           <span class="properties-parameter-name">
@@ -799,15 +802,15 @@ AFRAME.registerComponent('object-control-desktop', {
         div.el = pEl;
 
         // Different actions require different property rows
-        if(action == 'modify') {
-          // Check for attribute
-          var attrOptions = [['none', 'Keep current'], ['geometry', 'Geometry'], ['material', 'Material'], ['position', 'Position'], ['scale', 'Scale']];
+        if(action == 'changeTo') {
+          // Check for reaction
+          var attrOptions = [['box', 'Box'], ['cylinder', 'Cylinder'], ['plane', 'Plane'], ['sphere', 'Sphere'], ['bowl', 'Bowl']];
           var attrOptionsText = ``;
 
           for(var i=0; i<attrOptions.length; i++) {
             var attr = attrOptions[i];
 
-            if(attr[0] == attribute) {
+            if(attr[0] == reaction) {
               attrOptionsText += `
                 <option selected="selected" value="${attr[0]}">${attr[1]}</option>
               `;
@@ -821,79 +824,43 @@ AFRAME.registerComponent('object-control-desktop', {
           div.innerHTML += `
             <div class="property-row-element">
               <span class="properties-parameter-name">
-                <b>Attribute</b>
+                <b>Shape</b>
               </span>
-              <select name="attribute">
+              <select name="reaction">
                 ${attrOptionsText}
               </select>
             </div>
           `;
 
-          appendDiv.className = 'property-row-append';
+        }else if(action == 'addLayer'){
+          // Check for reaction
+          var attrOptions = [['cheese', 'Cheese'], ['tomato', 'Tomatoes']];
+          var attrOptionsText = ``;
 
-          switch(attribute) {
-            case 'material':
-              break;
-    
-            case 'position':
-              break;
-    
-            case 'scale':
-              break;
-    
-            case 'geometry':
-              // Geometry
-              var shapeOptions = [['none', 'Keep current'], ['box', 'Box'], ['cylinder', 'Cylinder'], ['plane', 'Plane'], ['sphere', 'Sphere']];
-              var shapeOptionsText = ``;
+          for(var i=0; i<attrOptions.length; i++) {
+            var attr = attrOptions[i];
 
-              for(var i=0; i<shapeOptions.length; i++) {
-                var sha = shapeOptions[i];
-
-                if(sha[0] == toshape) {
-                  shapeOptionsText += `
-                    <option selected="selected" value="${sha[0]}">${sha[1]}</option>
-                  `;
-                }else{
-                  shapeOptionsText += `
-                    <option value="${sha[0]}">${sha[1]}</option>
-                  `;
-                }
-              }
-              appendDiv.innerHTML = `
-                <span class="property-row-element">
-                </span>
-                <div class="property-row-element">
-                  <span class="properties-parameter-name">
-                    <b>To Shape</b>
-                  </span>
-                  <select id="toshape">
-                    ${shapeOptionsText}
-                  </select>
-                </div>
-                <div class="property-row-element">
-                  <span class="properties-parameter-name">
-                    <b>To Height</b>
-                  </span>
-                  <input type="number" id="toheight" value="${toheight}"/>
-                </div>
-                <div class="property-row-element">
-                  <span class="properties-parameter-name">
-                    <b>To Radius</b>
-                  </span>
-                  <input type="number" id="toradius" value="${toradius}"/>
-                </div>
+            if(attr[0] == reaction) {
+              attrOptionsText += `
+                <option selected="selected" value="${attr[0]}">${attr[1]}</option>
               `;
-    
-              var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
-              appendDiv.addEventListener("change", controller.interactionPropertyChanged, false);
-              appendDiv.el = pEl;
-              break;
-    
-            default:
-              break;
+            }else{
+              attrOptionsText += `
+                <option value="${attr[0]}">${attr[1]}</option>
+              `;
+            }
           }
 
-        }else if(action == 'remove'){
+          div.innerHTML += `
+            <div class="property-row-element">
+              <span class="properties-parameter-name">
+                <b>Layer</b>
+              </span>
+              <select name="reaction">
+                ${attrOptionsText}
+              </select>
+            </div>
+          `;
 
         }else if(action == 'none'){
           div.innerHTML += `
@@ -909,7 +876,6 @@ AFRAME.registerComponent('object-control-desktop', {
         div.addEventListener("change", this.interactionChanged, false);
   
         pPanel.appendChild(div);
-        pPanel.appendChild(appendDiv);
 
     }else if(classType == 'tasksOccupied') {  
       pPanel.innerHTML = '';
@@ -1118,6 +1084,7 @@ AFRAME.registerComponent('object-control-desktop', {
       atext.setAttribute('wrap-count', '80');
       atext.setAttribute('scale', '2 2 2');
 
+
       var taskAngle = task.eventAngle;
       var taskTrigger = task.triggerEvent;
       var taskType;
@@ -1154,13 +1121,16 @@ AFRAME.registerComponent('object-control-desktop', {
 
       switch(taskType) {
         case 'eventArea':
-          var interaction = pEl.data;
+          var interaction = pEl.interaction;
           var target = interaction.target;
+
+          console.log(target);
+
           var eventName = pEl.getAttribute('entityName');
           var targetName;
 
           for (var i = 0; i < els.length; i++) {
-            if(els[i].getAttribute('cid') == target) {
+            if('cid' + els[i].getAttribute('cid') == target) {
               targetName = els[i].getAttribute('entityName');
               break;
             }
@@ -1545,12 +1515,14 @@ AFRAME.registerComponent('object-control-desktop', {
     var attribute = data.attribute;
     var value = data.value;
 
-    pEl.data[attribute] = value;
+    pEl.interaction[attribute] = value;
 
     // Update property rows if element is currently selected by client
     if(data.sourceRtcId == clientRtcId) {
       this.selectEntity(componentId, clientRtcId, true);
     }
+
+    this.updateTaskboard();
   },
 
   removeInteraction: function(componentId) {
@@ -1576,20 +1548,20 @@ AFRAME.registerComponent('object-control-desktop', {
 
     if(type == 'eventarea') {
       var cid = interaction.cid;
-      var data = interaction.data;
       var name = interaction.name;
       var scale = interaction.scale;
-      var pos3 = new THREE.Vector3(interaction.posX, interaction.posY, interaction.posZ);
+      var pos3 = interaction.position;
 
       // Create container element
       var pEl = document.createElement('a-entity');
       pEl.setAttribute('class', 'interaction');
       pEl.setAttribute('type', type);
       pEl.setAttribute('cid', cid);
+      pEl.setAttribute('scale', '0.2 0.2 0.2');
       pEl.setAttribute('position', pos3);
       pEl.setAttribute('entityName', name);
 
-      pEl.data = data;
+      pEl.interaction = interaction;
 
       // Create actual element & handle attributes
       var el = document.createElement('a-entity');

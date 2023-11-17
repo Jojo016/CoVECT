@@ -156,9 +156,7 @@
           // Create data object to stringify
           var obj = new Object();
           obj.shape = shape;
-          obj.posX = pos3.x;
-          obj.posY = pos3.y;
-          obj.posZ = pos3.z;
+          obj.position = pos3;
           obj.color = "#0000FF"; 
 
           data = JSON.stringify(obj);
@@ -385,6 +383,8 @@
             lookController.enabled = false;
             player.setAttribute('look-controls', lookController);
 
+            console.log("MOUSEDOWN");
+
             // Start moving the object
             el.setAttribute('axis-grabbed', 'axis: ' + axis);
           });
@@ -447,40 +447,6 @@
         init: function () {
           var axis = this.data.axis;
           var mousePos = "";
-        },
-
-        tick: function () {
-          /*
-          var hand = null;
-          var raycaster = null;
-          var el = this.el;
-          var pEl = el.parentEl;
-          var axis = this.data.axis;
-                    
-          try {
-            hand = document.getElementById('hand-right');
-            raycaster = hand.components.raycaster;
-          }catch(e) {
-            return;
-          }
-
-          if(raycaster == null) {
-            return;
-          }
-
-          // Handle Position
-          var pos3 = hand.getAttribute('position');
-          var tempPos3 = pos3.clone();
-          var quaternion = raycaster.el.object3D.quaternion;
-          var vector = new THREE.Vector3(0, 0, -1);
-          vector.applyQuaternion( quaternion );
-          tempPos3 = tempPos3.add(vector);
-          
-          var pPosition3 = pEl.getAttribute('position');
-          var newPos3 = pPosition3.clone();
-          newPos3[axis] = tempPos3[axis];
-          pEl.setAttribute('position', newPos3);
-          */
         }
       });
     </script>
@@ -594,7 +560,8 @@
             wasd-controls="fly:true;"
             look-controls
             cursor="rayOrigin: mouse"
-            raycaster="objects: .clickable"
+            raycaster="objects: .clickable,
+                                .axis-slider"
           >
           <!-- 
             raycaster="objects: .cursor-listener"

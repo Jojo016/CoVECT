@@ -2,6 +2,7 @@
 var tasks = [];
 var tasksSelectedBy = null;
 
+// EventOption = [cid, name, type]
 var eventOptions = [['none', 'None']];
 
 function updateEventOptions() {
@@ -45,6 +46,9 @@ function updateEventOptions() {
       }
     }
   }
+  
+  console.log("final eventOptions:");
+  console.log(eventOptions);
 }
 
 function addNumberedTask(task, index) {
@@ -91,19 +95,20 @@ function addNumberedTask(task, index) {
   submenu.appendChild(container);
 }
 
-function changeEventOption(input, next) {
+function changeEventOption(inputContainer, next) {
   var debug = document.getElementById('debugtext');
   debug.setAttribute('value', debug.getAttribute('value') + '\nInside ChangeEventOpt!');
+  var input = inputContainer.children[0];
 
   var newOption = null;
   var nextOptionIndex;
-  debug.setAttribute('value', debug.getAttribute('value') + '\nInput = ' + input);
+  debug.setAttribute('value', debug.getAttribute('value') + '\nInputVal = ' + input.getAttribute('value'));
   var currentOptionIndex = input.getAttribute('index');
 
   debug.setAttribute('value', debug.getAttribute('value') + '\ncurrentOptionIndex: ' + currentOptionIndex);
 
   if(next) {
-    nextOptionIndex = currentOptionIndex + 1;
+    nextOptionIndex = Number(currentOptionIndex) + 1;
     if(nextOptionIndex > eventOptions.length-1) {
       newOption = eventOptions[0];
     }else{
@@ -111,7 +116,7 @@ function changeEventOption(input, next) {
     }
     
   }else{
-    nextOptionIndex = currentOptionIndex -1 ;
+    nextOptionIndex = Number(currentOptionIndex) -1 ;
     if(nextOptionIndex < 0) {
       newOption = eventOptions[eventOptions.length-1];
     }else{
@@ -139,8 +144,8 @@ function createSwitchInteractionButton(taskId, next) {
   button.setAttribute('raycaster-listen', '');
   buttonContainer.appendChild(button);
   button.addEventListener('select-object', function handleSelect(event) {
-    var input = document.getElementById('eventdisplay' + taskId);
-    changeEventOption(input, next);
+    var inputContainer = document.getElementById('eventdisplay' + taskId);
+    changeEventOption(inputContainer, next);
   });
 
   var buttonImg = document.createElement('a-entity');
@@ -470,6 +475,13 @@ AFRAME.registerComponent('object-control-vr', {
   },
 
   createAxes: function(pEl) {
+    var hasAxes = pEl.getAttribute('has-axes');
+    if(hasAxes == 'true') {
+      return;
+    }
+
+    pEl.setAttribute('has-axes', 'true');
+
     var xSlider = document.createElement('a-entity');
     var ySlider = document.createElement('a-entity');
     var zSlider = document.createElement('a-entity');
@@ -537,6 +549,7 @@ AFRAME.registerComponent('object-control-vr', {
   },
 
   removeAxes: function(pEl) {
+    pEl.removeAttribute('has-axes');
     Array.from(pEl.children).forEach(child => {
       if(child.getAttribute('class') == 'axis-slider') {
         pEl.removeChild(child);
@@ -567,7 +580,7 @@ AFRAME.registerComponent('object-control-vr', {
         this.createAxes(pEl);
 
         // Listen for thumbstick-rotation
-        el.setAttribute('currentlySelected', '');
+        el.setAttribute('currentlySelected', 'true');
 
         // Add color-listener for Colorwheel
         el.setAttribute('color-listener', '');
@@ -769,11 +782,6 @@ AFRAME.registerComponent('object-control-vr', {
         // Name has to be changed for parentEl
         pEl.setAttribute('entityName', data);
   
-        // Update scene objects view
-        var tr = parent.document.getElementById("cid" + componentId);
-        var elementNameCell = tr.cells[1];
-        elementNameCell.innerHTML = data;
-  
       }else{
         // All other types should be changed for el itself
         el.setAttribute(type, data);
@@ -878,13 +886,13 @@ AFRAME.registerComponent('object-control-vr', {
       pEl.setAttribute('scale', '0.2 0.2 0.2');
       pEl.setAttribute('entityName', name);
 
-      pEl.data = data;
+      pEl.interaction = data;
 
       // Create actual element & handle attributes
       var el = document.createElement('a-entity');
       el.setAttribute('scale', scale);
-      el.setAttribute('geometry', interaction.geometry);
-      el.setAttribute('material', interaction.material);
+      el.setAttribute('geometry', 'primitive: box');
+      el.setAttribute('material', 'color: #ffffff; opacity: 0.4');
 
       // Handle raycaster attribute 
       el.setAttribute('raycaster-listen', '');
@@ -937,7 +945,7 @@ AFRAME.registerComponent('object-control-vr', {
     var attribute = data.attribute;
     var value = data.value;
 
-    pEl.data[attribute] = value;
+    pEl.interaction[attribute] = value;
 
     // Update property rows if element is currently selected by client
     if(data.sourceRtcId == clientRtcId) {
@@ -1029,7 +1037,7 @@ AFRAME.registerComponent('object-control-vr', {
 
       switch(taskType) {
         case 'eventArea':
-          var interaction = pEl.data;
+          var interaction = pEl.interaction;
           var target = interaction.target;
           console.log("interaction");
           console.log(interaction);
