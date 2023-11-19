@@ -170,6 +170,19 @@ td.td1:hover {
     display: none;
 }
 
+.statusbar {
+    display: table;
+    width: 300px; /*Optional*/
+    table-layout: fixed; /*Optional*/
+    border-spacing: 5px; /*Optional*/
+}
+
+.userColumn {
+    display: table-cell;
+    width: 100px;
+    color: rgb(30, 192, 165)(204, 186, 186); /*Optional*/
+}
+
 .seamless-button {
     background: none;
     border: none;

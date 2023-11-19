@@ -1,26 +1,4 @@
 ﻿<!DOCTYPE html>
-
-<!--
-<!DOCTYPE html>
-<html>
-  <head>
-    <script>
-      console.log("BabelScript loading...");
-    </script>
-    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-    <script>
-      console.log("BabelScript loaded.");
-    </script>
-    <script type="text/jsx" src="/index.js"></script>
-  </head>
-  <body> 
-    <div id="root">
-    </div>
-    <script type="text/babel" src="./index.js"></script>
-  </body>
-</html>
--->
-
 <html>
   <head>
     <meta charset="utf-8" />
@@ -240,10 +218,10 @@
             var cid = data.cid;
             var sourceRtcId = data.sourceRtcId;
             var newData = data.updatedata;
-            var property = newData.property;
+            var attribute = newData.attribute;
             var value = newData.value;
             var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
-            controller.updateInteractable(cid, sourceRtcId, property, value);
+            controller.updateInteractable(cid, sourceRtcId, attribute, value);
 
           } else if(msgType === 'userJoined') {
             var data = JSON.parse(msgData);
@@ -258,6 +236,10 @@
             if(cid != -1) {
               var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
               controller.selectEntity(cid, sourceRtcId, false);
+            }
+            
+            if(data.tasksSelectedBy == 'remove') {
+              tasksSelectedBy = null;
             }
 
           }else if(msgType === 'spawnInteraction') {
@@ -292,7 +274,6 @@
 
           }else if(msgType === 'deselectTasks') {
             var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
-            console.log("deselectTasks");
             controller.deselectTasks();
 
           }else{
@@ -382,8 +363,6 @@
             var lookController = player.getAttribute('look-controls');
             lookController.enabled = false;
             player.setAttribute('look-controls', lookController);
-
-            console.log("MOUSEDOWN");
 
             // Start moving the object
             el.setAttribute('axis-grabbed', 'axis: ' + axis);

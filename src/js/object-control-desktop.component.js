@@ -208,6 +208,61 @@ AFRAME.registerComponent('object-control-desktop', {
       });
   },
 
+  removeRotatable: function() {
+    var axis = document.getElementById('rotatableAxis');
+
+    if(axis != null) {
+      axis.parentEl.removeChild(axis);
+    }
+  },
+
+  createRotatable: function(pEl) {
+    if(pEl.getAttribute('class') != 'entity') {
+      return;
+    }
+
+    var el = pEl.children[0];
+    var interactable = el.interactable;
+
+    if(interactable.type != 'rotatable') {
+      return;
+    } 
+    
+    this.removeRotatable();
+
+    var axisContainer = document.createElement('a-entity');
+    axisContainer.setAttribute('id', 'rotatableAxis');
+    axisContainer.setAttribute('rotation', el.getAttribute('rotation'));
+
+    var rotAxis = interactable.axis;
+    var offset = interactable.offset;
+    var axis = document.createElement('a-entity');
+    axis.setAttribute('material', 'color: #fcba03');
+    axis.setAttribute('geometry', 'primitive: cylinder; radius: 0.1; height: 3; segmentsRadial: 6');
+
+    console.log("rotAxis");
+    console.log(rotAxis);
+    switch(rotAxis) {
+      case 'X':
+        axis.setAttribute('rotation', '0 0 -90');
+        axis.setAttribute('position', '0 0 ' + offset);
+        break;
+
+      case 'Y':
+        axis.setAttribute('rotation', '0 0 0');
+        axis.setAttribute('position', offset + ' 0 0 ');
+        break;
+
+      case 'Z':
+        axis.setAttribute('rotation', '90 0 0');
+        axis.setAttribute('position', '0 ' + offset + ' 0');
+        break;
+    }
+
+    axisContainer.appendChild(axis);
+    pEl.appendChild(axisContainer);
+  },
+
   createAxes: function(pEl) {
     var xSlider = document.createElement('a-entity');
     var ySlider = document.createElement('a-entity');
@@ -357,14 +412,14 @@ AFRAME.registerComponent('object-control-desktop', {
   interactionPropertyChanged: function(event) {
     var pEl = event.currentTarget.el;
     var eventTarget = event.target;
-    var property = eventTarget.id;
+    var attribute = eventTarget.id;
     var value = eventTarget.value; 
 
     // Fill data object
     var newObj = new Object();
     newObj.cid = pEl.getAttribute('cid');
     newObj.updatetype = 'interaction';
-    newObj.attribute = property;
+    newObj.attribute = attribute;
     newObj.value = value;
     
     // Send changes to server
@@ -402,7 +457,7 @@ AFRAME.registerComponent('object-control-desktop', {
     var updateData = new Object();
     newObj.cid = pEl.getAttribute('cid');
     newObj.updatetype = 'interactable';
-    updateData.property = property;
+    updateData.attribute = property;
     updateData.value = value;
     newObj.updatedata = updateData;
     
@@ -727,10 +782,12 @@ AFRAME.registerComponent('object-control-desktop', {
 
       // Interaction DIVs
       var interaction = pEl.interaction;
+      var interactionData = interaction.data;
 
-      var target = interaction.target;
-      var action = interaction.action;
-      var reaction = interaction.reaction;
+      var target = interactionData.target;
+      var action = interactionData.action;
+      var reactionShape = interactionData.reactionShape;
+      var reactionLayer = interactionData.reactionLayer;
 
       div = document.createElement('div');
       div.className = 'property-row';
@@ -761,7 +818,7 @@ AFRAME.registerComponent('object-control-desktop', {
       }
 
       // Append action property rows
-      var actionOptions = [['none', 'Nothing'], ['addLayer', 'Add Layer'], ['changeTo', 'Change To']];
+      var actionOptions = [['none', 'None'], ['addLayer', 'Add Layer'], ['changeTo', 'Change To']];
       var actionOptionsText = ``;
 
       for(var i=0; i<actionOptions.length; i++) {
@@ -804,13 +861,13 @@ AFRAME.registerComponent('object-control-desktop', {
         // Different actions require different property rows
         if(action == 'changeTo') {
           // Check for reaction
-          var attrOptions = [['box', 'Box'], ['cylinder', 'Cylinder'], ['plane', 'Plane'], ['sphere', 'Sphere'], ['bowl', 'Bowl']];
+          var attrOptions = [['none', 'None'], ['box', 'Box'], ['cylinder', 'Cylinder'], ['plane', 'Plane'], ['sphere', 'Sphere'], ['bowl', 'Bowl']];
           var attrOptionsText = ``;
 
           for(var i=0; i<attrOptions.length; i++) {
             var attr = attrOptions[i];
 
-            if(attr[0] == reaction) {
+            if(attr[0] == reactionShape) {
               attrOptionsText += `
                 <option selected="selected" value="${attr[0]}">${attr[1]}</option>
               `;
@@ -826,7 +883,7 @@ AFRAME.registerComponent('object-control-desktop', {
               <span class="properties-parameter-name">
                 <b>Shape</b>
               </span>
-              <select name="reaction">
+              <select name="reactionShape">
                 ${attrOptionsText}
               </select>
             </div>
@@ -834,13 +891,13 @@ AFRAME.registerComponent('object-control-desktop', {
 
         }else if(action == 'addLayer'){
           // Check for reaction
-          var attrOptions = [['cheese', 'Cheese'], ['tomato', 'Tomatoes']];
+          var attrOptions = [['none', 'None'], ['cheese', 'Cheese'], ['tomato', 'Tomatoes']];
           var attrOptionsText = ``;
 
           for(var i=0; i<attrOptions.length; i++) {
             var attr = attrOptions[i];
 
-            if(attr[0] == reaction) {
+            if(attr[0] == reactionLayer) {
               attrOptionsText += `
                 <option selected="selected" value="${attr[0]}">${attr[1]}</option>
               `;
@@ -856,7 +913,7 @@ AFRAME.registerComponent('object-control-desktop', {
               <span class="properties-parameter-name">
                 <b>Layer</b>
               </span>
-              <select name="reaction">
+              <select name="reactionLayer">
                 ${attrOptionsText}
               </select>
             </div>
@@ -950,6 +1007,25 @@ AFRAME.registerComponent('object-control-desktop', {
 
           for(var k=0; k < eventOptions.length; k++) {
             var evtOption = eventOptions[k];
+
+            var elem = document.getElementById('cid' + evtOption[0]);
+            if(elem != null) {
+              var className = elem.getAttribute('class');
+              if(className == 'entity') {
+                var typ = elem.children[0].interactable.type;
+                if(typ == 'rotatable') {
+                  evtOption[1] = "Rotate '" + evtOption[1] + "'";
+                }
+              }else if(className == 'interaction') {
+
+                /* May be confusing
+                var typ = elem.interaction.type;
+                if(typ == 'eventarea') {
+                  evtOption[1] = "Trigger '" + evtOption[1] + "'";
+                }
+                */
+              }
+            }
 
             if(evtOption[0] == task.triggerEvent) {
               selected = evtOption;
@@ -1209,102 +1285,92 @@ AFRAME.registerComponent('object-control-desktop', {
   },
 
   selectEntity: function(componentId, sourceRtcId, selectBool) {
-      var el = null;
-      var pEl = null;
-      var els = this.el.sceneEl.querySelectorAll('[cid]');
-
-      for (var i = 0; i < els.length; i++) {
-
-        if(els[i].getAttribute('cid') == componentId) {
-          pEl = els[i];
-          el = pEl.children[0];
-          break;
-        }
-      }
+    var pEl = document.getElementById('cid' + componentId);
+    var el = pEl.children[0];
       
-      var pPanel = window.parent.document.getElementById('properties-panel');
-      var objectType = pEl.getAttribute('class');
+    var pPanel = window.parent.document.getElementById('properties-panel');
+    var objectType = pEl.getAttribute('class');
 
-
-      // Decide whether to select or deselect the object
-      if(sourceRtcId == clientRtcId) {
-        // Client's own EasyRTCid
-        if(selectBool) {
-          // Select object
-          // Create AxesHelper
-          this.createAxes(pEl);
-
-          // Update properties view
-          while (pPanel.firstChild) {
-            // Remove all children
-            pPanel.removeChild(pPanel.firstChild);
-          }
-
-          this.addPropertiesRow(pPanel, objectType, pEl);
-
-        }else{
-          // Deselect object
-          this.removeAxes(pEl);
-
-          // Remove object from properties panel
-          while (pPanel.firstChild) {
-            // Remove all children
-            pPanel.removeChild(pPanel.firstChild);
-          }
-
-          // Set properties panel to 'no selection'
-          this.addPropertiesRow(pPanel, 'no-selection', null);
-        }
-      }else{
-
-        // Other clients EasyRTCid
-        if(selectBool) {
-          // Make selected object transparent 
-          var mat = el.getAttribute('material');
-          if(objectType == 'interaction') {
-            mat.opacity = 0.1;
-          }else{
-            mat.opacity = 0.4;
-          }
-          el.setAttribute('material', mat);
-        }else {
-          // Make deselected object fully visible
-          var mat = el.getAttribute('material');
-          if(objectType == 'interaction') {
-            mat.opacity = 0.4;
-          }else{
-            mat.opacity = 1.0;
-          }
-          el.setAttribute('material', mat);
-        }
-      }
-
-      // DESKTOP - Further A-FRAME actions
+    // Decide whether to select or deselect the object
+    if(sourceRtcId == clientRtcId) {
+      // Client's own EasyRTCid
       if(selectBool) {
-        // Make selected object untargetable
-        var selectable = el.getAttribute('selectable');
-        if(selectable == null) {
-          selectable = new Object();
-        }
-        selectable.targetable = false;
-        el.setAttribute('selectable', selectable);
+        // Select object
+        this.removeAxes(pEl);
+        this.createAxes(pEl);
+        this.createRotatable(pEl);
 
-        // Set easyRtcId of source
-        el.setAttribute('selectedby', sourceRtcId);
-      }else {
-        // Make selected object targetable again
-        var selectable = el.getAttribute('selectable');
-
-        if(selectable == null) {
-          selectable = new Object();
+        // Update properties view
+        while (pPanel.firstChild) {
+          // Remove all children
+          pPanel.removeChild(pPanel.firstChild);
         }
 
-        selectable.targetable = true;
-        el.setAttribute('selectable', selectable);
+        this.addPropertiesRow(pPanel, objectType, pEl);
 
-        // Remove easyRtcId of source
-        el.removeAttribute('selectedby');
+      }else{
+        // Deselect object
+        this.removeAxes(pEl);
+
+        // Remove object from properties panel
+        while (pPanel.firstChild) {
+          // Remove all children
+          pPanel.removeChild(pPanel.firstChild);
+        }
+
+        // Set properties panel to 'no selection'
+        this.addPropertiesRow(pPanel, 'no-selection', null);
       }
+    }else{
+
+      // Other clients EasyRTCid
+      if(selectBool) {
+        // Make selected object transparent 
+        var mat = el.getAttribute('material');
+        if(objectType == 'interaction') {
+          mat.opacity = 0.1;
+        }else{
+          mat.opacity = 0.4;
+        }
+        el.setAttribute('material', mat);
+      }else {
+        // Make deselected object fully visible
+        var mat = el.getAttribute('material');
+        if(objectType == 'interaction') {
+          mat.opacity = 0.4;
+        }else{
+          mat.opacity = 1.0;
+        }
+        el.setAttribute('material', mat);
+      }
+    }
+
+    // DESKTOP - Further A-FRAME actions
+    if(selectBool) {
+      // Make selected object untargetable
+      var selectable = el.getAttribute('selectable');
+      if(selectable == null) {
+        selectable = new Object();
+      }
+      selectable.targetable = false;
+      el.setAttribute('selectable', selectable);
+
+      // Set easyRtcId of source
+      el.setAttribute('selectedby', sourceRtcId);
+    }else {
+      // Make selected object targetable again
+      var selectable = el.getAttribute('selectable');
+
+      if(selectable == null) {
+        selectable = new Object();
+      }
+
+      selectable.targetable = true;
+      el.setAttribute('selectable', selectable);
+
+      // Remove easyRtcId of source
+      el.removeAttribute('selectedby');
+    }
   },
 
   removeComponent: function(componentId) {
@@ -1514,8 +1580,20 @@ AFRAME.registerComponent('object-control-desktop', {
     // TODO: Update interaction and remove from old target if necessary
     var attribute = data.attribute;
     var value = data.value;
+    var interaction = pEl.interaction;
 
-    pEl.interaction[attribute] = value;
+    switch(attribute) {
+      case 'action':
+      case 'target':
+      case 'reactionLayer':
+      case 'reactionShape':
+        interaction.data[attribute] = value;
+        break;
+      
+      default:
+        interaction[attribute] = value;
+        break;
+    }
 
     // Update property rows if element is currently selected by client
     if(data.sourceRtcId == clientRtcId) {
@@ -1555,12 +1633,12 @@ AFRAME.registerComponent('object-control-desktop', {
       // Create container element
       var pEl = document.createElement('a-entity');
       pEl.setAttribute('class', 'interaction');
-      pEl.setAttribute('type', type);
+      pEl.setAttribute('id', 'cid' + cid);
       pEl.setAttribute('cid', cid);
+      pEl.setAttribute('type', type);
       pEl.setAttribute('scale', '0.2 0.2 0.2');
       pEl.setAttribute('position', pos3);
       pEl.setAttribute('entityName', name);
-
       pEl.interaction = interaction;
 
       // Create actual element & handle attributes

@@ -14,7 +14,7 @@ function updateEventOptions() {
     var pEl = interactions[j];
     var el = pEl.children[0];
     var cid = pEl.getAttribute('cid');
-    var type = pEl.getAttribute('type');
+    var type = pEl.getAttribute('class');
     var name = pEl.getAttribute('entityName');
     var eventOption = [cid, name, type];
     eventOptions.push(eventOption);
@@ -46,9 +46,6 @@ function updateEventOptions() {
       }
     }
   }
-  
-  console.log("final eventOptions:");
-  console.log(eventOptions);
 }
 
 function addNumberedTask(task, index) {
@@ -69,7 +66,7 @@ function addNumberedTask(task, index) {
   taskNameDisplay.setAttribute('position', '-0.15 0 0');
   taskNameDisplay.setAttribute('scale', '0.7 0.7 0.7');
   taskNameDisplay.setAttribute('color', 'black');
-  taskNameDisplay.setAttribute('value', 'Task ' + (index+1) + ':');
+  taskNameDisplay.setAttribute('value', 'Task ' + (Number(index)+1) + ':');
   container.appendChild(taskNameDisplay);
 
   // Interaction selection
@@ -95,41 +92,43 @@ function addNumberedTask(task, index) {
   submenu.appendChild(container);
 }
 
-function changeEventOption(inputContainer, next) {
-  var debug = document.getElementById('debugtext');
-  debug.setAttribute('value', debug.getAttribute('value') + '\nInside ChangeEventOpt!');
+function changeEventOption(taskId, eventOption, inputContainer, next) {
   var input = inputContainer.children[0];
-
-  var newOption = null;
   var nextOptionIndex;
-  debug.setAttribute('value', debug.getAttribute('value') + '\nInputVal = ' + input.getAttribute('value'));
-  var currentOptionIndex = input.getAttribute('index');
-
-  debug.setAttribute('value', debug.getAttribute('value') + '\ncurrentOptionIndex: ' + currentOptionIndex);
+  var currentOptionIndex = eventOptions.indexOf(eventOption);
 
   if(next) {
     nextOptionIndex = Number(currentOptionIndex) + 1;
     if(nextOptionIndex > eventOptions.length-1) {
-      newOption = eventOptions[0];
-    }else{
-      newOption = eventOptions[nextOptionIndex+1];
+      nextOptionIndex = 0;
     }
     
   }else{
-    nextOptionIndex = Number(currentOptionIndex) -1 ;
+    nextOptionIndex = Number(currentOptionIndex) - 1;
     if(nextOptionIndex < 0) {
-      newOption = eventOptions[eventOptions.length-1];
-    }else{
-      newOption = eventOptions[nextOptionIndex-1];
+      nextOptionIndex = eventOptions.length-1
     }
   }
 
-  var eventOptionName = newOption[1];
-  input.setAttribute('text', 'value: ' + eventOptionName);
-  input.setAttribute('index', nextOptionIndex);
+  var newOption = eventOptions[nextOptionIndex];
+  //var eventOptionName = newOption[1];
+
+  //input.setAttribute('index', nextOptionIndex);
+  //input.setAttribute('text', 'value: ' + eventOptionName);
+
+  // Update task
+  var task = tasks[taskId];
+  task.triggerEvent = newOption[0];
+
+  // Send to server
+  var newObj = new Object();
+  newObj.taskId = taskId;
+  newObj.task = task;
+  var data = JSON.stringify(newObj)
+  easyrtc.sendDataWS(clientRtcId, 'updateTask', data);
 }
 
-function createSwitchInteractionButton(taskId, next) {
+function createSwitchInteractionButton(taskId, eventOption, next) {
   var buttonContainer = document.createElement('a-entity');
   buttonContainer.setAttribute('priority', 'level: hud');
   buttonContainer.setAttribute('visible', 'true');
@@ -145,7 +144,7 @@ function createSwitchInteractionButton(taskId, next) {
   buttonContainer.appendChild(button);
   button.addEventListener('select-object', function handleSelect(event) {
     var inputContainer = document.getElementById('eventdisplay' + taskId);
-    changeEventOption(inputContainer, next);
+    changeEventOption(taskId, eventOption, inputContainer, next);
   });
 
   var buttonImg = document.createElement('a-entity');
@@ -167,15 +166,14 @@ function createInteractionSelection(taskId, triggerEvent, eventOption) {
   var container = document.createElement('a-entity');
   container.setAttribute('position', '0.05 0 0');
 
-  var eventOptionName = eventOption[1];
-  var eventTriggerDisplay = createDisplayEvent(taskId, eventOptionName, 1.5, 0.7, 0, 0);
+  var eventTriggerDisplay = createDisplayEvent(taskId, eventOption, 1.5, 0.7, 0, 0);
   container.appendChild(eventTriggerDisplay);
 
-  var nextButton = createSwitchInteractionButton(taskId, true);
+  var nextButton = createSwitchInteractionButton(taskId, eventOption, true);
   nextButton.setAttribute('position', '2.4 0 0');
   container.appendChild(nextButton);
 
-  var previousButton = createSwitchInteractionButton(taskId, false);
+  var previousButton = createSwitchInteractionButton(taskId, eventOption, false);
   previousButton.setAttribute('position', '0.5 0 0');
   container.appendChild(previousButton);
 
@@ -183,22 +181,18 @@ function createInteractionSelection(taskId, triggerEvent, eventOption) {
   if(eventOption[0] != 'none') {
     triggerType = eventOption[2];
   }
-  console.log("triggerType");
-  console.log(triggerType);
 
-  switch(triggerEvent) {
+  switch(triggerType) {
     case 'none':
-      break;
-
-    case 'eventarea':
-      // Add target
-      
-      // Add switch for actions 
+    case 'eventarea':      
       break;
 
     case 'rotatable':
       // Add target angle inputtable
-      var targetAngleInput = createInputtableTask(taskId, 'TargetAngle', task.eventAngle, 0.6, 3, 0, 0)
+      var task = tasks[taskId];
+      console.log("task");
+      console.log(task);
+      var targetAngleInput = this.createInputtableTask(taskId, 'TargetAngle', task.eventAngle, 1, 2.6, 0, 0);
       container.append(targetAngleInput);
       break;
   }
@@ -206,8 +200,9 @@ function createInteractionSelection(taskId, triggerEvent, eventOption) {
   return container;
 }
 
-function createDisplayEvent(id, value, width, posX, posY, posZ) {
+function createDisplayEvent(id, eventOption, width, posX, posY, posZ) {
   var offsetX = -0.7 + width/2;
+  var eventOptionName = eventOption[1];
 
   var container = document.createElement('a-entity');
   container.setAttribute('id', 'eventdisplay' + id);
@@ -217,7 +212,7 @@ function createDisplayEvent(id, value, width, posX, posY, posZ) {
   var name = document.createElement('a-text');
   name.setAttribute('scale', '0.7 0.7 0.7');
   name.setAttribute('color', 'black');
-  name.setAttribute('value', value);
+  name.setAttribute('value', eventOptionName);
   container.appendChild(name);
 
   var background = document.createElement('a-plane');
@@ -239,19 +234,20 @@ function createInputtableTask(id, name, value, width, posX, posY, posZ) {
   container.setAttribute('color', 'black');
   container.setAttribute('priority', 'level: hud');
 
-  var name = document.createElement('a-text');
-  name.setAttribute('scale', '3 3 3');
-  name.setAttribute('color', 'black');
-  name.setAttribute('value', name + ':');
-  name.setAttribute('priority', 'level: hud');
-  container.appendChild(name);
+  var nameUi = document.createElement('a-text');
+  nameUi.setAttribute('scale', '0.7 0.7 0.7');
+  nameUi.setAttribute('color', 'black');
+  nameUi.setAttribute('value', name + ':');
+  nameUi.setAttribute('priority', 'level: hud');
+  container.appendChild(nameUi);
 
-  var text = document.createElement('a-text');
-  text.setAttribute('scale', '3 3 3');
-  text.setAttribute('color', 'black');
-  text.setAttribute('value', value);
-  text.setAttribute('priority', 'level: hud');
-  container.appendChild(text);
+  var textUi = document.createElement('a-text');
+  textUi.setAttribute('scale', '0.8 0.8 0.8');
+  textUi.setAttribute('color', 'black');
+  textUi.setAttribute('value', value);
+  textUi.setAttribute('position', 1.2 + offsetX + ' 0 0');
+  textUi.setAttribute('priority', 'level: hud');
+  container.appendChild(textUi);
 
   var background = document.createElement('a-plane');
   background.setAttribute('class', 'vr-submenu-task');
@@ -318,11 +314,11 @@ AFRAME.registerComponent('object-control-vr', {
     var name = data.name;
     var shape = data.shape;
     var material = data.material;
-    var scale = data.scaleX + " " + data.scaleY + " " + data.scaleZ;
-    var rotation = data.rotX + " " + data.rotY + " " + data.rotZ;
+    var scale = data.scale;
+    var rotation = data.rotation;
     var height = data.height;
     var radius = data.radius;
-    var pos3 = new THREE.Vector3(data.posX, data.posY, data.posZ);
+    var pos3 = data.position;
     var interactable = data.interactable;
     var wireframed = data.wireframed;
 
@@ -548,6 +544,59 @@ AFRAME.registerComponent('object-control-vr', {
     updateEventOptions();
   },
 
+  removeRotatable: function() {
+    var axis = document.getElementById('rotatableAxis');
+
+    if(axis != null) {
+      axis.parentEl.removeChild(axis);
+    }
+  },
+
+  createRotatable: function(pEl) {
+    if(pEl.getAttribute('class') != 'entity') {
+      return;
+    }
+
+    var el = pEl.children[0];
+    var interactable = el.interactable;
+
+    if(interactable.type != 'rotatable') {
+      return;
+    } 
+    
+    this.removeRotatable();
+
+    var axisContainer = document.createElement('a-entity');
+    axisContainer.setAttribute('id', 'rotatableAxis');
+    axisContainer.setAttribute('rotation', el.getAttribute('rotation'));
+
+    var rotAxis = interactable.axis;
+    var offset = interactable.offset;
+    var axis = document.createElement('a-entity');
+    axis.setAttribute('material', 'color: #fcba03');
+    axis.setAttribute('geometry', 'primitive: cylinder; radius: 0.1; height: 3; segmentsRadial: 6');
+
+    switch(rotAxis) {
+      case 'X':
+        axis.setAttribute('rotation', '0 0 -90');
+        axis.setAttribute('position', '0 0 ' + offset);
+        break;
+
+      case 'Y':
+        axis.setAttribute('rotation', '0 0 0');
+        axis.setAttribute('position', offset + ' 0 0 ');
+        break;
+
+      case 'Z':
+        axis.setAttribute('rotation', '90 0 0');
+        axis.setAttribute('position', '0 ' + offset + ' 0');
+        break;
+    }
+
+    axisContainer.appendChild(axis);
+    pEl.appendChild(axisContainer);
+  },
+
   removeAxes: function(pEl) {
     pEl.removeAttribute('has-axes');
     Array.from(pEl.children).forEach(child => {
@@ -558,26 +607,17 @@ AFRAME.registerComponent('object-control-vr', {
   },
 
   selectEntity: function(componentId, sourceRtcId, selectBool) {
-
-    var el = null;
-    var pEl = null;
-    var els = document.querySelectorAll('[cid]');
-
-    for (var i = 0; i < els.length; i++) {
-
-      if(els[i].getAttribute('cid') == componentId) {
-        pEl = els[i];
-        el = pEl.children[0];
-        break;
-      }
-    }
+    var pEl = document.getElementById('cid' + componentId);
+    var el = pEl.children[0];
 
     // Decide whether to select or deselect the object
     if(sourceRtcId == clientRtcId) {
       // Client's own EasyRTCid
       if(selectBool) {
         // Select object: Add AxesHelper
+        this.removeAxes(pEl);
         this.createAxes(pEl);
+        this.createRotatable(pEl);
 
         // Listen for thumbstick-rotation
         el.setAttribute('currentlySelected', 'true');
@@ -625,20 +665,25 @@ AFRAME.registerComponent('object-control-vr', {
       }
     }else{
 
+      var objectType = pEl.getAttribute('class');
       // Other clients EasyRTCid
       if(selectBool) {
         // Make selected object transparent 
         var mat = el.getAttribute('material');
-        mat.opacity = 0.4;
+        if(objectType == 'interaction') {
+          mat.opacity = 0.1;
+        }else{
+          mat.opacity = 0.4;
+        }
         el.setAttribute('material', mat);
-        
       }else {
         // Make deselected object fully visible
-        if(el == null) {
-          return;
-        }
         var mat = el.getAttribute('material');
-        mat.opacity = 1.0;
+        if(objectType == 'interaction') {
+          mat.opacity = 0.4;
+        }else{
+          mat.opacity = 1.0;
+        }
         el.setAttribute('material', mat);
       }
     }
@@ -872,27 +917,28 @@ AFRAME.registerComponent('object-control-vr', {
 
     if(type == 'eventarea') {
       var cid = interaction.cid;
-      var data = interaction.data;
       var name = interaction.name;
       var scale = interaction.scale;
-      var pos3 = new THREE.Vector3(interaction.posX, interaction.posY, interaction.posZ);
+      var pos3 = interaction.position;
 
       // Create container element
       var pEl = document.createElement('a-entity');
       pEl.setAttribute('class', 'interaction');
-      pEl.setAttribute('type', type);
+      pEl.setAttribute('id', 'cid'+cid);
       pEl.setAttribute('cid', cid);
-      pEl.setAttribute('position', pos3);
+      pEl.setAttribute('type', type);
       pEl.setAttribute('scale', '0.2 0.2 0.2');
+      pEl.setAttribute('position', pos3);
       pEl.setAttribute('entityName', name);
-
-      pEl.interaction = data;
+      pEl.interaction = interaction;
+      console.log("interaction");
+      console.log(interaction);
 
       // Create actual element & handle attributes
       var el = document.createElement('a-entity');
       el.setAttribute('scale', scale);
-      el.setAttribute('geometry', 'primitive: box');
-      el.setAttribute('material', 'color: #ffffff; opacity: 0.4');
+      el.setAttribute('geometry', interaction.geometry);
+      el.setAttribute('material', interaction.material);
 
       // Handle raycaster attribute 
       el.setAttribute('raycaster-listen', '');
@@ -901,8 +947,11 @@ AFRAME.registerComponent('object-control-vr', {
       var selectedById = interaction.selectedBy;
       if(selectedById != -1) {
         // Make selected object transparent and untargetable
-        var mat = el.getDOMAttribute('material');
-        mat.opacity = 0.1;
+        var mat = el.getAttribute('material');
+        if(mat == null) {
+          mat = new Object();
+        }
+        mat.opacity = 0.4;;
         el.setAttribute('material', mat);
 
         // Set as untargetable for raycaster
@@ -918,8 +967,8 @@ AFRAME.registerComponent('object-control-vr', {
         el.setAttribute('grab-listener', '');
       }
 
-      pEl.appendChild(el);
       var scene = this.el.sceneEl;
+      pEl.appendChild(el);
       scene.appendChild(pEl);
 
       updateEventOptions();
@@ -928,29 +977,47 @@ AFRAME.registerComponent('object-control-vr', {
 
   updateInteraction: function(data) {
     var componentId = data.cid;
-    var el = null;
-    var pEl = null;
-    var els = this.el.sceneEl.querySelectorAll('[cid]');
+    var pEl = document.getElementById('cid' + componentId);
 
-    for (var i = 0; i < els.length; i++) {
-
-      if(els[i].getAttribute('cid') == componentId) {
-        pEl = els[i];
-        el = pEl.children[0];
-        break;
-      }
-    }
-
-    // TODO: Update interaction and remove from old target if necessary
     var attribute = data.attribute;
     var value = data.value;
+    var interaction = pEl.interaction;
 
-    pEl.interaction[attribute] = value;
+    switch(attribute) {
+      case 'action':
+      case 'target':
+      case 'reactionLayer':
+      case 'reactionShape':
+        interaction.data[attribute] = value;
+        break;
+      
+      default:
+        interaction[attribute] = value;
+        break;
+    }
+    
+    var debug = document.getElementById('debugtext');
+    debug.setAttribute('value', 'Updated interaction!');
+    debug.setAttribute('value', debug.getAttribute('value') + '\nAttribute: ' + attribute);
+    debug.setAttribute('value', debug.getAttribute('value') + '\nValue: ' + value);
+    debug.setAttribute('value', debug.getAttribute('value') + '\nsourceRtcId: ' + data.sourceRtcId);
+    debug.setAttribute('value', debug.getAttribute('value') + '\ncompare: ' + (data.sourceRtcId == clientRtcId));
 
     // Update property rows if element is currently selected by client
-    if(data.sourceRtcId == clientRtcId) {
-      this.selectEntity(componentId, clientRtcId, true);
+    try{
+      if(data.sourceRtcId == clientRtcId) {
+        this.selectEntity(componentId, clientRtcId, true);
+        debug.setAttribute('value', debug.getAttribute('value') + '\nPre updateSelectionMenu!');
+        updateSelectionMenu(pEl, true);
+        debug.setAttribute('value', debug.getAttribute('value') + '\nPost updateSelectionMenu!');
+      }
+    }catch(e){
+      
+      debug.setAttribute('value', debug.getAttribute('value') + '\nError: ' + e.message);
     }
+    
+
+    this.updateTaskboard();
   },
 
   areTasksOccupied: function() {
@@ -963,12 +1030,41 @@ AFRAME.registerComponent('object-control-vr', {
     return false;
   },
 
-  selectTasks: function(sourceRtcId) {
-    tasksSelectedBy = sourceRtcId;
+  selectTasks: function(data) {
+    var vrMenuTaskButton = document.getElementById('vr-menu-task');
+
+    if(data != 'update') {
+      tasksSelectedBy = data.tasksSelectedBy;
+    }
+
+    var material = vrMenuTaskButton.getAttribute('material');
+    var baseColor;
+    switch(tasksSelectedBy) {
+      case clientRtcId:
+        material.color = '#00b800';
+        baseColor = '#00b800';
+        break;
+      
+      case '-1':
+      case null:
+        material.color = '#0377fc';
+        baseColor = '#0377fc';
+        break;
+    
+      default:
+        material.color = '#b80000'
+        baseColor = '#b80000';
+        break;
+      }
+
+      vrMenuTaskButton.setAttribute('material', material);
+      vrMenuTaskButton.setAttribute('baseColor', baseColor);
   },
 
   deselectTasks: function() {
     tasksSelectedBy = null;
+
+    this.selectTasks('update');
   },
 
   updateTaskboard: function() {
@@ -1020,13 +1116,6 @@ AFRAME.registerComponent('object-control-vr', {
         }
 
         var compType = pEl.getAttribute('class');
-
-        console.log("compType");
-        console.log(compType);
-        console.log("cid");
-        console.log(pEl.getAttribute('cid'));
-        console.log("cid");
-        console.log(pEl.getAttribute('cid'));
         
         if(compType == 'interaction') {
           taskType = 'eventArea';
@@ -1039,10 +1128,6 @@ AFRAME.registerComponent('object-control-vr', {
         case 'eventArea':
           var interaction = pEl.interaction;
           var target = interaction.target;
-          console.log("interaction");
-          console.log(interaction);
-          console.log("target");
-          console.log(target);
           var eventName = pEl.getAttribute('entityName');
           var targetName;
 

@@ -88,9 +88,10 @@ function setupScenario1() {
   plate1.material.color = '#66ff66';
   plate1.material.opacity = 1;
   plate1.selectedBy = -1;
-  plate1.rotX = '0';
-  plate1.rotY = '0';
-  plate1.rotZ = '0';
+  plate1.rotation = new Object();
+  plate1.rotation.x = '0';
+  plate1.rotation.y = '0';
+  plate1.rotation.z = '0';
   plate1.scale = new Object();
   plate1.scale.x = '0.4';
   plate1.scale.y = '0.4';
@@ -113,9 +114,10 @@ function setupScenario1() {
   plate2.material.color = '#6666ff';
   plate2.material.opacity = 1;
   plate2.selectedBy = -1;
-  plate2.rotX = '0';
-  plate2.rotY = '0';
-  plate2.rotZ = '0';
+  plate2.rotation = new Object();
+  plate2.rotation.x = '0';
+  plate2.rotation.y = '0';
+  plate2.rotation.z = '0';
   plate2.scale = new Object();
   plate2.scale.x = '0.4';
   plate2.scale.y = '0.4';
@@ -138,18 +140,19 @@ function setupScenario1() {
   grillerTop.material.color = '#ff00ff';
   grillerTop.material.opacity = 1;
   grillerTop.selectedBy = -1;
-  grillerTop.rotX = '-36';
-  grillerTop.rotY = '-24';
-  grillerTop.rotZ = '0';
+  grillerTop.rotation = new Object();
+  grillerTop.rotation.x = '-36';
+  grillerTop.rotation.y = '-24';
+  grillerTop.rotation.z = '0';
   grillerTop.scale = new Object();
   grillerTop.scale.x = '1.5';
   grillerTop.scale.y = '1.5';
   grillerTop.scale.z = '1.5';
   grillerTop.wireframed = 'false';
   var interactable = new Object();
-  interactable.type = 'none';
+  interactable.type = 'rotatable';
   interactable.axis = 'X';
-  interactable.offset = 0;
+  interactable.offset = -1;
   grillerTop.interactable = interactable;
 
   listOfComponentData.push(plate1);
@@ -613,9 +616,21 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
         // Get data
         var attribute = dataObj.attribute;
         var value = dataObj.value;
+        var interactionData = component.data;
 
         // Update the data on server
-        component[attribute] = value;
+        switch(attribute) {
+          case 'action':
+          case 'target':
+          case 'reactionLayer':
+          case 'reactionShape':
+            interactionData[attribute] = value;
+            break;
+          
+          default:
+            component[attribute] = value;
+            break;
+        }
 
         // Set message data
         dataObj.sourceRtcId = easyrtcid;
@@ -644,23 +659,14 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
         // Update data of 'normal' entities 
         if(updateType == 'interactable') {
           // Update server data
-          component.interactable[updateData.property] = updateData.value;
+          component.interactable[updateData.attribute] = updateData.value;
 
           // Set message type
           message.msgType = 'updatedInteractable';
 
         }else{
           // Update server data
-
-          console.log("updatetype: updatedata");
-          console.log(updateType + ' = ' + updateData);
-          console.log("pre component");
-          console.log(component);
-
           component[updateType] = updateData;
-
-          console.log("post component");
-          console.log(component);
 
           // Set message type
           message.msgType = 'updatedComponent';
@@ -787,8 +793,9 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
         // Add default interaction data
         var interactionData = new Object();
         interactionData.target = 'none'; // Should be a cid
-        interactionData.action = 'changeTo'; // Possible actions: none, addLayer, changeTo 
-        interactionData.reaction = 'cylinder';
+        interactionData.action = 'none'; // Possible actions: none, addLayer, changeTo 
+        interactionData.reactionLayer = 'none';
+        interactionData.reactionShape = 'none';
         newObj.data = interactionData;
 
         // Set message data
@@ -1127,7 +1134,7 @@ easyrtc.events.on("roomLeave", (connectionObj, roomName, roomParameter, callback
   // Send 'Deselect' of 'old cid' 
   var message = {};
   var dataObj = new Object();
-  dataObj.easyrtcid = sourceRtcId;
+  dataObj.sourceRtcId = sourceRtcId;
 
   if(cidToDeselect != -1) {
     dataObj.cid = cidToDeselect;
@@ -1141,6 +1148,10 @@ easyrtc.events.on("roomLeave", (connectionObj, roomName, roomParameter, callback
     delete dictOfSelectedComponents[cidToDeselect];
   }else{
     dataObj.cid = -1;
+  }
+
+  if(tasksSelectedBy == sourceRtcId) {
+    dataObj.tasksSelectedBy = 'remove';
   }
 
   var data = JSON.stringify(dataObj);
