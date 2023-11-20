@@ -164,6 +164,7 @@ function setupScenario(scenarioNumber) {
       break;
 
     case 2:
+      componentCounter = 0;
       break;
     
     default:
@@ -172,9 +173,19 @@ function setupScenario(scenarioNumber) {
 }
 
 function exportComponents() {
-  
+  try{
+    var exportString = JSON.stringify(listOfComponentData);
+    var date = Date.now();
+    var fileString = '../data/export/export_' + date + '.txt';
+    console.log(fileString);
+    var fs = require('fs');
+    fs.writeFile(fileString, exportString, (err) => {
+      if(err) throw err;
+    });
+  }catch(e) {
+    console.log('Error while exporting component data!');
+  }
 }
-
 
 // Serve the files from the examples folder
 app.use(express.static(path.resolve(__dirname, "src")));
@@ -238,7 +249,7 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       var shape = newObj.shape;
       newObj['cid'] = componentCounter;
       newObj.name = 'New ' + shape;
-      newObj.material = 'color: #00ffff; opacity: 1';
+      newObj.material = 'color: #00ffff; opacity: 1;';
       newObj.selectedBy = -1;
       newObj.rotation = new Object();
       newObj.scale = new Object();
@@ -264,6 +275,7 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
           newObj.rotation.x = '-90';
           newObj.rotation.y = '0';
           newObj.rotation.z = '0';
+          break;
 
         case 'cylinder':
           newObj.height = '1';
@@ -279,24 +291,41 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
 
         case 'bowl':
           newObj.radius = '1';
+          newObj.material = 'color: #1b688c; opacity: 1;'
           break;
 
         case 'plate':
-          newObj.scale.x = '0.08';
-          newObj.scale.y = '0.08';
-          newObj.scale.z = '0.08';
+          newObj.scale.x = '0.4';
+          newObj.scale.y = '0.4';
+          newObj.scale.z = '0.4';
+          newObj.material = "color: #ededed; opacity: 1;"
           break;
 
         case 'stool':
-          newObj.scale.x = '0.06';
-          newObj.scale.y = '0.06';
-          newObj.scale.z = '0.06';
+          newObj.scale.x = '0.3';
+          newObj.scale.y = '0.3';
+          newObj.scale.z = '0.3';
           break;
 
-        case 'table':
-          newObj.scale.x = '0.016';
-          newObj.scale.y = '0.02';
-          newObj.scale.z = '0.016';
+        case 'toast':
+          newObj.rotation.x = '0';
+          newObj.rotation.y = '0';
+          newObj.rotation.z = '90';
+          newObj.scale.x = '0.05';
+          newObj.scale.y = '0.05';
+          newObj.scale.z = '0.05';
+          break;
+
+        case 'cheese':
+          newObj.rotation.x = '-90';
+          newObj.rotation.y = '0';
+          newObj.rotation.z = '0';
+          break;
+
+        case 'tomatoes':
+          newObj.rotation.x = '-90';
+          newObj.rotation.y = '0';
+          newObj.rotation.z = '0';
           break;
 
         default:
@@ -471,6 +500,12 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
         var specificObject = listOfComponentData.find(obj => {
           return obj.cid == cid;
         })
+
+        if(specificObject == null) {
+          console.log('Unsuccessfully tried to find object with cid: ' + cid);
+          return;
+        }
+
         specificObject.selectedBy = easyrtcid;
 
         // Send 'Select' for initial 'cid'. 
@@ -596,6 +631,9 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
     var dataObj = JSON.parse(data);
     var cid = dataObj.cid;
 
+    console.log("UPDATE dataObj");
+    console.log(dataObj);
+
     // Find object in 'component' list
     var dataIndex = -1;
 
@@ -669,7 +707,30 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
         var updateData = dataObj.updatedata;
 
         // Update data of 'normal' entities 
-        if(updateType == 'interactable') {
+
+        if(updateType == 'wireframed') {
+          var shape = component[geometry].shape;
+          switch(shape) {
+            case 'grillerTop':
+            case 'toast':
+            case 'tomatoes':
+            case 'cheese':
+            case 'stool':
+            case 'bowl':
+            case 'plate':
+              return;
+
+            default:
+              break;
+          }
+
+          // Update server data
+          component[updateType] = updateData;
+
+          // Set message type
+          message.msgType = 'updatedComponent';
+
+        }else if(updateType == 'interactable') {
           // Update server data
           component.interactable[updateData.attribute] = updateData.value;
 
@@ -1099,6 +1160,9 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
       })(currentEasyrtcid, msg);
     }
 
+  }else if(msgType === "exportFiles") {
+    exportComponents();
+    
   }else if(msgType === "addedTask") {
     // Only for client side --> SKIP
   }else if(msgType === "updatedTask") {

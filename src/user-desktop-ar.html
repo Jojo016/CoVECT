@@ -58,6 +58,39 @@
             });
           }
         }
+
+        if (!NAF.schemas.hasTemplate('#hand-right-template')) {
+          NAF.schemas.add({
+            template: '#hand-right-template',
+            components: [
+              'position',
+              'rotation',
+              'gltf-model',
+              {
+                selector: '.righthand',
+                component: 'material',
+                property: 'color'
+              }
+            ]
+          });
+        }
+
+        if (!NAF.schemas.hasTemplate('#hand-left-template')) {
+          NAF.schemas.add({
+            template: '#hand-left-template',
+            components: [
+              'position',
+              'rotation',
+              'gltf-model',
+              {
+                selector: '.lefthand',
+                component: 'material',
+                property: 'color'
+              }
+            ]
+          });
+        }
+
         const components = NAF.schemas.getComponentsOriginal(template);
         return components;
       };
@@ -71,7 +104,14 @@
         init: function () {
           var data = this.data;
           var el = this.el; 
-          var pEl = el.parentEl;
+          var pEl;
+          var className = el.getAttribute('class');
+          if(className == 'sub-clickable') {
+            pEl = el.parentEl.parentEl;
+          }else {
+            // className == 'collidable'
+            pEl = el.parentEl;
+          }
 
           // Get component id
           var componentId = pEl.getAttribute('cid');
@@ -133,7 +173,7 @@
           data = JSON.stringify(obj);
 
           console.log("Sending: 'Create new object with data:' " + data);
-          easyrtc.sendDataWS(clientRtcId, "addNewObject", data);
+          easyrtc.sendDataWS(clientRtcId, command, data);
 
         }else if(command == 'removeComponent'){
           // Get shape from data
@@ -150,7 +190,10 @@
 
         }else if(command == 'addInteraction'){
           // Get type & position from data
+          var player = document.getElementById('player');
+          var pos3 = player.getAttribute('position');
           var type = data.type;
+          data.position = pos3;
 
           data = JSON.stringify(data);
 
@@ -168,7 +211,7 @@
 
         }else if(command == 'exportFiles'){
           easyrtc.sendDataWS(clientRtcId, command, data);
-
+          alert('Exported data!');
         }
       }
 
@@ -455,6 +498,19 @@
             </a-entity>
           </template>
 
+          <!-- Hands -->
+          <template id="hand-right-template">
+            <a-entity class="rightarm">
+              <a-entity class="righthand" gltf-model="#righthand-model" scale="1 1 1"></a-entity>
+            </a-entity>
+          </template>
+  
+          <template id="hand-left-template">
+            <a-entity class="leftarm">
+              <a-entity class="lefthand" gltf-model="#lefthand-model" scale="1 1 1"></a-entity>
+            </a-entity>
+          </template>
+
           <!-- Entity -->
           <template id="block-template">
             <a-entity>
@@ -466,9 +522,15 @@
           <img id="grid" src="/img/grid.png">
           <img id="sky" src="/img/sky.jpg">
 
-           <!-- TEXTURES -->
+          <!-- Textures -->
           <img id="kitchenwalls" src="img/wall_stone_4k.png" />
           <img id="floortexture" src="img/floor.png" />
+          <img id="griller-texture" src="img/griller.png" />
+          <img id="bread-slice" src="img/Slice_of_Bread_BaseColor_4K_downscaled.png" />
+          <img id="blank" src="img/blank.png" />
+          <img id="cheese" src="img/cheese.png" />
+          <img id="tomato" src="img/tomato.png" />
+          <img id="cheese-tomato" src="img/cheese-tomato.png" />
 
           <!-- MODELS -->
           <a-asset-item id="kitchen-obj" src="/assets/kitchen_module.obj"></a-asset-item>
@@ -482,11 +544,12 @@
 
           <a-asset-item id="bowl" src="/assets/schuessel.obj"></a-asset-item>
           <a-asset-item id="plate" src="/assets/plate.obj"></a-asset-item>
+
+          <a-asset-item id="bread-obj" src="/assets/Slice_of_Bread_OBJ.obj"></a-asset-item>
+          <a-asset-item id="bread-mtl" src="/assets/Slice_of_Bread_OBJ.mtl"></a-asset-item>
           
           <a-asset-item id="righthand-model" src="/assets/rightHandHigh.glb"></a-asset-item>
           <a-asset-item id="lefthand-model" src="/assets/leftHandHigh.glb"></a-asset-item>
-
-          <a-asset-item id="window" src="/assets/win.obj"></a-asset-item>
         </a-assets>
 
         <!-- ENVIRONMENT -->
@@ -506,8 +569,15 @@
 
         <a-entity position="0.5 0 -3" scale="0.01 0.01 0.01" obj-model="obj: #kitchen-obj; mtl: #kitchen-mtl"></a-entity>
 
-        <a-entity position="1.2 0.85 -2.4" scale="0.2 0.2 0.2" obj-model="obj: #bowl" material="src: /img/ceramic_white.jpg; color: #80bbd1"></a-entity>
-        <a-entity position="-0.2 0.85 -2.5" scale="0.08 0.08 0.08" obj-model="obj: #plate" material="src: /img/ceramic_white.jpg; color: #ededed"></a-entity>
+        <a-entity id="griller-bottom" scale="0.3 0.3 0.3" position="1.2 0.86 -2.5" rotation="0 -24 0">
+          <a-entity geometry="primitive: box;" scale="0.2 0.1 0.5" position="-0.25 -0.05 0" material="color: #4d4d4d"></a-entity>
+          <a-entity geometry="primitive: box;" scale="0.2 0.1 0.5" position="0.25 -0.05 0" material="color: #4d4d4d"></a-entity>
+          <a-entity geometry="primitive: box;" scale="0.8 0.2 0.8" position="0 0.1 0" material="color: #4d4d4d"></a-entity>
+          <a-entity geometry="primitive: plane;" rotation="-90 0 0" scale="0.8 0.8 0.8" position="0 0.21 0" material="src: #griller-texture; transparent: true"></a-entity>
+        </a-entity>
+
+        <!--a-entity position="1.2 0.85 -2.4" scale="0.2 0.2 0.2" obj-model="obj: #bowl" material="src: /img/ceramic_white.jpg; color: #80bbd1"></a-entity>
+        <a-entity position="-0.2 0.85 -2.5" scale="0.08 0.08 0.08" obj-model="obj: #plate" material="src: /img/ceramic_white.jpg; color: #ededed"></a-entity-->
 
         <!-- Light -->
         <a-entity light="color: #ccccff; intensity: 1; type: ambient;" visible="true"></a-entity>
@@ -521,18 +591,60 @@
           </a-entity>
         </a-plane>
 
+        <!-- Calendar -->
+        <a-plane width="1.2" height="2" rotation="0 180 0" position="-0.5 1.45 2.99" color="#6C7A89">
+          <a-entity id="calendar1" position="-0.5 0.95 0" scale="0.2 0.2 0.2">
+            <a-text position="-0.2 0 0" value="Calendar & TODOs:"></a-text>
+            <a-text position="0 -0.5 0" color="#000000" value="Step 1.1. Orientate yourself in the virtual environment. Afterwards select an entity from the dining table and move it around."></a-text>
+            <a-text position="0 -1.25 0" color="#000000" value="Step 1.2. Select another entity from the table. Then navigate to the 'Properties'-view and delete the selected entity."></a-text>
+            <a-text position="0 -2.1 0" color="#000000" value="Step 1.3. Navigate to the 'NewEntity'-view. Then add a new entity of type 'Wafflemaker' to the scene. Afterwards add a 'Bowl' and a 'Sphere'. Place the all three objects on the kitchen counter."></a-text>
+            <a-text position="0 -3.1 0" color="#000000" value="Step 1.4. Select the entities from Step 1.3., navigate to the 'Properties'-View and rename them to 'Wafflemaker Top/Bottom', 'My Bowl' and 'Dough' respectively."></a-text>
+            <a-text position="0 -4.1 0" color="#000000" value="Step 1.5. Select the 'Dough' entity and navigate to the 'Properties'-View. Change its color to a doughy-color and resize it to fit into the 'Bowl'. Afterwards place it into the 'Bowl'."></a-text>
+            <a-text position="0.2 -5.1 0" value="Step 2.1. Select the 'Dough' and navigate to the 'Properties'-View. Beneath 'Interactable' Select the 'Grabbable' Radiobutton to make the object grabbable for users of the demo."></a-text>
+            <a-text position="0.2 -6.2 0" value="Step 2.2. Select the 'WaffleMaker Top' and set its 'Interactable' to 'Rotatable'. Additionally select an 'Axis' the user can rotate the object on in the demo and set an 'Offset' for the rotation axis origin."></a-text>
+            <a-text position="0.2 -7.5 0" value="Step 2.3. Navigate to the 'Task'-View, add a new 'EventArea' and place it inside the wafflemaker. Select it and set its properties in the 'Properties'-View as follows: Name = 'WafflemakerLocation', Target = 'Dough', Action: 'Change To', Shape: 'Waffle'."></a-text>
+            <a-text position="0 -9.0 0" color="#000000" value="Step 3. Navigate to the 'Task'-View and add three tasks. Set the first task's requirement to the event area from Step 3.1. and the remaining to the 'Wafflemaker Top'. Afterwards set the target angle for completing task 2 to 0 degrees and task 3 to 36 degrees."></a-text>
+          </a-entity>
+        </a-plane>
+
+        <a-plane width="1.6" height="2" rotation="0 180 0" position="1.5 1.45 2.99" color="#6C7A89">
+          <a-entity id="calendar2" position="-0.75 0.95 0" scale="0.3 0.3 0.3">
+            <a-text wrap-count="55" position="-0.15 0 0" value="Calendar & TODOs:"></a-text>
+            <a-text wrap-count="55" position="0 -0.3 0" color="#000000" value="Step 4. Switch the scenario by connecting to another URL with your webbrowser."></a-text>
+            <a-text wrap-count="55" position="0 -0.6 0" color="#000000" value="Step 4.1. Orientate yourself in the virtual environment."></a-text>
+            <a-text wrap-count="55" position="0.2 -1.0 0" value="Step 5. The kitchen in this scenario is missing some objects compared to scenario one. Together with your partner, fill the kitchen exactly with the following objects:"></a-text>
+            <a-text wrap-count="55" position="0.2 -1.4 0" value="Step 5.1. Add 2 Stools around the table."></a-text>
+            <a-text wrap-count="55" position="0.2 -1.6 0" value="Step 5.2. Add 4 Plates, place 3 on the counter and one on the table."></a-text>
+            <a-text wrap-count="55" position="0.2 -1.9 0" value="Step 5.3. Add 1 Griller-Top and place it above the existing 'Sandwichmaker-Bottom'."></a-text>
+            <a-text wrap-count="55" position="0.2 -2.3 0" value="Step 5.4. Add 1 Toast, 1 'Tomatoes' and 1 Cheese. Place each of them on their own plate on the counter."></a-text>
+            <a-text wrap-count="55" position="0 -2.7 0" color="#000000" value="Step 6. Together with your partner, add following interactions to the virtual environment:"></a-text>
+            <a-text wrap-count="55" position="0 -3.0 0" color="#000000" value="Step 6.1. Set the interactable of 'Toast' to 'Grabbable'."></a-text>
+            <a-text wrap-count="55" position="0 -3.3 0" color="#000000" value="Step 6.2. Select the 'Sandwichmaker-Top' and set its 'Interactable' to 'Rotatable'. Additionally set the 'Axis' and the 'Offset' so that it rotates where the Sandwichmaker-Top and -Bottom touch each other."></a-text>
+            <a-text wrap-count="55" position="0 -3.8 0" color="#000000" value="Step 6.3. Add two EventAreas named 'TomatoesLocation' and 'CheeseLocation' and place them above the 'Tomatoes' or 'Cheese'."></a-text>
+            <a-text wrap-count="55" position="0 -4.3 0" color="#000000" value="Step 6.4. Select the EventAreas of Step 6.3., set their target to 'Toast', set their action to 'Add Layer' and set layer to 'Tomatoes' or 'Cheese' respectively."></a-text>
+            <a-text wrap-count="55" position="0.2 -4.8 0" value="Step 7. Navigate to the 'Task'-View and add four tasks. Give them the following properties:"></a-text>
+            <a-text wrap-count="55" position="0.2 -5.1 0" value="Step 7.1. Set the trigger for 'Task1' to 'CheeseLocation'."></a-text>
+            <a-text wrap-count="55" position="0.2 -5.3 0" value="Step 7.2. Set the trigger for 'Task2' to 'TomatoesLocation."></a-text>
+            <a-text wrap-count="55" position="0.2 -5.6 0" value="Step 7.3. Set the trigger for 'Task3' to 'Sandwichmaker-Top' and set the target angle to 0 degrees."></a-text>
+            <a-text wrap-count="55" position="0.2 -6.0" value="Step 7.4. Set the trigger for 'Task3' to 'Sandwichmaker-Top' and set the target angle to 36 degrees."></a-text>
+            <a-text wrap-count="55" position="0 -6.3 0" color="#000000" value="Step 8. Export your data."></a-text>
+          </a-entity>
+        </a-plane>
+
+        <!-- Avatar -->
         <a-entity id="rig">
           <a-entity
             id="player"
             networked="template:#avatar-template;attachTemplateToLocal:false;"
             camera
             position="0 1.6 0"
-            spawn-in-circle="radius:3"
+            spawn-in-circle="radius:0"
             object-control-desktop="template:#block-template"
             wasd-controls="fly: true; acceleration: 50;"
             look-controls
             cursor="rayOrigin: mouse"
             raycaster="objects: .clickable,
+                                .sub-clickable,
                                 .axis-slider"
           >
           <!-- 

@@ -83,7 +83,7 @@ function addNumberedTask(task, index) {
   if(eventOption == null) {
     eventOption = eventOptions[0];
   }
-
+  
   var selection = createInteractionSelection(index, triggerEvent, eventOption);
   container.appendChild(selection);
 
@@ -91,7 +91,7 @@ function addNumberedTask(task, index) {
   submenu.appendChild(container);
 }
 
-function changeEventOption(taskId, eventOption, inputContainer, next) {
+function changeEventOption(taskId, eventOption, next) {
   var newOption;
   var oldOptionId = eventOption[0];
   var oldOption = eventOptions.find(opt => opt[0] == oldOptionId);
@@ -99,15 +99,15 @@ function changeEventOption(taskId, eventOption, inputContainer, next) {
 
   while(true) {
     if(next) {
-      nextOptionIndex++;
+      nextOptionIndex = nextOptionIndex+1;
       if(nextOptionIndex > eventOptions.length-1) {
         nextOptionIndex = 0;
       }
       
     }else{
-      nextOptionIndex--;
+      nextOptionIndex = nextOptionIndex-1;
       if(nextOptionIndex < 0) {
-        nextOptionIndex = eventOptions.length-1
+        nextOptionIndex = eventOptions.length-1;
       }
     }
 
@@ -116,8 +116,9 @@ function changeEventOption(taskId, eventOption, inputContainer, next) {
     if(cidId == 'none') {
       break;
     }else{
+      var elem = document.getElementById('cid' + cidId);
       if(elem == null) {
-        return;
+        continue;
       }
 
       var interactable = elem.children[0].interactable;
@@ -126,9 +127,11 @@ function changeEventOption(taskId, eventOption, inputContainer, next) {
       }
 
       var type = interactable.type;
-      if(type != 'grabbable') {
-        break;
+      if(type != 'rotatable') {
+        continue;
       }
+      
+      break;
     }
   }
 
@@ -159,8 +162,15 @@ function createSwitchInteractionButton(taskId, eventOption, next) {
   button.setAttribute('raycaster-listen', '');
   buttonContainer.appendChild(button);
   button.addEventListener('select-object', function handleSelect(event) {
-    var inputContainer = document.getElementById('eventdisplay' + taskId);
-    changeEventOption(taskId, eventOption, inputContainer, next);
+    var debug = document.getElementById('debugtext');
+    debug.setAttribute('value', 'inside "select-object...');
+    try{
+      changeEventOption(taskId, eventOption, next);
+    }catch(e) {
+      debug.setAttribute('value', debug.getAttribute('value') + '\nError:');
+      debug.setAttribute('value', debug.getAttribute('value') + '\n' + e.message);
+      debug.setAttribute('value', debug.getAttribute('value') + '\n' + e.stack);
+    }
   });
 
   var buttonImg = document.createElement('a-entity');
@@ -207,7 +217,7 @@ function createInteractionSelection(taskId, triggerEvent, eventOption) {
       // Add target angle inputtable
       var task = tasks[taskId];
       var eventAngle = task.eventAngle;
-      var targetAngleInput = this.createInputtableTask(taskId, 'targetAngle', eventAngle, 1, 2.6, 0, 0);
+      var targetAngleInput = this.createInputtableTask('vr-submenu-task-' + taskId, 'TargetAngle:', eventAngle, 1, 2.6, 0, 0);
       container.append(targetAngleInput);
       break;
   }
@@ -244,7 +254,7 @@ function createInputtableTask(id, name, value, width, posX, posY, posZ) {
   var offsetX = -0.7 + width/2;
 
   var container = document.createElement('a-entity');
-  container.setAttribute('id', name+id);
+  container.setAttribute('id', id);
   container.setAttribute('position', posX + ' ' + posY + ' ' + (posZ + 0.05) );
   container.setAttribute('color', 'black');
   container.setAttribute('priority', 'level: hud');
@@ -289,45 +299,74 @@ AFRAME.registerComponent('object-control-vr', {
   },
 
   getEl: function(cid) {
-    var pEl = null;
-    var els = document.querySelectorAll('[cid]');
-
-    for (var i = 0; i < els.length; i++) {
-
-      if(els[i].getAttribute('cid') == cid) {
-        pEl = els[i];
-        break;
-      }
-    }
-
+    var pEl = document.getElementById('cid' + cid);
     return pEl;
   },
 
+  updateSceneObjects: function() {
+    var sceneObjects = document.getElementById('scene-objects');
+
+    // Remove prior children
+    while(sceneObjects.children.length > 2) {
+      var child = sceneObjects.children[2];
+      sceneObjects.removeChild(child);
+    }
+
+    // Add all elements
+    var children = Array.from(document.querySelectorAll('[cid]'));
+    var counter = -1;
+    for(var i = 0; i < children.length; i++) {
+      var pEl = children[i];
+      var cid = pEl.getAttribute('cid');
+      if(cid == -1) {
+        continue;
+      }
+
+      counter++;
+      var yOffset = -0.3*counter;
+      var name = pEl.getAttribute('entityName');
+
+      var atext = document.createElement('a-text');
+      var pos3 = new Object();
+      pos3.x = 0;
+      pos3.y = yOffset - 0.6;
+      pos3.z = 0;
+      atext.setAttribute('position', pos3);
+      atext.setAttribute('value', cid + ' | ' + name);
+      atext.setAttribute('color', '#ffffff');
+
+      sceneObjects.appendChild(atext);
+    }
+  },
+
   createGrillerTop: function(el) {
-    var container = document.createElement('a-bowx');
-    container.setAttribute('material', 'opacity: 0.5');
-    container.setAttribute('class', 'collidable');
+    var hitbox = document.createElement('a-box');
+    hitbox.setAttribute('scale', '0.83 0.23 0.92');
+    hitbox.setAttribute('position', '0 0.1 0.05');
+    hitbox.setAttribute('material', 'opacity: 0');
+    hitbox.setAttribute('class', 'collidable');
+    hitbox.setAttribute('name', 'griller-top');
+    hitbox.interactable = el.interactable;
+    el.appendChild(hitbox);
 
     var body = document.createElement('a-box');
     body.setAttribute('scale', '0.8 0.2 0.8');
     body.setAttribute('position', '0 0.1 0');
     body.setAttribute('material', 'color: #4d4d4d');
-    container.appendChild(body);
+    el.appendChild(body);
 
     var handle = document.createElement('a-box');
     handle.setAttribute('scale', '0.2 0.1 0.1');
     handle.setAttribute('position', '0 0.1 0.45');
     handle.setAttribute('material', 'color: #4d4d4d');
-    container.appendChild(handle);
+    el.appendChild(handle);
 
     var surface = document.createElement('a-plane');
     surface.setAttribute('scale', '0.8 0.8 0.8');
-    surface.setAttribute('position', '0 -0.01 0');
+    surface.setAttribute('position', '0 -0.02 0');
     surface.setAttribute('rotation', '90 0 0');
     surface.setAttribute('material', 'src: #griller-texture; transparent: true');
-    container.appendChild(surface);
-
-    el.appendChild(container);
+    el.appendChild(surface);
   },
 
   spawnEntity: function(data) {
@@ -447,10 +486,29 @@ AFRAME.registerComponent('object-control-vr', {
     }else if(shape == 'griller-top') {
       this.createGrillerTop(el);
       el.setAttribute('position', '0 0 0');
-      el.setAttribute('rotation', rotation);
+      el.setAttribute('rotation', '-36 -24 0');
+      el.setAttribute('scale', '1.5 1.5 1.5');
+      el.setAttribute('name', 'griller-top');
+      pEl.setAttribute('name', 'griller-top');
 
       elWireframe.setAttribute('geometry', 'primitive: box');
       elWireframe.setAttribute('rotation', rotation);
+
+    }else if(shape == 'cheese') {
+      el.setAttribute('geometry', 'primitive: plane;');
+      el.setAttribute('rotation', rotation);
+      el.setAttribute('material', 'src: #cheese; transparent: true;');
+
+    }else if(shape == 'tomatoes') {
+      el.setAttribute('geometry', 'primitive: plane;');
+      el.setAttribute('rotation', rotation);
+      el.setAttribute('material', 'src: #tomato; transparent: true;');
+
+    }else if(shape == 'toast') {
+      el.setAttribute('obj-model', 'obj: #bread-obj; mtl: #bread-mtl');
+      el.setAttribute('rotation', rotation);
+      el.setAttribute('material', 'src: #bread-slice;');
+
     }else{
       // TODO: Add method for specific models
       el.setAttribute('rotation', rotation);
@@ -459,8 +517,13 @@ AFRAME.registerComponent('object-control-vr', {
       elWireframe.setAttribute('rotation', rotation);
     }
 
+
     // Handle raycaster attribute AFTER adding el to scene
-    el.setAttribute('raycaster-listen', '');
+    if(shape == 'griller-top') {
+      el.children[0].setAttribute('raycaster-listen', '');
+    }else {
+      el.setAttribute('raycaster-listen', '');
+    }
 
     // Check for selection
     var selectedById = data.selectedBy;
@@ -475,19 +538,29 @@ AFRAME.registerComponent('object-control-vr', {
         el.setAttribute('material', mat);
       }
 
-      // Set as untargetable for raycaster
-      el.setAttribute('class', 'selected-collidable');
-
       // Set easyRtcId of source
-      el.setAttribute('selectedby', selectedById);
+      if(shape == 'griller-top') {
+        el.children[0].setAttribute('selectedby', selectedById);
+      }else {
+        el.setAttribute('selectedby', selectedById);
+      }
     }else{
+      var tempName = el.getAttribute('name');
+      var tempEl;
+      if(tempName != 'griller-top') {
+        tempEl = el;
+      }else {
+        tempEl = el.children[0];
+      }
+
       // Set as targetable for raycaster & add select handler
-      el.setAttribute('class', 'collidable');
-      el.setAttribute('select-listener', '');
-      el.setAttribute('trigger-button-listener');
-      el.setAttribute('grab-listener', '');
+      tempEl.setAttribute('class', 'collidable');
+      tempEl.setAttribute('select-listener', '');
+      tempEl.setAttribute('trigger-button-listener');
+      tempEl.setAttribute('grab-listener', '');
     }
 
+    this.updateSceneObjects();
     updateEventOptions();
   },
 
@@ -541,21 +614,11 @@ AFRAME.registerComponent('object-control-vr', {
   
   updateInteractable: function(componentId, sourceRtcId, property, value) {
     console.log("updateInteractable");
-    var el = null;
-    var pEl = null;
-    var els = this.el.sceneEl.querySelectorAll('[cid]');
-
-    for (var i = 0; i < els.length; i++) {
-
-      if(els[i].getAttribute('cid') == componentId) {
-        pEl = els[i];
-        el = pEl.children[0];
-        break;
-      }
-    }
+    var pEl = document.getElementById('cid' + componentId);
+    var el = pEl.children[0];
 
     el.interactable[property] = value;
-
+    this.createRotatable(pEl);
     updateEventOptions();
   },
 
@@ -563,7 +626,11 @@ AFRAME.registerComponent('object-control-vr', {
     var axis = document.getElementById('rotatableAxis');
 
     if(axis != null) {
-      axis.parentEl.removeChild(axis);
+      var pEl = axis.parentEl;
+
+      if(pEl != null) {
+        pEl.removeChild(axis);
+      }
     }
   },
 
@@ -574,12 +641,11 @@ AFRAME.registerComponent('object-control-vr', {
 
     var el = pEl.children[0];
     var interactable = el.interactable;
+    this.removeRotatable();
 
     if(interactable.type != 'rotatable') {
       return;
     } 
-    
-    this.removeRotatable();
 
     var axisContainer = document.createElement('a-entity');
     axisContainer.setAttribute('id', 'rotatableAxis');
@@ -623,22 +689,13 @@ AFRAME.registerComponent('object-control-vr', {
 
   selectEntity: function(componentId, sourceRtcId, selectBool) {
     var pEl = document.getElementById('cid' + componentId);
-    /*
-    var debug = document.getElementById('debugtext');
-    debug.setAttribute('value', 'inside selectEntity');
-    debug.setAttribute('value', debug.getAttribute('value') + '\nselectBool: ' + selectBool);
-    debug.setAttribute('value', debug.getAttribute('value') + '\nsourceRtcId == clientRtcId');
-    debug.setAttribute('value', debug.getAttribute('value') + '\n' + sourceRtcId + ' == ' + clientRtcId);
-    debug.setAttribute('value', debug.getAttribute('value') + '\ncompare: ' + (sourceRtcId == clientRtcId));
-    debug.setAttribute('value', debug.getAttribute('value') + '\npEl: ' + pEl);
-    debug.setAttribute('value', debug.getAttribute('value') + '\npEl class: ' + pEl.getAttribute('class'));
-    debug.setAttribute('value', debug.getAttribute('value') + '\npEl id: ' + pEl.getAttribute('id'));
-    */
-
-    var el = pEl.children[0];
-
-    //debug.setAttribute('value', debug.getAttribute('value') + '\nel: ' + el);
-    //debug.setAttribute('value', debug.getAttribute('value') + '\nel class: ' + el.getAttribute('class'));
+    var el;
+    var tempName = pEl.getAttribute('name');
+    if(tempName == 'griller-top') {
+      el = pEl.children[0].children[0];
+    }else{
+      el = pEl.children[0];
+    }
 
     // Decide whether to select or deselect the object
     if(sourceRtcId == clientRtcId) {
@@ -672,12 +729,16 @@ AFRAME.registerComponent('object-control-vr', {
           }
         }
 
+        // Show properties view
+        showOnlySelectedSubmenu('edit');
+
       }else{
         // Remove thumbstick-rotation
         el.removeAttribute('currentlySelected');
 
         // Deselect object: Remove AxesHelper
         this.removeAxes(pEl);
+        this.removeRotatable();
 
         // Remove colorlistener TODO: May be put into the 'Open/Close Color-Menu'
         el.removeAttribute('color-listener');
@@ -688,21 +749,27 @@ AFRAME.registerComponent('object-control-vr', {
       if(selectBool) {
         // Make selected object transparent 
         var mat = el.getAttribute('material');
-        if(objectType == 'interaction') {
-          mat.opacity = 0.1;
-        }else{
-          mat.opacity = 0.4;
+
+        if(mat != null) {
+          if(objectType == 'interaction') {
+            mat.opacity = 0.1;
+          }else{
+            mat.opacity = 0.4;
+          }
+          el.setAttribute('material', mat);
         }
-        el.setAttribute('material', mat);
+        
       }else {
         // Make deselected object fully visible
         var mat = el.getAttribute('material');
-        if(objectType == 'interaction') {
-          mat.opacity = 0.4;
-        }else{
-          mat.opacity = 1.0;
+        if(mat != null) {
+          if(objectType == 'interaction') {
+            mat.opacity = 0.4;
+          }else{
+            mat.opacity = 1.0;
+          }
+          el.setAttribute('material', mat);
         }
-        el.setAttribute('material', mat);
         
         // May be redundant
         el.removeAttribute('color-listener');
@@ -713,32 +780,42 @@ AFRAME.registerComponent('object-control-vr', {
     if(selectBool) {
       // Set easyRtcId of source
       el.setAttribute('selectedby', sourceRtcId);
+
+      // Remove 'select-button-listener' and the listener it adds
+      //el.removeAttribute('raycaster-listen');
+
+      // VR - Make selected object untargetable
+      // el.setAttribute('class', 'selected-collidable');
     }else {
       // Remove easyRtcId of source
       el.removeAttribute('selectedby');
 
+      // Add 'select-button-listener' again
+      el.setAttribute('raycaster-listen', '');
+
+      // VR - Make selected object targetable again
+      el.setAttribute('class', 'collidable');
+
       // May be redundant
       el.removeAttribute('color-listener');
     }
-
-    // Show properties view
-    showOnlySelectedSubmenu('edit');
   },
 
   removeComponent: function(componentId) {
-      // Remove entity from scene
-      var pEl = null;
-      var els = this.el.sceneEl.querySelectorAll('[cid]');
+    // Remove entity from scene
+    var pEl = null;
+    var els = this.el.sceneEl.querySelectorAll('[cid]');
 
-      for (var i = 0; i < els.length; i++) {
+    for (var i = 0; i < els.length; i++) {
 
-        if(els[i].getAttribute('cid') == componentId) {
-          pEl = els[i];
-          break;
-        }
+      if(els[i].getAttribute('cid') == componentId) {
+        pEl = els[i];
+        break;
       }
+    }
 
-      pEl.parentNode.removeChild(pEl);
+    pEl.parentNode.removeChild(pEl);
+    this.updateSceneObjects();
   },
 
   updateComponent: function(componentId, type, data, sourcertcid) {
@@ -830,10 +907,19 @@ AFRAME.registerComponent('object-control-vr', {
       }else if(type == 'name'){
         // Name has to be changed for parentEl
         pEl.setAttribute('entityName', data);
+
+        this.updateSceneObjects();
   
       }else{
         // All other types should be changed for el itself
         el.setAttribute(type, data);
+
+        if(type == 'material') {
+          var color = data.color;
+          if(color != null)  {
+            el.setAttribute('baseColor', color);
+          }
+        }
       }
 
       // Check for wireframe
@@ -857,9 +943,7 @@ AFRAME.registerComponent('object-control-vr', {
     }
 
     // Update property rows if element is currently selected by client
-    if(sourcertcid == clientRtcId) {
-      this.selectEntity(componentId, clientRtcId, true);
-    }
+    this.selectEntity(componentId, sourcertcid, true);
 
     // Update taskboard & event options
     this.updateTaskboard();
@@ -973,6 +1057,7 @@ AFRAME.registerComponent('object-control-vr', {
       pEl.appendChild(el);
       scene.appendChild(pEl);
 
+      this.updateSceneObjects();
       updateEventOptions();
     }
   },
@@ -1128,8 +1213,6 @@ AFRAME.registerComponent('object-control-vr', {
 
           for (var i = 0; i < els.length; i++) {
             var cidId = els[i].getAttribute('cid');
-            console.log('cid'+cidId + ' == ' + target);
-            console.log('compare: ' + (cidId == target));
             if('cid' + cidId == target) {
               targetName = els[i].getAttribute('entityName');
               break;

@@ -77,6 +77,8 @@ AFRAME.registerComponent('object-control-desktop', {
 
     }else if(shape == 'plane') {
       el.setAttribute('geometry', 'primitive: plane;');
+      console.log("rotation");
+      console.log(rotation);
       el.setAttribute('rotation', rotation);
       el.setAttribute('material', material);
 
@@ -135,6 +137,30 @@ AFRAME.registerComponent('object-control-desktop', {
       el.setAttribute('obj-model', 'obj: #coffeetable-obj; mtl: coffeetable-mtl');
       el.setAttribute('rotation', rotation);
       
+    }else if(shape == 'griller-top') {
+      this.createGrillerTop(el);
+      el.setAttribute('position', '0 0 0');
+      el.setAttribute('rotation', '-36 -24 0');
+      el.setAttribute('scale', '1.5 1.5 1.5');
+
+      elWireframe.setAttribute('geometry', 'primitive: box');
+      elWireframe.setAttribute('rotation', rotation);
+
+    }else if(shape == 'cheese') {
+      el.setAttribute('geometry', 'primitive: plane;');
+      el.setAttribute('rotation', rotation);
+      el.setAttribute('material', 'src: #cheese; transparent: true;');
+
+    }else if(shape == 'tomatoes') {
+      el.setAttribute('geometry', 'primitive: plane;');
+      el.setAttribute('rotation', rotation);
+      el.setAttribute('material', 'src: #tomato; transparent: true;');
+
+    }else if(shape == 'toast') {
+      el.setAttribute('obj-model', 'obj: #bread-obj; mtl: #bread-mtl');
+      el.setAttribute('rotation', rotation);
+      el.setAttribute('material', 'src: #bread-slice;');
+
     }else{
       // TODO: Add method for specific models
       el.setAttribute('rotation', rotation);
@@ -186,6 +212,34 @@ AFRAME.registerComponent('object-control-desktop', {
     buttonCell.appendChild(button);
   },
 
+  createGrillerTop: function(el) {
+    var hitbox = document.createElement('a-box');
+    hitbox.setAttribute('scale', '0.83 0.23 0.92');
+    hitbox.setAttribute('position', '0 0.1 0.05');
+    hitbox.setAttribute('material', 'opacity: 0');
+    hitbox.setAttribute('class', 'sub-clickable');
+    el.appendChild(hitbox);
+
+    var body = document.createElement('a-box');
+    body.setAttribute('scale', '0.8 0.2 0.8');
+    body.setAttribute('position', '0 0.1 0');
+    body.setAttribute('material', 'color: #4d4d4d');
+    el.appendChild(body);
+
+    var handle = document.createElement('a-box');
+    handle.setAttribute('scale', '0.2 0.1 0.1');
+    handle.setAttribute('position', '0 0.1 0.45');
+    handle.setAttribute('material', 'color: #4d4d4d');
+    el.appendChild(handle);
+
+    var surface = document.createElement('a-plane');
+    surface.setAttribute('scale', '0.8 0.8 0.8');
+    surface.setAttribute('position', '0 -0.02 0');
+    surface.setAttribute('rotation', '90 0 0');
+    surface.setAttribute('material', 'src: #griller-texture; transparent: true');
+    el.appendChild(surface);
+  },
+
   markObject(evt) {
     var pEl = evt.currentTarget.el;
     var checked = evt.target.checked;
@@ -214,7 +268,11 @@ AFRAME.registerComponent('object-control-desktop', {
     var axis = document.getElementById('rotatableAxis');
 
     if(axis != null) {
-      axis.parentEl.removeChild(axis);
+      var pEl = axis.parentEl;
+
+      if(pEl != null) {
+        pEl.removeChild(axis);
+      }
     }
   },
 
@@ -225,12 +283,11 @@ AFRAME.registerComponent('object-control-desktop', {
 
     var el = pEl.children[0];
     var interactable = el.interactable;
+    this.removeRotatable();
 
     if(interactable.type != 'rotatable') {
       return;
     } 
-    
-    this.removeRotatable();
 
     var axisContainer = document.createElement('a-entity');
     axisContainer.setAttribute('id', 'rotatableAxis');
@@ -568,9 +625,10 @@ AFRAME.registerComponent('object-control-desktop', {
       pPanel.appendChild(div);
 
       // TODO: add switch/case for 'shape'
+      var shape;
       var material = pEl.children[0].getAttribute('material');
       if(material != null) {
-        var shape = material.shape;
+        shape = material.shape;
         
         if(shape != null) {
           switch(shape) {
@@ -634,6 +692,12 @@ AFRAME.registerComponent('object-control-desktop', {
 
       // Material
       var material = el.getAttribute('material');
+
+      if(material == null) {
+        material = new Object();
+        material.color = '#00ffff';
+      }
+
       var color = material.color;
       div = document.createElement('div');
       div.className = 'property-row';
@@ -746,35 +810,42 @@ AFRAME.registerComponent('object-control-desktop', {
       pPanel.appendChild(div);
 
       // Wireframe
-      div = document.createElement('div');
-      div.className = 'property-row';
+      switch(shape) {
+        case 'box':
+        case 'cylinder':
+        case 'plane':
+        case 'sphere':
+          div = document.createElement('div');
+          div.className = 'property-row';
 
-      var wireframed = el.getAttribute('wireframed');
-      var checked = '';
-      if(wireframed == 'true') {
-        checked = 'checked ';
+          var wireframed = el.getAttribute('wireframed');
+          var checked = '';
+          if(wireframed == 'true') {
+            checked = 'checked ';
+          }
+          
+          div.className = 'property-row';
+          div.innerHTML = `
+            <span class="property-row-element">
+              <b>Collaboration</b>
+            </span>
+            <div class="property-row-element">
+              <input class="property-row-checkbox" type="checkbox" id="wireframe-property" ${checked}value="wireframe"/>
+              <label for="wireframe-property">Highlight Element</label><br>
+            </div>
+            <div class="property-row-element">
+            </div>
+            <div class="property-row-element">
+            </div>
+          `;
+
+          div.el = pEl;
+          div.addEventListener("change", this.markObject, false);
+
+          pPanel.appendChild(div);
+          break;
       }
       
-      div.className = 'property-row';
-      div.innerHTML = `
-        <span class="property-row-element">
-          <b>Collaboration</b>
-        </span>
-        <div class="property-row-element">
-          <input class="property-row-checkbox" type="checkbox" id="wireframe-property" ${checked}value="wireframe"/>
-          <label for="wireframe-property">Highlight Element</label><br>
-        </div>
-        <div class="property-row-element">
-        </div>
-        <div class="property-row-element">
-        </div>
-      `;
-
-      div.el = pEl;
-      div.addEventListener("change", this.markObject, false);
-
-      pPanel.appendChild(div);
-
     }else if(classType == 'interaction') {
       // INTERACTION
       var pEl = data;
@@ -912,7 +983,7 @@ AFRAME.registerComponent('object-control-desktop', {
         // Different actions require different property rows
         if(action == 'changeTo') {
           // Check for reaction
-          var attrOptions = [['none', 'None'], ['box', 'Box'], ['cylinder', 'Cylinder'], ['plane', 'Plane'], ['sphere', 'Sphere'], ['bowl', 'Bowl']];
+          var attrOptions = [['none', 'None'], ['box', 'Box'], ['cylinder', 'Cylinder'], ['plane', 'Plane'], ['sphere', 'Sphere']];
           var attrOptionsText = ``;
 
           for(var i=0; i<attrOptions.length; i++) {
@@ -1531,20 +1602,11 @@ AFRAME.registerComponent('object-control-desktop', {
 
   updateInteractable: function(componentId, sourceRtcId, property, value) {
     console.log("updateInteractable");
-    var el = null;
-    var pEl = null;
-    var els = this.el.sceneEl.querySelectorAll('[cid]');
-
-    for (var i = 0; i < els.length; i++) {
-
-      if(els[i].getAttribute('cid') == componentId) {
-        pEl = els[i];
-        el = pEl.children[0];
-        break;
-      }
-    }
+    var pEl = document.getElementById('cid' + componentId);
+    var el = pEl.children[0];
 
     el.interactable[property] = value;
+    this.createRotatable(pEl);
 
     // Update property rows if element is currently selected by client
     if(sourceRtcId == clientRtcId) {
