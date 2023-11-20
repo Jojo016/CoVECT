@@ -32,11 +32,10 @@ var listOfComponentData = [];
 var tasks = [];
 var tasksSelectedBy = null;
 var dictOfSelectedComponents = new Object();
-setupScenario(2
-  );
+setupScenario(1);
 
 // Get port or default to 8080
-const port = process.env.PORT || 10101;
+const port = process.env.PORT || 9091;
 
 // Setup and configure Express http server.
 const app = express();
