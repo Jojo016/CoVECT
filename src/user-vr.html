@@ -2160,6 +2160,45 @@
         }
       });
 
+      AFRAME.registerComponent("temporary-color-change", {
+        init: function () {
+          this.el.timer = 0;
+        },
+
+        tick: function() {
+          var el = this.el;
+          el.timer++;
+          var material = el.getAttribute('material');
+
+          if(el.timer < 300) {
+            material.color = '#b80000';
+            el.setAttribute('baseColor', '#b80000');
+
+          }else if(el.timer < 600) {
+            material.color = '#00b800';
+            el.setAttribute('baseColor', '#00b800');
+
+          }else{
+            material.color = '#0377fc';
+            el.setAttribute('baseColor', '#0377fc');
+            el.removeAttribute('temporary-color-change');
+          }
+
+          el.setAttribute('material', material);
+        }
+      });
+
+      AFRAME.registerComponent("vr-menu-export", {
+        init: function () {
+          var el = this.el;
+
+          el.addEventListener('select-object', function handleSendSelect(event) {
+            easyrtc.sendDataWS(clientRtcId, 'exportFiles', null);
+            el.setAttribute('temporary-color-change', '');
+          });
+        }
+      });
+
       AFRAME.registerComponent("vr-menu-add", {
         init: function () {
           var el = this.el;
@@ -2756,8 +2795,34 @@
             > 
             </a-entity>
 
-            <!-- Menu PLAY -->
+            <!-- Menu EXPORT -->
             <a-entity
+              position = "0 2 0"
+              rotation="0 0 0" 
+              scale="0.9 0.9 0.1"
+            >
+              <a-entity
+                class="vr-menu-play" 
+                geometry="primitive: box"
+                material="color: #0377fc"
+                visible="true"
+                priority="level: hud"
+                raycaster-listen
+                vr-menu-export
+              ></a-entity>
+              <a-entity
+                  text="value: Export; color: black"
+                  position="1.7 0 0.5"
+                  scale="4 4 4"
+                  geometry="primitive: plane"
+                  material="opacity: 0;"
+                  visible="true"
+                  priority="level: hud"
+              ></a-entity>
+            </a-entity>
+
+            <!-- Menu PLAY -->
+            <!--a-entity
               position = "0 2 0"
               rotation="0 0 0" 
               scale="0.9 0.9 0.1"
@@ -2785,7 +2850,7 @@
                 visible="false"
                 priority="level: hud"
               ></a-entity>
-            </a-entity>
+            </a-entity-->
 
             <!-- Menu TASK -->
             <a-entity
@@ -3118,7 +3183,7 @@
                 ></a-entity>
                 <a-entity
                   text="value: Plate; color: black"
-                  position="1.8 0 0.16"
+                  position="1.8 0 0.5"
                   scale="4 4 4"
                   geometry="primitive: plane"
                   material="opacity: 0;"
@@ -3146,7 +3211,7 @@
                 ></a-entity>
                 <a-entity
                   text="value: Stool; color: black"
-                  position="1.8 0 0.06"
+                  position="1.8 0 0.5"
                   scale="4 4 4"
                   geometry="primitive: plane"
                   material="opacity: 0;"
@@ -3174,7 +3239,7 @@
                 ></a-entity>
                 <a-entity
                   text="value: Toast; color: black"
-                  position="1.8 0 0.06"
+                  position="1.8 0 0.5"
                   scale="4 4 4"
                   geometry="primitive: plane"
                   material="opacity: 0;"
@@ -3202,7 +3267,7 @@
                 ></a-entity>
                 <a-entity
                   text="value: Tomatoes; color: black"
-                  position="1.55 0 0.06"
+                  position="1.55 0 0.5"
                   scale="4 4 4"
                   geometry="primitive: plane"
                   material="opacity: 0;"
@@ -3230,7 +3295,7 @@
                 ></a-entity>
                 <a-entity
                   text="value: Cheese; color: black"
-                  position="1.65 0 0.06"
+                  position="1.65 0 0.5"
                   scale="4 4 4"
                   geometry="primitive: plane"
                   material="opacity: 0;"
