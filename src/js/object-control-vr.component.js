@@ -34,14 +34,13 @@ function updateEventOptions() {
       var name = pEl.getAttribute('entityName');
       
       switch(type) {
-        case 'rotatable':
-          //var angle = task.eventAngle;
-          var eventOption = [cid, name, type/*, angle*/];
-          eventOptions.push(eventOption);
+        case 'none':
           break;
 
-        case 'none':
+        case 'rotatable':
         case 'grabbable':
+          var eventOption = [cid, name, type];
+          eventOptions.push(eventOption);
           break;
       }
     }
@@ -93,28 +92,45 @@ function addNumberedTask(task, index) {
 }
 
 function changeEventOption(taskId, eventOption, inputContainer, next) {
-  var input = inputContainer.children[0];
-  var nextOptionIndex;
-  var currentOptionIndex = eventOptions.indexOf(eventOption);
+  var newOption;
+  var oldOptionId = eventOption[0];
+  var oldOption = eventOptions.find(opt => opt[0] == oldOptionId);
+  var nextOptionIndex = eventOptions.indexOf(oldOption);
 
-  if(next) {
-    nextOptionIndex = Number(currentOptionIndex) + 1;
-    if(nextOptionIndex > eventOptions.length-1) {
-      nextOptionIndex = 0;
+  while(true) {
+    if(next) {
+      nextOptionIndex++;
+      if(nextOptionIndex > eventOptions.length-1) {
+        nextOptionIndex = 0;
+      }
+      
+    }else{
+      nextOptionIndex--;
+      if(nextOptionIndex < 0) {
+        nextOptionIndex = eventOptions.length-1
+      }
     }
-    
-  }else{
-    nextOptionIndex = Number(currentOptionIndex) - 1;
-    if(nextOptionIndex < 0) {
-      nextOptionIndex = eventOptions.length-1
+
+    newOption = eventOptions[nextOptionIndex];
+    var cidId = newOption[0];
+    if(cidId == 'none') {
+      break;
+    }else{
+      if(elem == null) {
+        return;
+      }
+
+      var interactable = elem.children[0].interactable;
+      if(interactable == null) {
+        break;
+      }
+
+      var type = interactable.type;
+      if(type != 'grabbable') {
+        break;
+      }
     }
   }
-
-  var newOption = eventOptions[nextOptionIndex];
-  //var eventOptionName = newOption[1];
-
-  //input.setAttribute('index', nextOptionIndex);
-  //input.setAttribute('text', 'value: ' + eventOptionName);
 
   // Update task
   var task = tasks[taskId];
@@ -190,9 +206,8 @@ function createInteractionSelection(taskId, triggerEvent, eventOption) {
     case 'rotatable':
       // Add target angle inputtable
       var task = tasks[taskId];
-      console.log("task");
-      console.log(task);
-      var targetAngleInput = this.createInputtableTask(taskId, 'TargetAngle', task.eventAngle, 1, 2.6, 0, 0);
+      var eventAngle = task.eventAngle;
+      var targetAngleInput = this.createInputtableTask(taskId, 'targetAngle', eventAngle, 1, 2.6, 0, 0);
       container.append(targetAngleInput);
       break;
   }
@@ -234,13 +249,6 @@ function createInputtableTask(id, name, value, width, posX, posY, posZ) {
   container.setAttribute('color', 'black');
   container.setAttribute('priority', 'level: hud');
 
-  var nameUi = document.createElement('a-text');
-  nameUi.setAttribute('scale', '0.7 0.7 0.7');
-  nameUi.setAttribute('color', 'black');
-  nameUi.setAttribute('value', name + ':');
-  nameUi.setAttribute('priority', 'level: hud');
-  container.appendChild(nameUi);
-
   var textUi = document.createElement('a-text');
   textUi.setAttribute('scale', '0.8 0.8 0.8');
   textUi.setAttribute('color', 'black');
@@ -248,6 +256,13 @@ function createInputtableTask(id, name, value, width, posX, posY, posZ) {
   textUi.setAttribute('position', 1.2 + offsetX + ' 0 0');
   textUi.setAttribute('priority', 'level: hud');
   container.appendChild(textUi);
+
+  var nameUi = document.createElement('a-text');
+  nameUi.setAttribute('scale', '0.7 0.7 0.7');
+  nameUi.setAttribute('color', 'black');
+  nameUi.setAttribute('value', name + ':');
+  nameUi.setAttribute('priority', 'level: hud');
+  container.appendChild(nameUi);
 
   var background = document.createElement('a-plane');
   background.setAttribute('class', 'vr-submenu-task');
@@ -289,24 +304,30 @@ AFRAME.registerComponent('object-control-vr', {
   },
 
   createGrillerTop: function(el) {
+    var container = document.createElement('a-bowx');
+    container.setAttribute('material', 'opacity: 0.5');
+    container.setAttribute('class', 'collidable');
+
     var body = document.createElement('a-box');
     body.setAttribute('scale', '0.8 0.2 0.8');
     body.setAttribute('position', '0 0.1 0');
     body.setAttribute('material', 'color: #4d4d4d');
-    el.appendChild(body);
+    container.appendChild(body);
 
     var handle = document.createElement('a-box');
     handle.setAttribute('scale', '0.2 0.1 0.1');
     handle.setAttribute('position', '0 0.1 0.45');
     handle.setAttribute('material', 'color: #4d4d4d');
-    el.appendChild(handle);
+    container.appendChild(handle);
 
     var surface = document.createElement('a-plane');
     surface.setAttribute('scale', '0.8 0.8 0.8');
     surface.setAttribute('position', '0 -0.01 0');
     surface.setAttribute('rotation', '90 0 0');
     surface.setAttribute('material', 'src: #griller-texture; transparent: true');
-    el.appendChild(surface);
+    container.appendChild(surface);
+
+    el.appendChild(container);
   },
 
   spawnEntity: function(data) {
@@ -535,12 +556,6 @@ AFRAME.registerComponent('object-control-vr', {
 
     el.interactable[property] = value;
 
-    // TODO: Should not be neccessary
-    // Update property rows if element is currently selected by client
-    /*if(sourceRtcId == clientRtcId) {
-      this.selectEntity(componentId, clientRtcId, true);
-    }*/
-
     updateEventOptions();
   },
 
@@ -608,7 +623,22 @@ AFRAME.registerComponent('object-control-vr', {
 
   selectEntity: function(componentId, sourceRtcId, selectBool) {
     var pEl = document.getElementById('cid' + componentId);
+    /*
+    var debug = document.getElementById('debugtext');
+    debug.setAttribute('value', 'inside selectEntity');
+    debug.setAttribute('value', debug.getAttribute('value') + '\nselectBool: ' + selectBool);
+    debug.setAttribute('value', debug.getAttribute('value') + '\nsourceRtcId == clientRtcId');
+    debug.setAttribute('value', debug.getAttribute('value') + '\n' + sourceRtcId + ' == ' + clientRtcId);
+    debug.setAttribute('value', debug.getAttribute('value') + '\ncompare: ' + (sourceRtcId == clientRtcId));
+    debug.setAttribute('value', debug.getAttribute('value') + '\npEl: ' + pEl);
+    debug.setAttribute('value', debug.getAttribute('value') + '\npEl class: ' + pEl.getAttribute('class'));
+    debug.setAttribute('value', debug.getAttribute('value') + '\npEl id: ' + pEl.getAttribute('id'));
+    */
+
     var el = pEl.children[0];
+
+    //debug.setAttribute('value', debug.getAttribute('value') + '\nel: ' + el);
+    //debug.setAttribute('value', debug.getAttribute('value') + '\nel class: ' + el.getAttribute('class'));
 
     // Decide whether to select or deselect the object
     if(sourceRtcId == clientRtcId) {
@@ -636,19 +666,8 @@ AFRAME.registerComponent('object-control-vr', {
 
           // Check if wireframe exists and make it visible
           if(el.getAttribute('wireframed') == "true") {
-            // TODO: Change wireframe identifier to 'cid' instead of 'name'
-            var name = pEl.getAttribute('entityName');
-            var wfObjectName = name + "-wireframe";
-            var wfObjects = document.querySelectorAll("[wireframe]");
-            var wfObject = null;
-
-            wfObjects.forEach(obj => {
-              var objName = obj.getAttribute('entityName');
-              if(objName == wfObjectName) {
-                wfObject = obj;
-              }
-            });
-
+            var wfObjectId = 'cid' + componentId + "-wireframe"
+            var wfObject = document.getElementById(wfObjectId);
             wfObject.setAttribute('visible', true);
           }
         }
@@ -664,7 +683,6 @@ AFRAME.registerComponent('object-control-vr', {
         el.removeAttribute('color-listener');
       }
     }else{
-
       var objectType = pEl.getAttribute('class');
       // Other clients EasyRTCid
       if(selectBool) {
@@ -685,6 +703,9 @@ AFRAME.registerComponent('object-control-vr', {
           mat.opacity = 1.0;
         }
         el.setAttribute('material', mat);
+        
+        // May be redundant
+        el.removeAttribute('color-listener');
       }
     }
 
@@ -692,22 +713,16 @@ AFRAME.registerComponent('object-control-vr', {
     if(selectBool) {
       // Set easyRtcId of source
       el.setAttribute('selectedby', sourceRtcId);
-
-      // Remove 'select-button-listener' and the listener it adds
-      //el.removeAttribute('raycaster-listen');
-
-      // VR - Make selected object untargetable
-      // el.setAttribute('class', 'selected-collidable');
     }else {
       // Remove easyRtcId of source
       el.removeAttribute('selectedby');
 
-      // Add 'select-button-listener' again
-      el.setAttribute('raycaster-listen', '');
-
-      // VR - Make selected object targetable again
-      el.setAttribute('class', 'collidable');
+      // May be redundant
+      el.removeAttribute('color-listener');
     }
+
+    // Show properties view
+    showOnlySelectedSubmenu('edit');
   },
 
   removeComponent: function(componentId) {
@@ -727,19 +742,8 @@ AFRAME.registerComponent('object-control-vr', {
   },
 
   updateComponent: function(componentId, type, data, sourcertcid) {
-    var pEl = document.getElementById('cid' + componentId); // = null;
+    var pEl = document.getElementById('cid' + componentId);
     var el = pEl.children[0];
-    
-    /*var els = this.el.sceneEl.querySelectorAll('[cid]');
-
-    for (var i = 0; i < els.length; i++) {
-
-      if(els[i].getAttribute('cid') == componentId) {
-        pEl = els[i];
-        el = pEl.children[0];
-        break;
-      }
-    }*/
 
     if(type == 'wireframed') {
       var cid = pEl.getAttribute('id');
@@ -835,7 +839,7 @@ AFRAME.registerComponent('object-control-vr', {
       // Check for wireframe
       var wireframed = el.getAttribute('wireframed');
       if(wireframed == 'true') {
-        var wfObject = document.getElementById(pEl.getAttribute('cid') + '-wireframe');
+        var wfObject = document.getElementById(componentId + '-wireframe');
         if(wfObject != null) {
           switch(type) {
             case 'scale':
@@ -931,8 +935,6 @@ AFRAME.registerComponent('object-control-vr', {
       pEl.setAttribute('position', pos3);
       pEl.setAttribute('entityName', name);
       pEl.interaction = interaction;
-      console.log("interaction");
-      console.log(interaction);
 
       // Create actual element & handle attributes
       var el = document.createElement('a-entity');
@@ -995,27 +997,12 @@ AFRAME.registerComponent('object-control-vr', {
         interaction[attribute] = value;
         break;
     }
-    
-    var debug = document.getElementById('debugtext');
-    debug.setAttribute('value', 'Updated interaction!');
-    debug.setAttribute('value', debug.getAttribute('value') + '\nAttribute: ' + attribute);
-    debug.setAttribute('value', debug.getAttribute('value') + '\nValue: ' + value);
-    debug.setAttribute('value', debug.getAttribute('value') + '\nsourceRtcId: ' + data.sourceRtcId);
-    debug.setAttribute('value', debug.getAttribute('value') + '\ncompare: ' + (data.sourceRtcId == clientRtcId));
 
     // Update property rows if element is currently selected by client
-    try{
-      if(data.sourceRtcId == clientRtcId) {
-        this.selectEntity(componentId, clientRtcId, true);
-        debug.setAttribute('value', debug.getAttribute('value') + '\nPre updateSelectionMenu!');
-        updateSelectionMenu(pEl, true);
-        debug.setAttribute('value', debug.getAttribute('value') + '\nPost updateSelectionMenu!');
-      }
-    }catch(e){
-      
-      debug.setAttribute('value', debug.getAttribute('value') + '\nError: ' + e.message);
-    }
-    
+    if(data.sourceRtcId == clientRtcId) {
+      this.selectEntity(componentId, clientRtcId, true);
+      updateSelectionMenu(pEl, true);
+    }    
 
     this.updateTaskboard();
   },
@@ -1043,6 +1030,7 @@ AFRAME.registerComponent('object-control-vr', {
       case clientRtcId:
         material.color = '#00b800';
         baseColor = '#00b800';
+        showOnlySelectedSubmenu('task');
         break;
       
       case '-1':
@@ -1096,7 +1084,7 @@ AFRAME.registerComponent('object-control-vr', {
 
       var taskAngle = task.eventAngle;
       var taskTrigger = task.triggerEvent;
-      var taskType;
+      var taskType = 'none';
 
       // Determine tasktype
       if(taskTrigger == 'none') {
@@ -1115,8 +1103,14 @@ AFRAME.registerComponent('object-control-vr', {
           }
         }
 
+        if(pEl == null) {
+          // Entity possibly deleted, skip
+          atext.setAttribute('value', childrenCount + '. No event selected!');
+          taskboard.appendChild(atext);
+          continue;
+        }
+
         var compType = pEl.getAttribute('class');
-        
         if(compType == 'interaction') {
           taskType = 'eventArea';
         }else{
@@ -1127,12 +1121,16 @@ AFRAME.registerComponent('object-control-vr', {
       switch(taskType) {
         case 'eventArea':
           var interaction = pEl.interaction;
-          var target = interaction.target;
+          var interactionData = interaction.data;
+          var target = interactionData.target;
           var eventName = pEl.getAttribute('entityName');
           var targetName;
 
           for (var i = 0; i < els.length; i++) {
-            if(els[i].getAttribute('cid') == target) {
+            var cidId = els[i].getAttribute('cid');
+            console.log('cid'+cidId + ' == ' + target);
+            console.log('compare: ' + (cidId == target));
+            if('cid' + cidId == target) {
               targetName = els[i].getAttribute('entityName');
               break;
             }
@@ -1161,6 +1159,9 @@ AFRAME.registerComponent('object-control-vr', {
     var index = tasks.length;
     tasks.push(newTask);
 
+    // Update event options
+    updateEventOptions();
+
     // Update taskboard
     this.updateTaskboard();
 
@@ -1176,6 +1177,9 @@ AFRAME.registerComponent('object-control-vr', {
     var taskId = data.taskId;
     var task = data.task; 
     tasks[taskId] = task;
+
+    // Update event options
+    updateEventOptions();
 
     // Update taskboard
     this.updateTaskboard();

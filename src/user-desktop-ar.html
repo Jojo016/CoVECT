@@ -72,7 +72,6 @@
           var data = this.data;
           var el = this.el; 
           var pEl = el.parentEl;
-          var selectedBy = el.getAttribute('selectedby');
 
           // Get component id
           var componentId = pEl.getAttribute('cid');
@@ -81,24 +80,18 @@
           var obj = new Object();
           obj.cid = componentId;
 
-          // Check if object needs to be selected or deselected
-          if(selectedBy == clientRtcId) {
-            obj.bool = false;
-          }else{
-            obj.bool = true;
-          }
-
-          var entityData = JSON.stringify(obj); 
-
           // Add click listener
           el.addEventListener('click', function() {
-            var targetable = data.targetable;
-            if(targetable) {
-              console.log("Sending: 'Select object with component-id:' " + entityData);
-              easyrtc.sendDataWS(clientRtcId, "selectComponent", entityData);
+            var selectedBy = el.getAttribute('selectedby');
+            // Check if object needs to be selected or deselected
+            if(selectedBy == clientRtcId) {
+              obj.bool = false;
             }else{
-              console.log("Tried to select untargetable entity.");
+              obj.bool = true;
             }
+
+            var entityData = JSON.stringify(obj); 
+            easyrtc.sendDataWS(clientRtcId, "selectComponent", entityData);
           });
         }
       });
@@ -536,7 +529,7 @@
             position="0 1.6 0"
             spawn-in-circle="radius:3"
             object-control-desktop="template:#block-template"
-            wasd-controls="fly:true;"
+            wasd-controls="fly: true; acceleration: 50;"
             look-controls
             cursor="rayOrigin: mouse"
             raycaster="objects: .clickable,

@@ -2,6 +2,8 @@
 var tasks = [];
 var tasksSelectedBy = null;
 
+var eventOptions = [['none', 'None', 'none']];
+
 /* global AFRAME, NAF */
 AFRAME.registerComponent('object-control-desktop', {
   schema: {
@@ -37,6 +39,9 @@ AFRAME.registerComponent('object-control-desktop', {
 
     // Create actual element
     var el = document.createElement('a-entity');
+    var selectable = new Object();
+    selectable.targetable = true;
+    el.setAttribute('selectable', selectable);
     el.setAttribute('class', 'clickable');
     el.setAttribute('scale', scale);
     el.setAttribute('wireframed', String(wireframed));
@@ -150,14 +155,11 @@ AFRAME.registerComponent('object-control-desktop', {
         el.setAttribute('material', mat);
       }
 
-      // Set as untargetable for raycaster
-      el.removeAttribute('selectable');
-
       // Set easyRtcId of source
       el.setAttribute('selectedby', selectedById);
     }else{
       // Set as targetable for raycaster & add select handler
-      el.setAttribute('selectable', '');
+      el.removeAttribute('selectedby');
     }
 
     // Add object to list 'Scene Objects'
@@ -240,8 +242,6 @@ AFRAME.registerComponent('object-control-desktop', {
     axis.setAttribute('material', 'color: #fcba03');
     axis.setAttribute('geometry', 'primitive: cylinder; radius: 0.1; height: 3; segmentsRadial: 6');
 
-    console.log("rotAxis");
-    console.log(rotAxis);
     switch(rotAxis) {
       case 'X':
         axis.setAttribute('rotation', '0 0 -90');
@@ -407,6 +407,48 @@ AFRAME.registerComponent('object-control-desktop', {
     obj.updatedata = scale;
     var newData = JSON.stringify(obj);
     easyrtc.sendDataWS(clientRtcId, "updateComponent", newData);
+  },
+
+  updateEventOptions: function() {
+    eventOptions = [['none', 'None', 'none']]
+
+    // Get all existing interactions and add them to the eventOptions
+    var interactions = document.getElementsByClassName('interaction');
+    for(var j = 0; j < interactions.length; j++) {
+      var pEl = interactions[j];
+      var el = pEl.children[0];
+      var cid = pEl.getAttribute('cid');
+      var type = pEl.getAttribute('type');
+      var name = pEl.getAttribute('entityName');
+      var eventOption = [cid, name, type];
+      eventOptions.push(eventOption);
+    }
+
+    // Get all existing interactables and add them to the eventOptions
+    var interactables = document.getElementsByClassName('entity');
+    for(var n = 0; n < interactables.length; n++) {
+      var pEl = interactables[n];
+      var el = pEl.children[0];
+      var interactable = el.interactable;
+
+      // Sort out task areas
+      if(interactable != null) {
+        var type = interactable.type;
+        var cid = pEl.getAttribute('cid');
+        var name = pEl.getAttribute('entityName');
+        
+        switch(type) {
+          case 'none':
+            break;
+
+          case 'rotatable':
+          case 'grabbable':
+            var eventOption = [cid, name, type];
+            eventOptions.push(eventOption);
+            break;
+        }
+      }
+    }
   },
 
   interactionPropertyChanged: function(event) {
@@ -797,9 +839,18 @@ AFRAME.registerComponent('object-control-desktop', {
       var pEls = document.getElementsByClassName('entity');
       for(var i = 0; i < pEls.length; i++) {
         var ent = pEls[i];
-        var cid = ent.getAttribute('id');
+        if(ent.getAttribute('class') != 'entity') {
+          continue;
+        }
+
+        var el = ent.children[0];
+        if(el.interactable.type != 'grabbable') {
+          continue;
+        }
+        
+        var compId = ent.getAttribute('id');
         var entName = ent.getAttribute('entityName');
-        targetOptions.push([cid, entName]);
+        targetOptions.push([compId, entName]);
       }
 
       // Append target property rows
@@ -950,6 +1001,7 @@ AFRAME.registerComponent('object-control-desktop', {
       if(tasks.length > 0) {
         for(var i = 0; i < tasks.length; i++) {
           var task = tasks[i];
+          var eventAngle = task.eventAngle;
 
           // Add task to properties view
           div = document.createElement('div');
@@ -961,46 +1013,7 @@ AFRAME.registerComponent('object-control-desktop', {
             </span>
           `;
       
-          var eventOptions = [['none', 'None']];
-
-          // Get all existing interactions and add them to the eventOptions
-          var interactions = document.getElementsByClassName('interaction');
-          for(var j = 0; j < interactions.length; j++) {
-            var pEl = interactions[j];
-            var el = pEl.children[0];
-            var cid = pEl.getAttribute('cid');
-            var type = pEl.getAttribute('type');
-            var name = pEl.getAttribute('entityName');
-            var eventOption = [cid, name, type];
-            eventOptions.push(eventOption);
-          }
-
-          // Get all existing interactables and add them to the eventOptions
-          var interactables = document.getElementsByClassName('entity');
-          for(var n = 0; n < interactables.length; n++) {
-            var pEl = interactables[n];
-            var el = pEl.children[0];
-            var interactable = el.interactable;
-
-            // Sort out task areas
-            if(interactable != null) {
-              var type = interactable.type;
-              var cid = pEl.getAttribute('cid');
-              var name = pEl.getAttribute('entityName');
-              
-              switch(type) {
-                case 'rotatable':
-                  var angle = task.eventAngle;
-                  var eventOption = [cid, name, type, angle];
-                  eventOptions.push(eventOption);
-                  break;
-
-                case 'none':
-                case 'grabbable':
-                  break;
-              }
-            }
-          }
+          this.updateEventOptions();
 
           var eventOptionsText = ``;
           var selected = 'none';
@@ -1008,34 +1021,17 @@ AFRAME.registerComponent('object-control-desktop', {
           for(var k=0; k < eventOptions.length; k++) {
             var evtOption = eventOptions[k];
 
-            var elem = document.getElementById('cid' + evtOption[0]);
-            if(elem != null) {
-              var className = elem.getAttribute('class');
-              if(className == 'entity') {
-                var typ = elem.children[0].interactable.type;
-                if(typ == 'rotatable') {
-                  evtOption[1] = "Rotate '" + evtOption[1] + "'";
-                }
-              }else if(className == 'interaction') {
-
-                /* May be confusing
-                var typ = elem.interaction.type;
-                if(typ == 'eventarea') {
-                  evtOption[1] = "Trigger '" + evtOption[1] + "'";
-                }
-                */
+            if(evtOption[2] != 'grabbable') {
+              if(evtOption[0] == task.triggerEvent) {
+                selected = evtOption;
+                eventOptionsText += `
+                  <option selected="selected" value="${evtOption[0]}">${evtOption[1]}</option>
+                `;
+              }else{
+                eventOptionsText += `
+                  <option value="${evtOption[0]}">${evtOption[1]}</option>
+                `;
               }
-            }
-
-            if(evtOption[0] == task.triggerEvent) {
-              selected = evtOption;
-              eventOptionsText += `
-                <option selected="selected" value="${evtOption[0]}">${evtOption[1]}</option>
-              `;
-            }else{
-              eventOptionsText += `
-                <option value="${evtOption[0]}">${evtOption[1]}</option>
-              `;
             }
           }
 
@@ -1058,7 +1054,7 @@ AFRAME.registerComponent('object-control-desktop', {
                   <span class="properties-parameter-name">
                     <b>Target Angle</b>
                   </span>
-                  <input type="number" class="eventAngle" name="eventAngle" value="${selected[3]}"/>
+                  <input type="number" class="eventAngle" name="eventAngle" value="${eventAngle}"/>
                 </div>
               `;
               break;
@@ -1184,6 +1180,8 @@ AFRAME.registerComponent('object-control-desktop', {
 
         if(pEl == null) {
           // Entity possibly deleted, skip
+          atext.setAttribute('value', childrenCount + '. No event selected!');
+          taskboard.appendChild(atext);
           continue;
         }
 
@@ -1198,16 +1196,21 @@ AFRAME.registerComponent('object-control-desktop', {
       switch(taskType) {
         case 'eventArea':
           var interaction = pEl.interaction;
-          var target = interaction.target;
-
-          console.log(target);
-
+          var interactionData = interaction.data;
+          var target = interactionData.target;
           var eventName = pEl.getAttribute('entityName');
           var targetName;
+          
+          for (var i = 0; i < eventOptions.length; i++) {
+            var evtOption = eventOptions[i]
+            var cidId = evtOption[0];
 
-          for (var i = 0; i < els.length; i++) {
-            if('cid' + els[i].getAttribute('cid') == target) {
-              targetName = els[i].getAttribute('entityName');
+            if(evtOption[0] != 'none') {
+              cidId = 'cid' + cidId;
+            }
+
+            if(cidId == target) {
+              targetName = evtOption[1];
               break;
             }
           }
@@ -1233,6 +1236,9 @@ AFRAME.registerComponent('object-control-desktop', {
 
   addTask: function(newTask) {
     tasks.push(newTask);
+    
+    // Update taskboard
+    this.updateEventOptions();
 
     // Update taskboard
     this.updateTaskboard();
@@ -1248,11 +1254,10 @@ AFRAME.registerComponent('object-control-desktop', {
     // Update data
     var taskId = data.taskId;
     var task = data.task; 
-    console.log("taskData");
-    console.log(task);
     tasks[taskId] = task;
-    console.log("newTask");
-    console.log(tasks[taskId]);
+
+    // UpdateEventOptions
+    this.updateEventOptions();
 
     // Update taskboard
     this.updateTaskboard();
@@ -1347,27 +1352,9 @@ AFRAME.registerComponent('object-control-desktop', {
 
     // DESKTOP - Further A-FRAME actions
     if(selectBool) {
-      // Make selected object untargetable
-      var selectable = el.getAttribute('selectable');
-      if(selectable == null) {
-        selectable = new Object();
-      }
-      selectable.targetable = false;
-      el.setAttribute('selectable', selectable);
-
       // Set easyRtcId of source
       el.setAttribute('selectedby', sourceRtcId);
     }else {
-      // Make selected object targetable again
-      var selectable = el.getAttribute('selectable');
-
-      if(selectable == null) {
-        selectable = new Object();
-      }
-
-      selectable.targetable = true;
-      el.setAttribute('selectable', selectable);
-
       // Remove easyRtcId of source
       el.removeAttribute('selectedby');
     }
@@ -1531,6 +1518,9 @@ AFRAME.registerComponent('object-control-desktop', {
       this.selectEntity(componentId, clientRtcId, true);
     }
 
+    // Update event option
+    this.updateEventOptions();
+
     // Update taskboard & properties-view
     this.updateTaskboard();
 
@@ -1600,6 +1590,8 @@ AFRAME.registerComponent('object-control-desktop', {
       this.selectEntity(componentId, clientRtcId, true);
     }
 
+    this.updateEventOptions();
+
     this.updateTaskboard();
   },
 
@@ -1643,6 +1635,9 @@ AFRAME.registerComponent('object-control-desktop', {
 
       // Create actual element & handle attributes
       var el = document.createElement('a-entity');
+      var selectable = new Object();
+      selectable.targetable = true;
+      el.setAttribute('selectable', selectable);
       el.setAttribute('class', 'clickable');
       el.setAttribute('scale', scale);
       el.setAttribute('geometry', interaction.geometry);
@@ -1659,14 +1654,11 @@ AFRAME.registerComponent('object-control-desktop', {
         mat.opacity = 0.4;;
         el.setAttribute('material', mat);
 
-        // Set as untargetable for raycaster
-        el.removeAttribute('selectable');
-
         // Set easyRtcId of source
         el.setAttribute('selectedby', selectedById);
       }else{
         // Set as targetable for raycaster & add select handler
-        el.setAttribute('selectable', '');
+        el.removeAttribute('selectedby');
       }
 
       var scene = this.el.sceneEl;

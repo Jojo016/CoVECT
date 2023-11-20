@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <title id="title">User Study "cVECT"</title>
     <meta name="description" content="cVECT User Study in Aframe." />
-    
+
     <!-- Actual Code -->
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.5.0/socket.io.slim.js"></script>
@@ -15,6 +15,7 @@
     <script src="/dist/aframe-keyboard.min.js"></script>
     <script type="text/javascript">
       AFRAME.ASSETS_PATH = "./assets";
+      var clientName = '[VR] ' + prompt("Please enter your name", "User");
     </script>
     <script>
       // see issue https://github.com/networked-aframe/networked-aframe/issues/267
@@ -234,6 +235,7 @@
 
         var menuTask = document.getElementById('vr-menu-task');
         var submenuTask = document.getElementById('container-vr-submenu-task');
+        var submenuTaskVisible = submenuTask.getAttribute('visible');
 
         // Enable the given interface, disable the rest
         switch(submenuName) {
@@ -247,8 +249,15 @@
             submenuTask.setAttribute('position', '0 100 0');
             
             // Handle color of buttons
-            menuAdd.setAttribute('baseColor', '#186e44');
+            menuAdd.setAttribute('baseColor', '#00b800');
             menuEdit.setAttribute('baseColor', '#0377fc');
+
+            // Handle deselection of TaskEdit 
+            if(submenuTaskVisible) { 
+              // Send 'deselect' to server
+              var data = JSON.stringify(new Object());
+              easyrtc.sendDataWS(clientRtcId, "deselectTasks", data);
+            }
             break;
 
           case 'edit':
@@ -262,7 +271,14 @@
 
             // Handle color of buttons
             menuAdd.setAttribute('baseColor', '#0377fc');
-            menuEdit.setAttribute('baseColor', '#186e44');
+            menuEdit.setAttribute('baseColor', '#00b800');
+
+            // Handle deselection of TaskEdit 
+            if(submenuTaskVisible) { 
+              // Send 'deselect' to server
+              var data = JSON.stringify(new Object());
+              easyrtc.sendDataWS(clientRtcId, "deselectTasks", data);
+            }
             break;
 
           case 'task':
@@ -290,6 +306,13 @@
 
             menuAdd.setAttribute('baseColor', '#0377fc');
             menuEdit.setAttribute('baseColor', '#0377fc');
+
+            // Handle deselection of TaskEdit 
+            if(submenuTaskVisible) { 
+              // Send 'deselect' to server
+              var data = JSON.stringify(new Object());
+              easyrtc.sendDataWS(clientRtcId, "deselectTasks", data);
+            }
             break;
 
           default:
@@ -384,7 +407,7 @@
       function createRadioButton(pEl, id, type, name, radioButtonKind, activeType, posX, posY, posZ, updateType) {
         var container = document.createElement('a-entity');
         container.setAttribute('scale', '0.8 0.8 0.8');
-        container.setAttribute('geometry', 'primitive: box; width: 1.3; height: 0.3; depth: 0.1');
+        container.setAttribute('geometry', 'primitive: box; width: 1.6; height: 0.3; depth: 0.1');
         container.setAttribute('material', 'opacity: 0');
         container.setAttribute('position', (Number(posX) + 0.45) + ' ' + posY + ' ' + (Number(posZ) + 0.05));
         container.setAttribute('priority', 'level: hud');
@@ -392,7 +415,7 @@
         var interactable = document.createElement('a-entity');
         interactable.setAttribute('id', id);
         interactable.setAttribute('class', 'vr-submenu-edit');
-        interactable.setAttribute('scale', '1.3 0.3 0.05');
+        interactable.setAttribute('scale', '1.6 0.3 0.05');
         interactable.setAttribute('position', '0 0 0');
         interactable.setAttribute('geometry', 'primitive: box');
         interactable.setAttribute('material', 'opacity: 0;');
@@ -546,15 +569,15 @@
 
               var radio1Container = document.createElement('a-entity');
               radio1Container.setAttribute('priority', 'level: hud');
-              var interactableUi2 = createRadioButton(radio1Container, 'vr-submenu-edit-static', 'none', 'Static', 'type', interactable.type, 0.4, 1.5, 0, 'interactable');
-              var interactableUi3 = createRadioButton(radio1Container, 'vr-submenu-edit-grabbable', 'grabbable', 'Grabbable', 'type', interactable.type, 0.4, 1.3, 0, 'interactable');
-              var interactableUi4 = createRadioButton(radio1Container, 'vr-submenu-edit-rotatable', 'rotatable', 'Rotatable', 'type', interactable.type, 0.4, 1.1, 0, 'interactable');
+              var interactableUi2 = createRadioButton(radio1Container, 'vr-submenu-edit-static', 'none', 'Static', 'type', interactable.type, 0.4, 1.7, 0, 'interactable');
+              var interactableUi3 = createRadioButton(radio1Container, 'vr-submenu-edit-grabbable', 'grabbable', 'Grabbable', 'type', interactable.type, 0.4, 1.5, 0, 'interactable');
+              var interactableUi4 = createRadioButton(radio1Container, 'vr-submenu-edit-rotatable', 'rotatable', 'Rotatable', 'type', interactable.type, 0.4, 1.3, 0, 'interactable');
               
               var radio2Container = document.createElement('a-entity');
               radio2Container.setAttribute('priority', 'level: hud');
-              var interactableUi5 = createRadioButton(radio2Container, 'vr-submenu-edit-axisx', 'X', 'X-Axis', 'axis', interactable.axis, 0.6, 0.9, 0, 'interactable');
-              var interactableUi6 = createRadioButton(radio2Container, 'vr-submenu-edit-axisy', 'Y', 'Y-Axis', 'axis', interactable.axis, 0.6, 0.7, 0, 'interactable');
-              var interactableUi7 = createRadioButton(radio2Container, 'vr-submenu-edit-axisz', 'Z', 'Z-Axis', 'axis', interactable.axis, 0.6, 0.5, 0, 'interactable');
+              var interactableUi5 = createRadioButton(radio2Container, 'vr-submenu-edit-axisx', 'X', 'X-Axis', 'axis', interactable.axis, 0.6, 1.1, 0, 'interactable');
+              var interactableUi6 = createRadioButton(radio2Container, 'vr-submenu-edit-axisy', 'Y', 'Y-Axis', 'axis', interactable.axis, 0.6, 0.9, 0, 'interactable');
+              var interactableUi7 = createRadioButton(radio2Container, 'vr-submenu-edit-axisz', 'Z', 'Z-Axis', 'axis', interactable.axis, 0.6, 0.7, 0, 'interactable');
 
               var interactableUi8 = document.createElement('a-entity');
               interactableUi8.setAttribute('position', '2.46 0.5 0');
@@ -759,22 +782,22 @@
               var pEls = document.getElementsByClassName('entity');
               for(var i = 0; i < pEls.length; i++) {
                 var ent = pEls[i];
-                var interactable = ent.interactable;
-                if(interactable != null) {
-                  if(interactable.type == 'rotatable') {
-                    continue;
-                  }
+                if(ent.getAttribute('class') != 'entity') {
+                  continue;
                 }
-                var compId = 'cid' + ent.getAttribute('cid');
+
+                var el = ent.children[0];
+                if(el.interactable.type != 'grabbable') {
+                  continue;
+                }
+                
+                var compId = ent.getAttribute('id');
                 var entName = ent.getAttribute('entityName');
                 targetOptions.push([compId, entName]);
               }
 
               // Add target radiobuttons
               var currentTarget = pEl.interaction.data.target;
-
-              var debug = document.getElementById('debugtext');
-              debug.setAttribute('value', 'CurrentTarget: ' + currentTarget);
 
               var targetRadioContainer = document.createElement('a-entity');
               targetRadioContainer.setAttribute('priority', 'level: hud');
@@ -934,9 +957,18 @@
             var sourceRtcId = data.sourceRtcId;
             var bool = data.bool;
             var controller = document.querySelector('[object-control-vr]').components['object-control-vr'];
-            controller.selectEntity(cid, sourceRtcId, bool);
 
-            if(sourceRtcId == clientRtcId || true) {
+            try{
+
+              controller.selectEntity(cid, sourceRtcId, bool);
+            }catch(e) {
+              var debug = document.getElementById('debugtext');
+              debug.setAttribute('value', debug.getAttribute('value') + '\nError:');
+              debug.setAttribute('value', debug.getAttribute('value') + '\n' + e.message);
+              debug.setAttribute('value', debug.getAttribute('value') + '\n' + e.stack);
+            }
+
+            if(sourceRtcId == clientRtcId) {
               // Update properties menu
               var pEl = controller.getEl(cid);
               this.updateSelectionMenu(pEl, bool);
@@ -1112,19 +1144,12 @@
 
             // Check if wireframe exists and make it visible
             if(this.el.getAttribute('wireframed') == "true") {
-              var name = pEl.getAttribute('entityName');
-              var wfObjectName = name + "-wireframe";
-              var wfObjects = document.querySelectorAll("[wireframe]");
-              var wfObject = null;
+              var wfObjectId = cid + "-wireframe"
+              var wfObject = document.getElementById(wfObjectId);
 
-              wfObjects.forEach(obj => {
-                var objName = obj.getAttribute('entityName');
-                if(objName == wfObjectName) {
-                  wfObject = obj;
-                }
-              });
-
-              wfObject.setAttribute('visible', true);
+              if(wfObject != null) {
+                wfObject.setAttribute('visible', true);
+              }
             }
           }
         },
@@ -1157,19 +1182,12 @@
 
               // Check if wireframe exists and make it insivible
               if(this.el.getAttribute('wireframed') == "true") {
-                var name = pEl.getAttribute('entityName');
-                var wfObjectName = name + "-wireframe";
-                var wfObjects = document.querySelectorAll("[wireframe]");
-                var wfObject = null;
+                var wfObjectId = cid + "-wireframe"
+                var wfObject = document.getElementById(wfObjectId);
 
-                wfObjects.forEach(obj => {
-                  var objName = obj.getAttribute('entityName');
-                  if(objName == wfObjectName) {
-                    wfObject = obj;
-                  }
-                });
-
-                wfObject.setAttribute('visible', false);
+                if(wfObject != null) {
+                  wfObject.setAttribute('visible', false);
+                }
               }
             }
           }
@@ -1204,8 +1222,16 @@
           
           // Add 'Select Object' listener
           el.addEventListener('select-object', function handleSendSelect(event) {
+            var debug = document.getElementById('debugtext');
+            debug.setAttribute('value', 'inside selectObject');
+
             // Check if handler is 'disabled'
             var selectedBy = el.getAttribute('selectedby');
+            var className = el.getAttribute('class');
+            var id = el.getAttribute('id');
+            debug.setAttribute('value', debug.getAttribute('value') + '\nselectedBy: ' + selectedBy);
+            debug.setAttribute('value', debug.getAttribute('value') + '\nclass: ' + className);
+            debug.setAttribute('value', debug.getAttribute('value') + '\nid: ' + id);
             if(!(selectedBy == null || selectedBy == clientRtcId)) {
               return;
             }
@@ -1224,14 +1250,17 @@
             obj.cid = componentId;
 
             // Check if object needs to be selected or deselected
+
+            debug.setAttribute('value', debug.getAttribute('value') + '\nselectedBy == clientRtcId');
+            debug.setAttribute('value', debug.getAttribute('value') + '\ncompare: ' + (selectedBy == clientRtcId));
+
             if(selectedBy == clientRtcId) {
               obj.bool = false;
             }else{
               obj.bool = true;
             }
 
-            var entityData = JSON.stringify(obj); 
-            
+            var entityData = JSON.stringify(obj);             
             console.log("Sending: 'Select object with component-id:' " + entityData);
             easyrtc.sendDataWS(clientRtcId, "selectComponent", entityData);
           });
@@ -1615,8 +1644,6 @@
 
       AFRAME.registerComponent('b-button-listener', {
         init: function () {
-          const markObjectEvent = new Event("mark-object");
-
           var el = this.el;
           el.addEventListener('bbuttondown', function (evt) { 
             // Get raycaster
@@ -1635,6 +1662,10 @@
               return;
             }
 
+            if(!firstHit.getAttribute('currentlySelected')) {
+              return;
+            }
+
             // Trigger event 'Mark Object'
             var pEl = firstHit.parentEl;
             var cid = pEl.getAttribute('cid');
@@ -1643,14 +1674,14 @@
 
             // Check if wireframe is enabled
             var wireframed = firstHit.getAttribute('wireframed');
-            obj.updatetype = 'wireframe';
+            obj.updatetype = 'wireframed';
             
             if(wireframed == "false") {
               // Remove wireframe
-              obj.updatedata = true;
+              obj.updatedata = "true";
             }else {
               // Add wireframe
-              obj.updatedata = false;
+              obj.updatedata = "false";
             }
 
             var entityData = JSON.stringify(obj); 
@@ -1958,9 +1989,9 @@
               var occupied = controller.areTasksOccupied();
 
               if(!occupied) {
-                // Send to server
-                var data = new Object();  
-                easyrtc.sendDataWS("selectTasks", data);
+                // Send select to server
+                var data = JSON.stringify(new Object());
+                easyrtc.sendDataWS(clientRtcId, "selectTasks", data);
 
                 // Make visible and close other open submenus
                 showOnlySelectedSubmenu('task');
@@ -1968,7 +1999,6 @@
 
             }else{
               // Make invisible
-              el.setAttribute('baseColor', '#0377fc');
               showOnlySelectedSubmenu('close');
             }
           });
@@ -2137,18 +2167,36 @@
       
       AFRAME.registerComponent('color-listener', {
         init: function(){
-          const el = this.el;
+          var el = this.el;
           document.body.addEventListener('didchangecolor', function(evt){
-
               //Available return formats from colorwheel
               let style = evt.detail.style
               let rgb = evt.detail.rgb
               let hsv = evt.detail.hsv
               let hex = evt.detail.hex
 
-              //el.setAttribute('color', hex)
-              el.setAttribute('material', 'color: ' + hex)
-              el.setAttribute('basecolor', hex)
+              // Upload color
+              var el = document.querySelector('[currentlySelected]');
+              if(el == null) {
+                return;
+              }
+
+              var material = el.getAttribute('material');
+              if(material == null) {
+                material = new Object();
+              }
+              
+              material.color = hex;
+              
+              el.setAttribute('material', material);
+              el.setAttribute('basecolor', hex);
+
+              var newData = new Object();
+              newData.cid = el.parentEl.getAttribute('cid');
+              newData.updatetype = 'material';
+              newData.updatedata = material;
+              var data = JSON.stringify(newData);
+              easyrtc.sendDataWS(clientRtcId, 'updateComponent', data);
           })
         }
       })
@@ -2314,11 +2362,13 @@
           break;
 
         case 6:
-          // Hide keyboard
-          input.setAttribute('value', text);
-
+          // Submit -> Hide keyboard
           closeKeyboard();
           return;
+
+        case -1:
+          // Cancel
+          break;
 
         default:
           text = text + e.detail.value;
@@ -2348,7 +2398,6 @@
 
         // Make new input listen to changes
         var newInput = newInputBackground.parentEl.children[0];
-
         text = newInput.getAttribute('value');
 
         newInput.setAttribute('value', text + '_');
@@ -2696,14 +2745,15 @@
 
             <!-- Submenu TASK -->
             <a-entity
-              position="0.35 100 0" 
+              position="0.35 -1.225 0" 
               visible="true"
               scale="1.2 1.125 1.2"
               visible="false" 
             >
               <a-entity
                 id="container-vr-submenu-task" 
-                visible="true"
+                position="0 100 0" 
+                visible="false"
               >
                 <a-entity 
                   name="addTaskButton" 
@@ -2804,14 +2854,14 @@
               id="container-vr-submenu-add" 
               position="2.05 100 0" 
               scale="3 3 1"
-              visible="true"
+              visible="false"
             >  
               <a-entity
                 name="vr-submenu-add"
                 geometry="primitive: plane"
                 material="color: #31b5cc"
                 rotation="0 0 0" 
-                visible="false"
+                visible="true"
                 priority="level: hud"
               ></a-entity>
 

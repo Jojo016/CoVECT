@@ -35,7 +35,7 @@ var dictOfSelectedComponents = new Object();
 setupScenario(1);
 
 // Get port or default to 8080
-const port = process.env.PORT || 8081;
+const port = process.env.PORT || 9090;
 
 // Setup and configure Express http server.
 const app = express();
@@ -348,13 +348,10 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
     }
 
   }else if(msgType === "selectComponent"){
-    console.log('selectComponent:');
-    console.log(msg.msgData);
     // When a client selects an entity, broadcast it
     var data = msg.msgData;
 
     var dataObj = JSON.parse(data);
-    dataObj.sourceRtcId = easyrtcid;
 
     var cid = dataObj.cid;
     var bool = dataObj.bool;
@@ -690,9 +687,6 @@ easyrtc.events.on("easyrtcMsg", (connectionObj, msg, socketCallback, callback) =
 
         // Set message data
         message.msgData = data;
-
-        console.log("data");
-        console.log(data);
 
         // Send the update message
         console.log("Broadcasting '" + message.msgType + "'...");

@@ -11,7 +11,7 @@
       });
     </script>
     <script>
-      var clientName = prompt("Please enter your name", "WEB User");
+      var clientName = '[Web] ' + prompt("Please enter your name", "User");
 
       // Send specific commands to the server 
       function addObject(shape) {
@@ -48,9 +48,9 @@
 
       function editTasks() {
         var iframe = document.getElementById("iframe");
-        var data = new Object();  
         var occupied = iframe.contentWindow.areTasksOccupied();
         if(!occupied) {
+          var data = JSON.stringify(new Object());
           iframe.contentWindow.sendToServer("selectTasks", data);
         }           
       }

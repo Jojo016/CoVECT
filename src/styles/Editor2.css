@@ -174,12 +174,15 @@ td.td1:hover {
     display: table;
     width: 300px; /*Optional*/
     table-layout: fixed; /*Optional*/
-    border-spacing: 5px; /*Optional*/
+    border-spacing: 10px; /*Optional*/
+    overflow: hidden;
 }
 
 .userColumn {
     display: table-cell;
-    width: 100px;
+    width: 150px;
+    overflow: hidden;
+    white-space: nowrap;
     color: rgb(30, 192, 165)(204, 186, 186); /*Optional*/
 }
 
