@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "recastCLI.js",
   "version": "1.0.0",
   "scripts": {
@@ -19,7 +19,7 @@
   "devDependencies": {
     "graceful-fs": "^4.1.15",
     "nan": "^2.14.1",
-    "node-gyp": "^3.8.0"
+    "node-gyp": "^9.3.1"
   },
   "dependencies": {}
 }

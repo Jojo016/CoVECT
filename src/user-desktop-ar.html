@@ -1,0 +1,673 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Select & move objects</title>
+    <meta name="description" content="Ownership Transfer Example MODIFIED— Networked-Aframe" />
+    <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.5.0/socket.io.slim.js"></script>
+    <script src="/easyrtc/easyrtc.js"></script>
+    <script src="/dist/networked-aframe.min.js"></script>
+    <script src="/dist/aframe-material.min.js"></script>
+    <script>
+      // see issue https://github.com/networked-aframe/networked-aframe/issues/267
+      NAF.schemas.getComponentsOriginal = NAF.schemas.getComponents;
+      NAF.schemas.getComponents = (template) => {
+        if (!NAF.schemas.hasTemplate('#avatar-template')) {
+          NAF.schemas.add({
+            template: '#avatar-template',
+            components: [
+              'position',
+              'rotation',
+              {
+                selector: '.head',
+                component: 'material',
+                property: 'color'
+              },
+              {
+                selector: '.headcontainer',
+                component: 'scale'
+              }
+            ]
+          });
+
+          if (!NAF.schemas.hasTemplate('#block-template')) {
+            NAF.schemas.add({
+              template: '#block-template',
+              components: [
+                'position',
+                {
+                  selector: '.block',
+                  component: 'rotation'
+                },
+                {
+                  selector: '.block',
+                  component: 'position'
+                },
+                {
+                  selector: '.block',
+                  component: 'material',
+                  property: 'color'
+                },
+                {
+                  selector: '.block',
+                  component: 'select-entity',
+                  property: 'direction'
+                }
+              ]
+            });
+          }
+        }
+
+        if (!NAF.schemas.hasTemplate('#hand-right-template')) {
+          NAF.schemas.add({
+            template: '#hand-right-template',
+            components: [
+              'position',
+              'rotation',
+              'gltf-model',
+              {
+                selector: '.righthand',
+                component: 'material',
+                property: 'color'
+              }
+            ]
+          });
+        }
+
+        if (!NAF.schemas.hasTemplate('#hand-left-template')) {
+          NAF.schemas.add({
+            template: '#hand-left-template',
+            components: [
+              'position',
+              'rotation',
+              'gltf-model',
+              {
+                selector: '.lefthand',
+                component: 'material',
+                property: 'color'
+              }
+            ]
+          });
+        }
+
+        const components = NAF.schemas.getComponentsOriginal(template);
+        return components;
+      };
+    </script>
+    <script>
+      AFRAME.registerComponent('selectable', {
+        schema: {
+          targetable: {default: true}
+        },
+
+        init: function () {
+          var data = this.data;
+          var el = this.el; 
+          var pEl;
+          var className = el.getAttribute('class');
+          if(className == 'sub-clickable') {
+            pEl = el.parentEl.parentEl;
+          }else {
+            // className == 'collidable'
+            pEl = el.parentEl;
+          }
+
+          // Get component id
+          var componentId = pEl.getAttribute('cid');
+
+          // Create data object to stringify
+          var obj = new Object();
+          obj.cid = componentId;
+
+          // Add click listener
+          el.addEventListener('click', function() {
+            var selectedBy = el.getAttribute('selectedby');
+            // Check if object needs to be selected or deselected
+            if(selectedBy == clientRtcId) {
+              obj.bool = false;
+            }else{
+              obj.bool = true;
+            }
+
+            var entityData = JSON.stringify(obj); 
+            easyrtc.sendDataWS(clientRtcId, "selectComponent", entityData);
+          });
+        }
+      });
+    </script>
+    <script src="https://unpkg.com/aframe-randomizer-components@^3.0.1/dist/aframe-randomizer-components.min.js"></script>
+    <script src="https://unpkg.com/aframe-environment-component@1.3.1/dist/aframe-environment-component.min.js"></script>
+    <script src="/js/spawn-in-circle.component.js"></script>
+    <script src="/js/object-control-desktop.component.js"></script>
+    <script>
+      let clientRtcId;
+
+      // Called by Networked-Aframe when connected to server
+      function onConnect() {        
+        // Set clients easyrtcid
+        clientRtcId = NAF.clientId;
+        clientName = window.parent.clientName;
+
+        // Send clientId to statusbar
+        //window.parent.addUserToStatusBar(clientRtcId, true);
+        serverJoinedSetup();
+      }
+    </script>
+    <script>
+      function sendToServer(command, data) {
+        if(command == 'addNewObject') {
+          // Get shape from data
+          var shape = data;
+
+          // Get player position
+          var player = document.getElementById('player');
+          var pos3 = player.getAttribute('position');
+
+          // Create data object to stringify
+          var obj = new Object();
+          obj.shape = shape;
+          obj.position = pos3;
+          obj.color = "#0000FF"; 
+
+          data = JSON.stringify(obj);
+
+          console.log("Sending: 'Create new object with data:' " + data);
+          easyrtc.sendDataWS(clientRtcId, command, data);
+
+        }else if(command == 'removeComponent'){
+          // Get shape from data
+          var cid = data;
+
+          // Create data object to stringify
+          var obj = new Object();
+          obj.cid = cid;
+
+          data = JSON.stringify(obj);
+
+          console.log("Sending: 'Remove component with cid:' " + cid);
+          easyrtc.sendDataWS(clientRtcId, "removeComponent", data);
+
+        }else if(command == 'addInteraction'){
+          // Get type & position from data
+          var player = document.getElementById('player');
+          var pos3 = player.getAttribute('position');
+          var type = data.type;
+          data.position = pos3;
+
+          data = JSON.stringify(data);
+
+          console.log("Sending: 'Add interaction of type:' " + type);
+          easyrtc.sendDataWS(clientRtcId, command, data);
+
+        }else if(command == 'addTask'){
+          easyrtc.sendDataWS(clientRtcId, command, data);
+
+        }else if(command == 'selectTasks'){
+          data = JSON.stringify(data);
+          if(tasksSelectedBy == null) {
+            easyrtc.sendDataWS(clientRtcId, command, data);
+          }
+
+        }else if(command == 'exportFiles'){
+          easyrtc.sendDataWS(clientRtcId, command, data);
+          alert('Exported data!');
+        }
+      }
+
+      function serverJoinedSetup() {
+        // Add own name to statusbar
+        window.parent.addUserToStatusBar(clientRtcId, clientName, true);
+
+        // Init Listeners
+        easyrtc.setServerListener( function(msgType, msgData, targeting) {
+          if(msgType === 'spawnComponent') {
+            var newData = JSON.parse(msgData);
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.spawnEntity(newData);
+
+          }else if(msgType === 'selectedComponent') {
+            var data = JSON.parse(msgData);
+            var cid = data.cid;
+            var sourceRtcId = data.sourceRtcId;
+            var bool = data.bool;
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.selectEntity(cid, sourceRtcId, bool);
+
+          }else if(msgType === 'removedComponent') {
+            var data = JSON.parse(msgData);
+            var cid = data.cid;
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.removeComponent(cid);
+
+          }else if(msgType === 'updatedComponent') {
+            var data = JSON.parse(msgData);
+            var cid = data.cid;
+            var type = data.updatetype;
+            var newData = data.updatedata;
+            var sourceRtcId = data.sourceRtcId;
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.updateComponent(cid, type, newData, sourceRtcId);
+
+          }else if(msgType === 'updatedInteractable') {
+            var data = JSON.parse(msgData);
+            var cid = data.cid;
+            var sourceRtcId = data.sourceRtcId;
+            var newData = data.updatedata;
+            var attribute = newData.attribute;
+            var value = newData.value;
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.updateInteractable(cid, sourceRtcId, attribute, value);
+
+          } else if(msgType === 'userJoined') {
+            var data = JSON.parse(msgData);
+            window.parent.addUserToStatusBar(data.easyrtcid, data.name, false);
+
+          }else if(msgType === 'userLeft') {
+            var data = JSON.parse(msgData);
+            window.parent.removeUserFromStatusBar(data.sourceRtcId);
+
+            var cid = data.cid;
+            var sourceRtcId = data.sourceRtcId;
+            if(cid != -1) {
+              var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+              controller.selectEntity(cid, sourceRtcId, false);
+            }
+            
+            if(data.tasksSelectedBy == 'remove') {
+              tasksSelectedBy = null;
+            }
+
+          }else if(msgType === 'spawnInteraction') {
+            var newData = JSON.parse(msgData);
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.spawnInteraction(newData);
+
+          }else if(msgType === 'updatedInteraction') {
+            var newData = JSON.parse(msgData);
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.updateInteraction(newData);
+
+          }else if(msgType === 'removedInteraction') {
+            var newData = JSON.parse(msgData);
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.removeInteraction(newData);
+
+          }else if(msgType === 'selectedTasks') {
+            var newData = JSON.parse(msgData);
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.selectTasks(newData);
+
+          }else if(msgType === 'addedTask') {
+            var newData = JSON.parse(msgData);
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.addTask(newData);
+
+          }else if(msgType === 'updatedTask') {
+            var newData = JSON.parse(msgData);
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.updateTask(newData);
+
+          }else if(msgType === 'deselectTasks') {
+            var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+            controller.deselectTasks();
+
+          }else{
+            console.log("Received unknown message type '" + msgType + "'.");
+          }
+        });
+
+        // Broadcast ClientName
+        var obj = new Object();
+        obj.easyrtcid = clientRtcId;
+        obj.name = clientName;
+        var clientData = JSON.stringify(obj);
+        easyrtc.sendDataWS(clientRtcId, "broadcastUserName", clientData);
+
+        // Fetch existing components from server
+        easyrtc.sendDataWS(clientRtcId, "getAllComponents", null);
+      }
+    </script>
+    <script>
+      // Taskboard
+      function addTaskButton() {
+        easyrtc.sendDataWS(clientRtcId, "addTask", null);
+      }
+
+      function areTasksOccupied() {
+        var controller = document.querySelector('[object-control-desktop]').components['object-control-desktop'];
+        return controller.areTasksOccupied();
+      }
+    </script>
+    <script>
+      AFRAME.registerComponent('cursor-listener', {
+        init: function () {
+          this.el.addEventListener('raycaster-intersected', evt => {
+            this.raycaster = evt.detail.el;
+          });
+          this.el.addEventListener('raycaster-intersected-cleared', evt => {
+            this.raycaster = null;
+          });
+        },
+        tick: function () {
+            if (!this.raycaster) { return; }  // Not intersecting.
+            let intersection = this.raycaster.components.raycaster.getIntersection(this.el);
+            if (!intersection) { return; } // Not intersecting
+            // intersecting
+            /*
+            console.log('Tick: ');
+            console.log(this.el);
+            */
+        }
+      });
+    </script>
+    <script>
+      function sendMarkObject(pEl) {
+        // Create data object to stringify
+        var el = pEl.children[0];
+        var cid = pEl.getAttribute('cid');
+        var obj = new Object();
+        obj.cid = cid;
+
+        // Check if wireframe is enabled
+        var wireframed = el.getAttribute('wireframed');
+        obj.updatetype = 'wireframe';
+        
+        if(wireframed == "false") {
+          // Remove wireframe
+          obj.updatedata = true;
+        }else {
+          // Add wireframe
+          obj.updatedata = false;
+        }
+
+        var entityData = JSON.stringify(obj); 
+        console.log("Sending: 'UpdateComponent to switch wireframe on object:' " + entityData);
+        easyrtc.sendDataWS(clientRtcId, "updateComponent", entityData);
+      }
+
+      AFRAME.registerComponent('grab-axisslider-listener', {
+        init: function () {
+          var el = this.el;
+          var pEl = el.parentEl;
+          var axis = el.getAttribute('axis');
+          var player = document.getElementById('player');
+          var origin = null;
+
+          el.addEventListener('mousedown', function handleSendSelect(event) {
+            // Disable look-controls for the drag
+            var lookController = player.getAttribute('look-controls');
+            lookController.enabled = false;
+            player.setAttribute('look-controls', lookController);
+
+            // Start moving the object
+            el.setAttribute('axis-grabbed', 'axis: ' + axis);
+          });
+
+          document.addEventListener("mousemove", (e) => {
+            var axisGrabbed = el.getAttribute('axis-grabbed');
+            if (axisGrabbed != null) {
+
+              if(origin == null) {
+                origin = new Object();
+                origin.x = e.offsetX;
+                origin.y = e.offsetY;
+                return;
+              }
+
+              // Determine axis & offset
+              var axis = axisGrabbed.axis;
+              var offset;
+              var offsetX = e.offsetX;
+              var offsetY = e.offsetY;
+             
+              offset = offsetX - origin.x;
+              origin.x = offsetX;
+
+              // Map offset to position
+              offset = offset/500;
+              var pos3 = pEl.getAttribute('position');
+              pos3[axis] = pos3[axis] + offset;
+              pEl.setAttribute('position', pos3);
+            }
+          });
+
+          el.addEventListener('mouseup', function handleSendSelect(event) {
+            // Stop moving the object
+            el.removeAttribute('axis-grabbed');
+            origin = null;
+
+            // Enable the look-controls after the drag
+            var lookController = player.getAttribute('look-controls');
+            lookController.enabled = true;
+            player.setAttribute('look-controls', lookController);
+
+            // Send the updated object position to server
+            var obj = new Object();
+            var pos = pEl.getAttribute('position');
+            var cid = pEl.getAttribute('cid');
+            obj.cid = cid; 
+            obj.updatetype = 'position';
+            obj.updatedata = pos;
+            var newData = JSON.stringify(obj);
+            easyrtc.sendDataWS(clientRtcId, "updateComponent", newData);
+          });
+        }
+      });
+
+      AFRAME.registerComponent('axis-grabbed', {
+        schema: {
+          axis: { default: "x" }
+        },
+        init: function () {
+          var axis = this.data.axis;
+          var mousePos = "";
+        }
+      });
+    </script>
+    <!--link rel="stylesheet" type="text/css" href="/styles/Editor2.css" /-->
+  </head>
+  <body>
+   <div class="middle-panel">
+    <a-scene
+      networked-scene="
+        room: dev;
+        debug: true;
+        adapter: easyrtc;
+        audio: true;
+      "
+      stats
+    >
+        <a-assets timeout="20000">
+          <!-- Templates -->
+
+          <!-- Avatar -->
+          <template id="avatar-template">
+            <a-entity class="avatar" networked-audio-source>
+              <a-entity class="headcontainer" scale="0.4 0.4 0.4">
+                <a-sphere class="head" scale="0.45 0.5 0.4"></a-sphere>
+                <a-entity class="face" position="0 0.05 0">
+                  <a-sphere class="eye" color="#efefef" position="0.16 0.1 -0.35" scale="0.12 0.12 0.12">
+                    <a-sphere class="pupil" color="#000" position="0 0 -1" scale="0.2 0.2 0.2"></a-sphere>
+                  </a-sphere>
+                  <a-sphere class="eye" color="#efefef" position="-0.16 0.1 -0.35" scale="0.12 0.12 0.12">
+                    <a-sphere class="pupil" color="#000" position="0 0 -1" scale="0.2 0.2 0.2"></a-sphere>
+                  </a-sphere>
+                </a-entity>
+              </a-entity>
+            </a-entity>
+          </template>
+
+          <!-- Hands -->
+          <template id="hand-right-template">
+            <a-entity class="rightarm">
+              <a-entity class="righthand" gltf-model="#righthand-model" scale="1 1 1"></a-entity>
+            </a-entity>
+          </template>
+  
+          <template id="hand-left-template">
+            <a-entity class="leftarm">
+              <a-entity class="lefthand" gltf-model="#lefthand-model" scale="1 1 1"></a-entity>
+            </a-entity>
+          </template>
+
+          <!-- Entity -->
+          <template id="block-template">
+            <a-entity>
+              <a-box class="block" arrow-control selectable></a-box>
+            </a-entity>
+          </template>
+
+          <!-- Grid -->
+          <img id="grid" src="/img/grid.png">
+          <img id="sky" src="/img/sky.jpg">
+
+          <!-- Textures -->
+          <img id="kitchenwalls" src="img/wall_stone_4k.png" />
+          <img id="floortexture" src="img/floor.png" />
+          <img id="griller-texture" src="img/griller.png" />
+          <img id="bread-slice" src="img/Slice_of_Bread_BaseColor_4K_downscaled.png" />
+          <img id="blank" src="img/blank.png" />
+          <img id="cheese" src="img/cheese.png" />
+          <img id="tomato" src="img/tomato.png" />
+          <img id="cheese-tomato" src="img/cheese-tomato.png" />
+
+          <!-- MODELS -->
+          <a-asset-item id="kitchen-obj" src="/assets/kitchen_module.obj"></a-asset-item>
+          <a-asset-item id="kitchen-mtl" src="/assets/kitchen_module.mtl"></a-asset-item>
+          <a-asset-item id="woodendoor-obj" src="/assets/kk.obj"></a-asset-item>
+          <a-asset-item id="woodendoor-mtl" src="/assets/kk.mtl"></a-asset-item>
+          
+          <a-asset-item id="woodenstool" src="/assets/WoodenStoolObj.obj"></a-asset-item>
+          <a-asset-item id="coffeetable-obj" src="/assets/Censi_ConcreteCoffeeTable_free_obj.obj"></a-asset-item>
+          <a-asset-item id="coffeetable-mtl" src="/assets/Censi_ConcreteCoffeeTable_free_obj.mtl"></a-asset-item>
+
+          <a-asset-item id="bowl" src="/assets/schuessel.obj"></a-asset-item>
+          <a-asset-item id="plate" src="/assets/plate.obj"></a-asset-item>
+
+          <a-asset-item id="bread-obj" src="/assets/Slice_of_Bread_OBJ.obj"></a-asset-item>
+          <a-asset-item id="bread-mtl" src="/assets/Slice_of_Bread_OBJ.mtl"></a-asset-item>
+          
+          <a-asset-item id="righthand-model" src="/assets/rightHandHigh.glb"></a-asset-item>
+          <a-asset-item id="lefthand-model" src="/assets/leftHandHigh.glb"></a-asset-item>
+        </a-assets>
+
+        <!-- ENVIRONMENT -->
+        <a-sky src="#sky" rotation="0 -90 0"></a-sky>
+
+        <a-plane name="floor" geometry="primitive: plane" scale="6 6 1" rotation="-90 0 0" position="0 0 0" src="#floortexture" repeat="6 6"></a-plane>
+        <a-plane name="walln" geometry="primitive: plane" scale="6 2.5 1" rotation="0 0 0" position="0 1.25 -3" src="#kitchenwalls" repeat="12 5"></a-plane>
+        <a-plane name="wallw" geometry="primitive: plane" scale="6 2.5 1" rotation="0 90 0" position="-3 1.25 0" src="#kitchenwalls" repeat="12 5"></a-plane>
+        <a-plane name="walle" geometry="primitive: plane" scale="6 2.5 1" rotation="0 -90 0" position="3 1.25 0" src="#kitchenwalls" repeat="12 5"></a-plane>
+        <a-plane name="walls" geometry="primitive: plane" scale="6 2.5 1" rotation="0 180 0" position="0 1.25 3" src="#kitchenwalls" repeat="12 5"></a-plane>
+
+        <a-entity name="woodendoor" obj-model="obj: #woodendoor-obj; mtl: #woodendoor-mtl" material="color: #ff00ff" scale="1 1 1" rotation="0 180 0" position="-2 0 3.005"></a-entity>
+        
+        <a-entity name="coffeetable" obj-model="obj: #coffeetable-obj; mtl: #coffeetable-mtl" scale="0.016 0.02 0.016" rotation="0 45 0" position="1 0 1"></a-entity>
+        <a-entity name="woodenstool1" obj-model="obj: #woodenstool" material="src: /img/wood1.jpg" scale="0.06 0.06 0.06" rotation="0 90 0" position="1.2 0 2"></a-entity>
+        <a-entity name="woodenstool2" obj-model="obj: #woodenstool" material="src: /img/wood1.jpg" scale="0.06 0.06 0.06" rotation="0 90 0" position="2 0 1.2"></a-entity>
+
+        <a-entity position="0.5 0 -3" scale="0.01 0.01 0.01" obj-model="obj: #kitchen-obj; mtl: #kitchen-mtl"></a-entity>
+
+        <a-entity id="griller-bottom" scale="0.3 0.3 0.3" position="1.2 0.86 -2.5" rotation="0 -24 0">
+          <a-entity geometry="primitive: box;" scale="0.2 0.1 0.5" position="-0.25 -0.05 0" material="color: #4d4d4d"></a-entity>
+          <a-entity geometry="primitive: box;" scale="0.2 0.1 0.5" position="0.25 -0.05 0" material="color: #4d4d4d"></a-entity>
+          <a-entity geometry="primitive: box;" scale="0.8 0.2 0.8" position="0 0.1 0" material="color: #4d4d4d"></a-entity>
+          <a-entity geometry="primitive: plane;" rotation="-90 0 0" scale="0.8 0.8 0.8" position="0 0.21 0" material="src: #griller-texture; transparent: true"></a-entity>
+        </a-entity>
+
+        <!--a-entity position="1.2 0.85 -2.4" scale="0.2 0.2 0.2" obj-model="obj: #bowl" material="src: /img/ceramic_white.jpg; color: #80bbd1"></a-entity>
+        <a-entity position="-0.2 0.85 -2.5" scale="0.08 0.08 0.08" obj-model="obj: #plate" material="src: /img/ceramic_white.jpg; color: #ededed"></a-entity-->
+
+        <!-- Light -->
+        <a-entity light="color: #ccccff; intensity: 1; type: ambient;" visible="true"></a-entity>
+        <a-entity light="type: point; intensity: 0.8; distance: 8; decay: 2" position="0 2.5 0"></a-entity>
+
+        <!-- Taskboard -->
+        <a-plane width="2" height="1" rotation="0 90 0" position="-2.99 1.5 -1.5" color="#6C7A89">
+          <a-entity id="taskboard" position="-0.9 0.4 0" scale="0.3 0.3 0.3">
+            <a-text position="0 0 0" value="Tasks:"></a-text>
+            <!--a-text position="0 -0.3 0" value="1. blabla"></a-text-->
+          </a-entity>
+        </a-plane>
+
+        <!-- Calendar -->
+      <a-plane width="1.2" height="2" rotation="0 180 0" position="-0.5 1.45 2.99" color="#6C7A89">
+        <a-entity id="calendar1" position="-0.5 0.95 0" scale="0.2 0.2 0.2">
+          <a-text position="-0.2 0 0" value="Calendar & TODOs:"></a-text>
+          <a-text position="0 -0.5 0" color="#000000" value="Step 1.1. Orientate yourself in the virtual environment. Afterwards select an entity from the dining table and move it around."></a-text>
+          <a-text position="0 -1.25 0" color="#000000" value="Step 1.2. Select another entity from the table. Then navigate to the 'Properties'-view and delete the selected entity."></a-text>
+          <a-text position="0 -2.1 0" color="#000000" value="Step 1.3. Navigate to the 'NewEntity'-view. Then add a new entity of type 'Bowl' to the scene. Afterwards add a 'Sphere'. Place both objects on the kitchen counter."></a-text>
+          <a-text position="0 -3.1 0" color="#000000" value="Step 1.4. Select the entities from Step 1.3., navigate to the 'Properties'-View and rename them to 'My Bowl' and 'Dough' respectively."></a-text>
+          <a-text position="0 -4.1 0" color="#000000" value="Step 1.5. Select the 'Dough' entity and navigate to the 'Properties'-View. Change its color to a doughy-color and resize it to fit into the 'Bowl'. Afterwards place it into the 'Bowl'."></a-text>
+          <a-text position="0.2 -5.1 0" value="Step 2.1. Select the 'Dough' and navigate to the 'Properties'-View. Beneath 'Interactable' Select the 'Grabbable' Radiobutton to make the object grabbable for users of the demo."></a-text>
+          <a-text position="0.2 -6.2 0" value="Step 2.2. Select the 'Wafflemaker Top' and set its 'Interactable' to 'Rotatable'. Additionally select an 'Axis' the user can rotate the object on in the demo and set an 'Offset' for the rotation axis origin."></a-text>
+          <a-text position="0.2 -7.5 0" value="Step 2.3. Navigate to the 'Task'-View, add a new 'EventArea' and place it inside the wafflemaker. Select it and set its properties in the 'Properties'-View as follows: Name = 'WafflemakerLocation', Target = 'Dough', Action: 'Change To', Shape: 'Waffle'."></a-text>
+          <a-text position="0 -9.0 0" color="#000000" value="Step 3. Navigate to the 'Task'-View and add three tasks. Set the first task's requirement to the event area from Step 3.1. and the remaining to the 'Wafflemaker Top'. Afterwards set the target angle for completing task 2 to 0 degrees and task 3 to 36 degrees."></a-text>
+        </a-entity>
+      </a-plane>
+      
+      <!--a-plane width="1.6" height="2" rotation="0 180 0" position="-0.4 1.45 2.99" color="#6C7A89">
+        <a-entity id="calendar2" position="-0.75 0.95 0" scale="0.3 0.3 0.3">
+          <a-text wrap-count="55" position="-0.15 0 0" value="Calendar & TODOs:"></a-text>
+          <a-text wrap-count="55" position="0 -0.3 0" color="#000000" value="Step 4. Switch the scenario by connecting to another URL with your webbrowser."></a-text>
+          <a-text wrap-count="55" position="0 -0.6 0" color="#000000" value="Step 4.1. Orientate yourself in the virtual environment."></a-text>
+          <a-text wrap-count="55" position="0.2 -1.0 0" value="Step 5. The kitchen in this scenario is missing some objects compared to scenario one. Together with your partner, fill the kitchen exactly with the following objects:"></a-text>
+          <a-text wrap-count="55" position="0.2 -1.4 0" value="Step 5.1. Add 2 Stools around the table."></a-text>
+          <a-text wrap-count="55" position="0.2 -1.6 0" value="Step 5.2. Add 4 Plates, place 3 on the counter and one on the table."></a-text>
+          <a-text wrap-count="55" position="0.2 -1.9 0" value="Step 5.3. Add 1 Griller-Top and place it above the existing 'Sandwichmaker-Bottom'."></a-text>
+          <a-text wrap-count="55" position="0.2 -2.3 0" value="Step 5.4. Add 1 Toast, 1 'Tomatoes' and 1 Cheese. Place each of them on their own plate on the counter."></a-text>
+          <a-text wrap-count="55" position="0 -2.7 0" color="#000000" value="Step 6. Together with your partner, add following interactions to the virtual environment:"></a-text>
+          <a-text wrap-count="55" position="0 -3.0 0" color="#000000" value="Step 6.1. Set the interactable of 'Toast' to 'Grabbable'."></a-text>
+          <a-text wrap-count="55" position="0 -3.3 0" color="#000000" value="Step 6.2. Select the 'Sandwichmaker-Top' and set its 'Interactable' to 'Rotatable'. Additionally set the 'Axis' and the 'Offset' so that it rotates where the Sandwichmaker-Top and -Bottom touch each other."></a-text>
+          <a-text wrap-count="55" position="0 -3.8 0" color="#000000" value="Step 6.3. Add two EventAreas named 'TomatoesLocation' and 'CheeseLocation' and place them above the 'Tomatoes' or 'Cheese'."></a-text>
+          <a-text wrap-count="55" position="0 -4.3 0" color="#000000" value="Step 6.4. Select the EventAreas of Step 6.3., set their target to 'Toast', set their action to 'Add Layer' and set layer to 'Tomatoes' or 'Cheese' respectively."></a-text>
+          <a-text wrap-count="55" position="0.2 -4.8 0" value="Step 7. Navigate to the 'Task'-View and add four tasks. Give them the following properties:"></a-text>
+          <a-text wrap-count="55" position="0.2 -5.1 0" value="Step 7.1. Set the trigger for 'Task1' to 'CheeseLocation'."></a-text>
+          <a-text wrap-count="55" position="0.2 -5.3 0" value="Step 7.2. Set the trigger for 'Task2' to 'TomatoesLocation."></a-text>
+          <a-text wrap-count="55" position="0.2 -5.6 0" value="Step 7.3. Set the trigger for 'Task3' to 'Sandwichmaker-Top' and set the target angle to 0 degrees."></a-text>
+          <a-text wrap-count="55" position="0.2 -6.0" value="Step 7.4. Set the trigger for 'Task3' to 'Sandwichmaker-Top' and set the target angle to 36 degrees."></a-text>
+          <a-text wrap-count="55" position="0 -6.3 0" color="#000000" value="Step 8. Export your data."></a-text>
+        </a-entity>
+      </a-plane-->
+
+        <!-- Avatar -->
+        <a-entity id="rig">
+          <a-entity
+            id="player"
+            networked="template:#avatar-template;attachTemplateToLocal:false;"
+            camera
+            position="0 1.6 0"
+            spawn-in-circle="radius:0"
+            object-control-desktop="template:#block-template"
+            wasd-controls="fly: true; acceleration: 50;"
+            look-controls
+            cursor="rayOrigin: mouse"
+            raycaster="objects: .clickable,
+                                .sub-clickable,
+                                .axis-slider"
+          >
+          <!-- 
+            raycaster="objects: .cursor-listener"
+          -->
+            <a-sphere id="playerhead" scale="0.3 0.3 0.3" class="head" visible="false" random-color></a-sphere>
+          </a-entity>
+        </a-entity>
+
+        <!-- Environment -->
+        <!--a-entity position="0 0 0"
+          geometry="primitive: plane; width: 10000; height: 10000;" rotation="-90 0 0"
+          material="src: #grid; repeat: 10000 10000; transparent: true; metalness:0.6; roughness: 0.4; sphericalEnvMap: #sky;"
+        ></a-entity-->
+
+        <!--a-entity gltf-model="#kitchenModel"></a-entity-->
+        <!--a-entity scale="0.6 0.6 0.6" obj-model="obj: #kitchen-obj; mtl: #kitchen-mtl"></a-entity-->
+
+      </a-scene>
+    </div>
+
+    <div class="controls">
+      <p>Use WASD-Keys to fly around. Click on a component to select it and edit its properties.</p>
+    </div>
+  </body>
+</html>
