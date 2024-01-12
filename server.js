@@ -16,9 +16,13 @@ const fs = require("fs");
 const { update } = require("@tweenjs/tween.js");
 const { ReverseSubtractEquation } = require("three");
 
-// Next two lines are a SSL certificate for local testing
-const privateKey = fs.readFileSync(__dirname + "\\certs\\localhost.key", "utf8");
-const certificate = fs.readFileSync(__dirname + "\\certs\\localhost.crt", "utf8");
+// Next two lines are a SSL certificate for local testing on WINDOWS
+// const privateKey = fs.readFileSync(__dirname + "\\certs\\localhost.key", "utf8");
+// const certificate = fs.readFileSync(__dirname + "\\certs\\localhost.crt", "utf8");
+
+// Next two lines are a SSL certificate for local testing on LINUX
+const privateKey = fs.readFileSync(__dirname + "/certs/localhost.key", "utf8");
+const certificate = fs.readFileSync(__dirname + "/certs/localhost.crt", "utf8");
 
 // Next two lines were used for the SSL certificate in the user study
 //const privateKey = fs.readFileSync("/certbot/privkey.pem", "utf8");
