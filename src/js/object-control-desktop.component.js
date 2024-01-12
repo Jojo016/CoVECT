@@ -624,24 +624,6 @@ AFRAME.registerComponent('object-control-desktop', {
       div.addEventListener("change", this.positionChanged, false);
       pPanel.appendChild(div);
 
-      // TODO: add switch/case for 'shape'
-      var shape;
-      var material = pEl.children[0].getAttribute('material');
-      if(material != null) {
-        shape = material.shape;
-        
-        if(shape != null) {
-          switch(shape) {
-
-            case 'sphere':
-              break;
-  
-            default:
-              break;
-          }
-        }
-      }
-
       // Rotation
       var rotation = el.getAttribute('rotation');
       div = document.createElement('div');
@@ -810,6 +792,13 @@ AFRAME.registerComponent('object-control-desktop', {
       pPanel.appendChild(div);
 
       // Wireframe
+      var geometry = pEl.children[0].getAttribute('geometry');
+      var shape;
+
+      if(geometry != null) {
+        shape = geometry.primitive;
+      }
+
       switch(shape) {
         case 'box':
         case 'cylinder':
@@ -821,7 +810,7 @@ AFRAME.registerComponent('object-control-desktop', {
           var wireframed = el.getAttribute('wireframed');
           var checked = '';
           if(wireframed == 'true') {
-            checked = 'checked ';
+            checked = 'checked';
           }
           
           div.className = 'property-row';
@@ -830,7 +819,7 @@ AFRAME.registerComponent('object-control-desktop', {
               <b>Collaboration</b>
             </span>
             <div class="property-row-element">
-              <input class="property-row-checkbox" type="checkbox" id="wireframe-property" ${checked}value="wireframe"/>
+              <input class="property-row-checkbox" type="checkbox" id="wireframe-property" ${checked} value="wireframe"/>
               <label for="wireframe-property">Highlight Element</label><br>
             </div>
             <div class="property-row-element">
@@ -1148,6 +1137,9 @@ AFRAME.registerComponent('object-control-desktop', {
       div.innerHTML += `
         <div class="property-row-element">
           <button type="button" onclick="addTaskButton()">Add Task</button>
+        </div>
+        <div class="property-row-element">
+          <button type="button" onclick="addTaskButton()">Remove Task</button>
         </div>
       `;
       pPanel.appendChild(div);

@@ -1,0 +1,301 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script>
+      $(document).ready(function() {
+        $('[data-toggle="toggle"]').change(function(){
+          $(this).parents().next('.hide').toggle();
+        });
+      });
+    </script>
+    <script>
+      var clientName = '[Web] ' + prompt("Please enter your name", "User");
+
+      // Send specific commands to the server 
+      function addObject(shape) {
+        var iframe = document.getElementById("iframe");
+        iframe.contentWindow.sendToServer("addNewObject", shape);
+      }
+
+      function removeObject(cid) {
+        var iframe = document.getElementById("iframe");
+        iframe.contentWindow.sendToServer("removeObject", cid);
+      }
+
+      function addInteraction(type) {
+        var iframe = document.getElementById("iframe");
+        var data = new Object();
+        data.type = type;
+
+        if(type == 'eventarea') {
+          // Get position
+          var position = new Object();
+          position.x = 1; 
+          position.y = 1;
+          position.z = -1;
+          // TODO: Get pos from player -> iframe.contentWindow.scene;
+          data.position = position;
+
+          data.geometry = "primitive: box";
+          data.scale = "1 0.5 1";
+          data.material = "color: #a8a8a8; opacity: 0.4";
+        }
+        
+        iframe.contentWindow.sendToServer("addInteraction", data);
+      }
+
+      function editTasks() {
+        var iframe = document.getElementById("iframe");
+        var occupied = iframe.contentWindow.areTasksOccupied();
+        if(!occupied) {
+          var data = JSON.stringify(new Object());
+          iframe.contentWindow.sendToServer("selectTasks", data);
+        }           
+      }
+
+      function addTaskButton() {
+        var iframe = document.getElementById("iframe");
+        iframe.contentWindow.sendToServer("addTask", null);
+      }
+
+      function exportFiles() {
+        var iframe = document.getElementById("iframe");
+        iframe.contentWindow.sendToServer("exportFiles", null);
+      }
+
+      // Status Bar functions
+      function addUserToStatusBar(clientId, clientName, isYourself) {
+        // Create Div
+        var div = document.createElement('div');
+        div.id = 'user-' + clientId;
+        div.className = 'userColumn';
+        div.innerHTML = `
+          <b>${clientName}</b>
+        `; 
+        /*
+        div.setAttribute('padding', '50px');
+        div.setAttribute('display', 'inline-block');
+        */
+
+        if(isYourself) {
+          div.setAttribute('highlight', '')
+        }
+
+        // Add div to statusbar
+        var statusbar = document.getElementById('statusbar');
+        statusbar.appendChild(div);
+        console.log("Added client to statusbar: " + clientName + "[" + clientId + "]");
+      }
+
+      function removeUserFromStatusBar(clientId) {
+        var div = document.getElementById('user-' + clientId);
+        div.parentElement.removeChild(div);
+        console.log("Removed client from statusbar: [" + clientId + "]");
+      }
+
+    </script>
+    <link rel="stylesheet" type="text/css" href="/styles/Editor2.css" />
+  </head>
+  <body>
+    <div class="editor">
+      <div class="header">
+        <div class="statusbar" id="statusbar">
+          <div class="userColumn">
+            <b>Active Users:</b>
+          </div>
+        </div>
+      </div>
+
+      <div class="main">
+        <div class="left-panel">
+          <table class="table1">
+            <tbody>
+              <tbody class="labels">
+                <tr class="tr1">
+                  <td class="td1" colspan="2">
+                    <label for="geometry">Add Entities</label>
+                    <input type="checkbox" name="geometry" id="geometry" data-toggle="toggle">
+                  </td>
+                </tr>
+              </tbody>
+              <tbody class="hide">
+                <tr class="tr1">
+                  <td class="td1">
+                    <div style="width: 100%;">
+                      <button class="seamless-button" onClick="addObject('box')">Add Box</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="tr1">
+                  <td class="td1">
+                    <div style="width: 100%;">
+                      <button class="seamless-button" onClick="addObject('cylinder')">Add Cylinder</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="tr1">
+                  <td class="td1">
+                    <div style="width: 100%;">
+                      <button class="seamless-button" onClick="addObject('plane')">Add Plane</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="tr1">
+                  <td class="td1">
+                    <div style="width: 100%;">
+                      <button class="seamless-button" onClick="addObject('sphere')">Add Sphere</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="tr1">
+                  <td class="td1">
+                    <div style="width: 100%;">
+                      <button class="seamless-button" onClick="addObject('bowl')">Add Bowl</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="tr1">
+                  <td class="td1">
+                    <div style="width: 100%;">
+                      <button class="seamless-button" onClick="addObject('plate')">Add Plate</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="tr1">
+                  <td class="td1">
+                    <div style="width: 100%;">
+                      <button class="seamless-button" onClick="addObject('stool')">Add Stool</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="tr1">
+                  <td class="td1">
+                    <div style="width: 100%;">
+                      <button class="seamless-button" onClick="addObject('toast')">Add Toast</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="tr1">
+                  <td class="td1">
+                    <div style="width: 100%;">
+                      <button class="seamless-button" onClick="addObject('cheese')">Add Cheese</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="tr1">
+                  <td class="td1">
+                    <div style="width: 100%;">
+                      <button class="seamless-button" onClick="addObject('tomatoes')">Add Tomatoes</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="tr1">
+                  <td class="td1">
+                    <div style="width: 100%;">
+                      <button class="seamless-button" onClick="addObject('griller-top')">Add Griller-Top</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+              <tbody class="labels">
+                <tr class="tr1">
+                  <td class="td1" colspan="2">
+                    <label for="interaction">Interactions</label>
+                    <input type="checkbox" name="interaction" id="interaction" data-toggle="toggle">
+                  </td>
+                </tr>
+              </tbody>
+              <tbody class="hide">
+                <tr class="tr1">
+                  <td class="td1">
+                    <div style="width: 100%;">
+                      <button class="seamless-button" onClick="addInteraction('eventarea')">Add EventArea</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+              <tbody class="labels">
+                <tr class="tr1">
+                  <td class="td1" colspan="2">
+                    <label for="task">Tasks</label>
+                    <input type="checkbox" name="task" id="task" data-toggle="toggle">
+                  </td>
+                </tr>
+              </tbody>
+              <tbody class="hide">
+                <tr class="tr1">
+                  <td class="td1">
+                    <div style="width: 100%;">
+                      <button class="seamless-button" onClick="editTasks()">Edit Tasks</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+              <tbody class="labels">
+                <tr class="tr1">
+                  <td class="td1" colspan="2">
+                    <label for="export">Export</label>
+                    <input type="checkbox" name="export" id="export" data-toggle="toggle">
+                  </td>
+                </tr>
+              </tbody>
+              <tbody class="hide">
+                <tr class="tr1">
+                  <td class="td1">
+                    <div style="width: 100%;">
+                      <button class="seamless-button" onClick="exportFiles()">Export now</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="middle-panel">
+          <div class="iframe-panel">
+            <iframe id="iframe" src="user-desktop-ar1.html" height="100%" width="100%"></iframe>
+          </div>
+          <div class="properties-panel" id="properties-panel">
+            <!--div class="properties-category">
+              <div class="properties-category-content-one-parameter">
+                <span class="properties-category-name">
+                  <b>Name</b>
+                </span>
+                <div class="properties-parameter">
+                  <input type="text" name="name" value="Box1"/>
+                </div>
+              </div>
+            </div-->
+            <div class="properties-no-selection">
+              <span>Nothing is selected</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="right-panel">
+          <div style="text-align: center;" >
+            <span style="font-size: 20px; font-weight:bold; color: white;">Scene Objects</span>
+          </div>
+          <table id="scene-objects" width="100%">
+            <thead>
+              <th align="left">
+                CID
+              </th>
+              <th align="left">
+                Object Name
+              </th>
+              <th align="left">
+                Delete
+              </th>
+            </thead>
+            <tbody>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

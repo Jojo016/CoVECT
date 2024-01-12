@@ -9,7 +9,9 @@
 
 # testing
 /coverage
-/certs
+/certs/*
+!certs/localhost.crt
+!certs/localhost.key
 
 # production
 /build

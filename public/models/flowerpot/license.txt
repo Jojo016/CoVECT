@@ -1,7 +1,0 @@
-Model Information:
-* title:	Flowerpot 2
-* source:	https://sketchfab.com/models/4664b25a0e134ab682e05c23816dc9b6
-* author:	r.hessens (https://sketchfab.com/r.hessens)
-Model License:
-* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
-* requirements:	Author must be credited. Commercial use is allowed.
