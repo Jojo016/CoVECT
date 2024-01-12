@@ -1,5 +1,5 @@
-﻿# cVECT  
-A collaborative Virtual Environment Creation Tool to simplify the development of interactive virtual reality environments.
+﻿# CoVECT  
+A "Collaborative Virtual Environment Creation Tool" to simplify the development of interactive virtual reality environments.
 
 **Reference:**  
 None
