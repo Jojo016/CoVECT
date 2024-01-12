@@ -1,8 +1,0 @@
-Model Information:
-* title:	Chair
-* source:	https://sketchfab.com/3d-models/chair-0bc0e03f59f94c2eba688e3cbd70b141
-* author:	TMGreed (https://sketchfab.com/TMGreed)
-
-Model License:
-* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
-* requirements:	Author must be credited. Commercial use is allowed.
