@@ -1,4 +1,4 @@
-⚠️ **WARNING: The published version has some major security risks due to dependencies. Use in secure or disposable spaces only!**
+⚠️ **WARNING: The published version contains some major security risks due to dependencies. Use in secure or disposable spaces only!**
  
  # CoVECT  
 A CoVECT is a "Collaborative Virtual Environment Creation Tool" that enables multiple users to simultaneously develop interactive virtual reality environments. The server provides access to the editor through two different interfaces. A web interface for desktop computers and a virtual reality interface for head mounted displays. The editor can be accessed with any browser that supports WebXR, it was tested with Google Chrome.  
